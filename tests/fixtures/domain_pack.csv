@@ -1,0 +1,5 @@
+term,canonical_id,entry_type,language,aliases,definition,traits
+aluminum profile,material:aluminum_profile,material,en,aluminium profile;铝型材,Extruded aluminum construction profile,"{""material"":""aluminum"",""domain"":""construction""}"
+FOB,trade:fob,trade_term,en,Free On Board;离岸价,Free On Board international trade term,"{""incoterm"":true}"
+tempered glass,material:tempered_glass,material,en,钢化玻璃,Heat-treated safety glass,"{""fragile"":true}"
+MOQ,trade:moq,trade_term,en,Minimum Order Quantity;最小起订量,Minimum order quantity,"{""quantity_term"":true}"

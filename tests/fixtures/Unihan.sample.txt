@@ -1,0 +1,8 @@
+# Sample Unihan fixture
+U+94DD	kMandarin	lǚ
+U+94DD	kDefinition	aluminum
+U+94DD	kTotalStrokes	11
+U+6C34	kMandarin	shuǐ
+U+6C34	kDefinition	water, liquid, lotion, juice
+broken	kMandarin	bad
+U+94DD	bad-row
