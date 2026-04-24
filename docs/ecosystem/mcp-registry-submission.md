@@ -29,11 +29,11 @@ Use `package-registry/server.json` as the machine-readable draft. The draft foll
 
 ## Important Pre-Submission Gap
 
-The draft `server.json` assumes a PyPI package named `omniglyph` with version `0.3.1b0`.
+The draft `server.json` assumes a PyPI package named `omniglyph` with version `0.3.2b0`.
 
 Before submitting to the registry, complete one of these:
 
-1. Bump the Python package version to `0.3.1b0` in `pyproject.toml` and `src/omniglyph/__init__.py`.
+1. Bump the Python package version to `0.3.2b0` in `pyproject.toml` and `src/omniglyph/__init__.py`.
 2. Publish OmniGlyph to PyPI as `omniglyph`.
 3. Confirm the PyPI long description contains `mcp-name: io.github.aidi1723/omniglyph`.
 
