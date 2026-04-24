@@ -10,6 +10,18 @@ Raw input
   → customer reply / quote / ERP / factory instruction
 ```
 
+## Infrastructure Gap
+
+Most Agent failures are not caused only by weak reasoning. Many begin earlier, when the system treats uncertain symbols, abbreviations, OCR fragments, or domain terms as if they were already reliable facts. This creates a hidden coupling between perception and reasoning:
+
+```text
+uncertain symbol → guessed term → wrong retrieval key → drifting decision
+```
+
+OmniGlyph separates those layers. The model can focus on reasoning, while OmniGlyph provides a local, deterministic, source-backed fact service for symbols and terms. This is especially useful for edge and private deployments where remote APIs, large knowledge graphs, or repeated prompt explanations are too slow, too expensive, or too exposed.
+
+The key architectural role is not to replace the LLM. It is to constrain the factual substrate that the LLM reads from and writes back into.
+
 ## 1. Input Normalizer
 
 The input normalizer handles noisy physical-world text before it enters the model.

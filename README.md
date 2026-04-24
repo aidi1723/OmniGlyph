@@ -75,6 +75,32 @@ Because it is atomic and highly cohesive, it can be reused across workflows:
 
 In this sense, OmniGlyph is an open-source attempt to define a data cleaning and fact-verification primitive for the Agent era.
 
+## What Gap Does OmniGlyph Fill?
+
+Most Agent systems still rely on a model-first pattern: when the workflow becomes unreliable, teams often upgrade the model, add more prompt text, or add another RAG layer. Those are useful, but they do not fully solve deterministic symbol and terminology problems. A probabilistic engine should reason over facts; it should not be forced to invent the facts themselves.
+
+OmniGlyph fills three infrastructure gaps that are easy to miss:
+
+### 1. Separating Perception from Reasoning
+
+Agent workflows often mix basic recognition and high-level reasoning inside the same LLM call. For industrial automation, this is fragile. Recognizing a rare glyph, noisy OCR fragment, local abbreviation, material shorthand, or HS-code-like string is a perception problem before it is a reasoning problem.
+
+OmniGlyph gives the agent a local fact dictionary for this layer: reasoning stays with the model, while symbol and term identification are grounded in a deterministic service.
+
+### 2. Lightweight Local Ground Truth
+
+Large knowledge graphs and remote APIs can be powerful, but they may be too heavy, too slow, too expensive, or too network-dependent for edge Agent workflows.
+
+OmniGlyph is designed to run as a small local service on machines such as Intel N100/N97 edge nodes. That lets agents perform low-latency local lexical checks before spending tokens on model reasoning or sending sensitive business text to external services.
+
+### 3. Turning Symbols into Computable Inputs
+
+Traditional dictionaries are optimized for reading. Agent systems need structured inputs for computation.
+
+OmniGlyph converts characters, aliases, abbreviations, and domain terms into canonical IDs, JSON facts, source metadata, and eventually computable traits. This turns messy real-world text into stable inputs for quotation logic, RAG retrieval, OCR correction, compliance checks, and downstream automation.
+
+In short: OmniGlyph is a practical anti-hallucination filter at the symbol and terminology layer. It does not claim to eliminate all model hallucinations; it reduces one important class of failures by giving agents a local, source-backed fact layer before and after reasoning.
+
 ## Long-Term Vision
 
 OmniGlyph aims to become the Symbol Kernel for agentic systems:
