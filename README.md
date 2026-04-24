@@ -142,6 +142,71 @@ GET /api/v1/glyph?char=铝
 
 The key distinction is that global Unicode facts, Unihan lexical facts, and optional private domain traits are returned together but remain source-separated internally. Missing upstream facts remain `null`; for example, current Unihan readings provide `kMandarin` for `铝`, while `basic_meaning` may remain null unless another approved source supplies it. `domain_traits` appears only when an authorized private domain pack contributes matching properties.
 
+
+## Measured Data and Expected Impact
+
+OmniGlyph is designed to reduce token waste and hallucination risk by replacing ad-hoc web reading or model guessing with local, source-backed lookups.
+
+### Verified Data
+
+The current `v0.2.0-beta` candidate has been verified with:
+
+| Metric | Result |
+| --- | ---: |
+| UnicodeData import | `40,569` glyph records |
+| Unihan_Readings import | `291,227` properties |
+| Unihan_DictionaryLikeData import | `156,251` properties |
+| Total verified Unihan properties | `447,478` properties |
+| Local test suite | `34 passed` |
+| N100 Linux test suite | `34 passed` |
+| Docker build/run/healthcheck | Passed on N100 |
+| SQLite lookup benchmark for `铝` | P95 about `0.17ms` over 1,000 lookups |
+
+Example normalization:
+
+```text
+Need aluminum profile and tempered glass, FOB Bangkok, MOQ 500 sets.
+```
+
+Compact result:
+
+```json
+{
+  "known": {
+    "aluminum profile": "material:aluminum_profile",
+    "tempered glass": "material:tempered_glass",
+    "FOB": "trade:fob",
+    "MOQ": "trade:moq"
+  },
+  "unknown": ["Bangkok", "500 sets"]
+}
+```
+
+### Token-Saving Potential
+
+These are engineering estimates, not large-scale benchmark claims:
+
+| Scenario | Estimated token reduction | Why |
+| --- | ---: | --- |
+| Single Unicode character verification | `70%–95%` | Local JSON replaces web search, HTML, and explanation context. |
+| CJK reading lookup | `60%–90%` | Unihan fields replace model guessing and long explanations. |
+| Emoji / symbol identification | `50%–85%` | Unicode names and source-backed properties are returned directly. |
+| Cross-border inquiry normalization | `30%–70%` target | Requires domain packs + batch normalize; now available as beta functionality. |
+
+### Hallucination Guardrails
+
+OmniGlyph currently reduces character-, symbol-, and term-level hallucination by enforcing this rule:
+
+```text
+source-backed fact → return it
+missing upstream value → return null
+unknown token → return unknown / 404
+```
+
+Example: verified Unihan data provides `kMandarin = lǚ` for `铝`, but the checked Unihan files do not provide `kDefinition` for that code point. OmniGlyph therefore returns `basic_meaning: null` instead of inventing a definition.
+
+This does not eliminate all Agent hallucination. It provides the first infrastructure layer: deterministic symbol and term facts before the model reasons.
+
 ## Development Stages
 
 ### Stage 1: Symbol Fact Base

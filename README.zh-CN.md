@@ -113,6 +113,71 @@ Codex 接入说明见：`docs/integrations/codex-mcp.md`。
 
 导入的数据集、Unicode/Unihan/CLDR 原始数据以及私有领域词库遵循各自的授权条款，本项目不会对其重新授权。
 
+
+## 实测数据与预期效果
+
+OmniGlyph 的目标是用本地、可追溯、结构化查询，替代 Agent 临时读网页或让模型直接猜，从而减少 token 浪费和字符/术语级幻觉风险。
+
+### 已验证数据
+
+当前 `v0.2.0-beta` 候选版本已验证：
+
+| 指标 | 结果 |
+| --- | ---: |
+| UnicodeData 导入 | `40,569` 条 glyph records |
+| Unihan_Readings 导入 | `291,227` 条 properties |
+| Unihan_DictionaryLikeData 导入 | `156,251` 条 properties |
+| 已验证 Unihan 属性总量 | `447,478` 条 properties |
+| 本地测试 | `34 passed` |
+| N100 Linux 测试 | `34 passed` |
+| Docker build/run/healthcheck | N100 验证通过 |
+| `铝` 的 SQLite 查询 benchmark | 1000 次查询 P95 约 `0.17ms` |
+
+示例询盘：
+
+```text
+Need aluminum profile and tempered glass, FOB Bangkok, MOQ 500 sets.
+```
+
+Compact 标准化结果：
+
+```json
+{
+  "known": {
+    "aluminum profile": "material:aluminum_profile",
+    "tempered glass": "material:tempered_glass",
+    "FOB": "trade:fob",
+    "MOQ": "trade:moq"
+  },
+  "unknown": ["Bangkok", "500 sets"]
+}
+```
+
+### Token 节省潜力
+
+以下是工程预估，不是大规模 benchmark 结论：
+
+| 场景 | 预计 token 节省 | 原因 |
+| --- | ---: | --- |
+| 单个 Unicode 字符查证 | `70%–95%` | 用本地 JSON 替代网页搜索、HTML 和长解释。 |
+| CJK 读音查询 | `60%–90%` | 用 Unihan 字段替代模型猜测和解释。 |
+| emoji / 符号识别 | `50%–85%` | 直接返回 Unicode 名称和来源属性。 |
+| 跨境询盘标准化 | 目标 `30%–70%` | 依赖 domain pack + batch normalize；当前 beta 已具备雏形。 |
+
+### 防幻觉护栏
+
+OmniGlyph 当前通过以下规则降低字符、符号和术语级幻觉：
+
+```text
+有来源事实 → 返回事实
+上游缺失值 → 返回 null
+未知 token → 返回 unknown / 404
+```
+
+例如，真实验证的 Unihan 数据为 `铝` 提供了 `kMandarin = lǚ`，但验证过的 Unihan 文件没有给该码点提供 `kDefinition`。因此 OmniGlyph 返回 `basic_meaning: null`，不会为了“看起来完整”而编造解释。
+
+这不能消灭所有 Agent 幻觉，但能提供第一层基础设施：模型推理前，先用确定性的符号和术语事实打底。
+
 ## 当前阶段
 
 当前版本适合作为 `v0.2.0-beta` 开源发布候选：
