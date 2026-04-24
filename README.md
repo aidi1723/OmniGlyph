@@ -1,3 +1,4 @@
+<!-- mcp-name: io.github.aidi1723/omniglyph -->
 # OmniGlyph（万象文枢）
 
 [中文文档 / Chinese README](README.zh-CN.md)
