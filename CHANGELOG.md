@@ -17,3 +17,4 @@
 - Add OmniGlyph Code Linter core scanner, CLI `scan-code`, MCP `scan_code_symbols`, and poisoned-code demo generator.
 - Add Claude Desktop/Claude Code MCP readiness docs, MCP server card, and MCP safety notes.
 - Add MCP Registry submission plan and draft `package-registry/server.json`.
+- Prepare PyPI packaging metadata and publish checklist for MCP Registry submission.

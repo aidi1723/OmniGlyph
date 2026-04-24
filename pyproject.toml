@@ -1,7 +1,23 @@
 [project]
 name = "omniglyph"
-version = "0.2.0b0"
-description = "AI Agent symbol ground truth layer"
+version = "0.3.2b0"
+description = "Local-first symbol ground truth MCP server for AI agents"
+readme = "README.md"
+license = "Apache-2.0"
+authors = [
+  { name = "OmniGlyph contributors" }
+]
+keywords = ["mcp", "unicode", "agent", "homoglyph", "llm", "claude"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Quality Assurance",
+  "Topic :: Text Processing :: Linguistic",
+]
 requires-python = ">=3.10"
 dependencies = [
   "fastapi>=0.110",
@@ -25,3 +41,9 @@ build-backend = "setuptools.build_meta"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+
+[project.urls]
+Homepage = "https://github.com/aidi1723/OmniGlyph"
+Repository = "https://github.com/aidi1723/OmniGlyph"
+Issues = "https://github.com/aidi1723/OmniGlyph/issues"
+Documentation = "https://github.com/aidi1723/OmniGlyph#readme"
