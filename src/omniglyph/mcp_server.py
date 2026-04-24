@@ -2,6 +2,7 @@ import json
 import sys
 from typing import Any, TextIO
 
+from omniglyph.code_linter import scan_text
 from omniglyph.config import settings
 from omniglyph.guardrail import validate_output_terms
 from omniglyph.normalization import compact_normalize, normalize_tokens
@@ -49,6 +50,18 @@ def build_tools_list() -> list[dict[str, Any]]:
                 "type": "object",
                 "properties": {"terms": {"type": "array", "items": {"type": "string"}}},
                 "required": ["terms"],
+            },
+        },
+        {
+            "name": "scan_code_symbols",
+            "description": "Scan source code text for invisible Unicode controls and cross-script homoglyph risks.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "text": {"type": "string", "description": "Source code text to scan."},
+                    "source_name": {"type": "string", "description": "Optional source label for findings."},
+                },
+                "required": ["text"],
             },
         },
     ]
@@ -111,6 +124,15 @@ def handle_mcp_request(request: dict[str, Any], repository: GlyphRepository | No
             if not isinstance(terms, list) or not all(isinstance(item, str) for item in terms):
                 return _error(request_id, -32602, "validate_output_terms requires a list of string terms")
             return _result(request_id, {"content": [{"type": "json", "json": validate_output_terms(glyph_repository, terms)}]})
+
+        if tool_name == "scan_code_symbols":
+            text = arguments.get("text")
+            source_name = arguments.get("source_name", "<mcp-text>")
+            if not isinstance(text, str):
+                return _error(request_id, -32602, "scan_code_symbols requires source code text")
+            if not isinstance(source_name, str) or not source_name.strip():
+                return _error(request_id, -32602, "scan_code_symbols source_name must be a string")
+            return _result(request_id, {"content": [{"type": "json", "json": scan_text(text, source_name=source_name)}]})
 
         return _error(request_id, -32601, f"Unknown tool: {tool_name}")
 

@@ -1,5 +1,23 @@
 # Release Checklist
 
+## v0.3.0-beta Development Scope
+
+This upcoming release adds the first developer-facing dogfooding use case: OmniGlyph Code Linter.
+
+Included in the working tree:
+
+- Core code-symbol scanner for invisible Unicode format characters, Bidi controls, unexpected controls, and cross-script homoglyph risks.
+- CLI command: `omniglyph scan-code PATH --format text|json --fail-on never|warning`.
+- MCP tool: `scan_code_symbols` for coding agents.
+- Poisoned-code demo generator under `examples/poisoned-code/`.
+- Use-case documentation under `docs/use-cases/code-linter.md`.
+
+Release gate for v0.3.0-beta:
+
+- Full test suite passes.
+- Demo generator plus `scan-code` smoke test finds `U+0430`, `U+200B`, and `U+202E`.
+- Generated poisoned sample is not committed to the repository.
+
 ## v0.2.0-beta Scope
 
 This release is an beta-quality local symbol fact base for AI agents.

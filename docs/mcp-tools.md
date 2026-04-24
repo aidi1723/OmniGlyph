@@ -76,6 +76,16 @@ Output:
 
 Use this as the output guardrail layer in Sandwich Architecture. Unknown generated terms should be reviewed, regenerated, or blocked before they reach customers or production systems.
 
+## Tool: `scan_code_symbols`
+
+Input:
+
+```json
+{"text":"vаlue = 1\n","source_name":"agent.py"}
+```
+
+Returns a code-symbol scan report for invisible Unicode controls, Bidi controls, and cross-script homoglyph risks. Use it before an agent edits copied code, reviews suspicious diffs, or explains compiler errors that may be caused by hidden characters.
+
 ## Agent Rule
 
 Before interpreting unknown symbols, trade terms, or building-material terms, call OmniGlyph first. Treat `unknown` and `null` as missing facts, not as permission to hallucinate.

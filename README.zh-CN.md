@@ -79,7 +79,8 @@ OmniGlyph 把字符、别名、缩写和领域术语转换为 canonical ID、JSO
 - `GET /api/v1/glyph` 字符查询。
 - `GET /api/v1/term` 术语查询。
 - `POST /api/v1/normalize` 批量标准化。
-- MCP 工具：`lookup_glyph`、`lookup_term`、`normalize_tokens`。
+- `omniglyph scan-code` 代码符号审查器。
+- MCP 工具：`lookup_glyph`、`lookup_term`、`normalize_tokens`、`validate_output_terms`、`scan_code_symbols`。
 - 建材外贸 demo pack 与跨境询盘 demo。
 - Docker、CI、release check、N100 验证记录。
 
@@ -180,6 +181,17 @@ Codex 接入说明见：`docs/integrations/codex-mcp.md`。
 导入的数据集、Unicode/Unihan/CLDR 原始数据以及私有领域词库遵循各自的授权条款，本项目不会对其重新授权。
 
 
+
+## 开发者场景：代码符号审查器
+
+OmniGlyph 现在把自己的符号事实层用于编码 Agent 场景。`scan-code` 命令可以检测隐形 Unicode 控制符、Bidi 控制符、跨文字系统同形字符等问题，这类问题会让源码看起来正确，但实际行为异常。
+
+```bash
+python examples/poisoned-code/generate_poison.py
+omniglyph scan-code examples/poisoned-code/test_bug.py
+```
+
+该能力适合接入 pre-commit、CI，以及支持 MCP 的编码 Agent，让 Agent 在修改或解释代码之前，先看见源码的物理 Unicode 真相。详见 `docs/use-cases/code-linter.md`。
 
 ## Agent 三明治防线架构
 
