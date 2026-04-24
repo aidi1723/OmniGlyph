@@ -35,6 +35,46 @@ OmniGlyph is designed as the local knowledge heart of private agent systems such
 - **Composable (MCP-Ready):** Exposes standard Model Context Protocol servers for immediate use in OpenClaw, RAG pipelines, cross-border inquiry parsing, product standardization, and semantic computation.
 - **Expandable:** Starts from Unicode and grows into industry concepts and computable traits.
 
+
+## Why This Is Agent Infrastructure
+
+OmniGlyph is not just a dictionary API. It is a low-level infrastructure component for agentic systems.
+
+### 1. Agent Perception Layer
+
+LLMs do not directly see characters as humans do. They operate on tokens. When an OpenClaw-style workflow receives a multilingual trade email full of abbreviations, OCR noise, rare glyphs, mixed scripts, or malformed symbols, hallucination can begin before reasoning starts: at the perception and tokenization layer.
+
+OmniGlyph acts like a high-precision symbolic microscope for agents. Before the LLM performs intent analysis, quoting logic, or risk reasoning, OmniGlyph can normalize uncertain symbols and domain terms into deterministic Unicode facts and canonical IDs.
+
+If perception is unstable, downstream business logic becomes unstable. OmniGlyph stabilizes the first layer.
+
+### 2. External Ground-Truth Memory
+
+LLM knowledge is compressed into probabilistic model weights. That makes it powerful, but also context-sensitive and prone to confident fabrication.
+
+OmniGlyph removes character, symbol, and domain-term interpretation from the model's internal memory and places it into an external, read-only, source-backed service. Deployed on edge nodes such as Intel N100, it becomes a local ground-truth memory that agents can call through API or MCP.
+
+This gives agents a local system of measurement: a deterministic reference for symbols, terms, sources, and missing values.
+
+### 3. Atomic Infrastructure
+
+Good infrastructure does not hard-code business workflows. OmniGlyph does not decide how to reply to customers, calculate freight, or price glass. Its core job is atomic:
+
+```text
+input symbol or term → source-backed standard attributes / canonical ID
+```
+
+Because it is atomic and highly cohesive, it can be reused across workflows:
+
+- inquiry text cleanup
+- OCR post-processing
+- multilingual product-title normalization
+- RAG preprocessing
+- building-material term standardization
+- MCP tool calls for Codex/OpenClaw-style agents
+
+In this sense, OmniGlyph is an open-source attempt to define a data cleaning and fact-verification primitive for the Agent era.
+
 ## Long-Term Vision
 
 OmniGlyph aims to become the Symbol Kernel for agentic systems:
