@@ -72,6 +72,7 @@ Because it is atomic and highly cohesive, it can be reused across workflows:
 - RAG preprocessing
 - building-material term standardization
 - MCP tool calls for Codex/OpenClaw-style agents
+- code-symbol linting before agents edit copied or generated code
 
 In this sense, OmniGlyph is an open-source attempt to define a data cleaning and fact-verification primitive for the Agent era.
 
@@ -209,6 +210,17 @@ GET /api/v1/glyph?char=铝
 The key distinction is that global Unicode facts, Unihan lexical facts, and optional private domain traits are returned together but remain source-separated internally. Missing upstream facts remain `null`; for example, current Unihan readings provide `kMandarin` for `铝`, while `basic_meaning` may remain null unless another approved source supplies it. `domain_traits` appears only when an authorized private domain pack contributes matching properties.
 
 
+
+## Developer Use Case: Code Symbol Linter
+
+OmniGlyph now dogfoods its own symbol fact layer for coding agents. The `scan-code` command detects invisible Unicode controls, Bidi controls, and cross-script homoglyph risks that can make source code look correct while behaving incorrectly.
+
+```bash
+python examples/poisoned-code/generate_poison.py
+omniglyph scan-code examples/poisoned-code/test_bug.py
+```
+
+This is designed for pre-commit hooks, CI, and MCP-enabled coding agents that should inspect the physical Unicode layer before editing or explaining code. See `docs/use-cases/code-linter.md`.
 
 ## Sandwich Architecture for Agents
 

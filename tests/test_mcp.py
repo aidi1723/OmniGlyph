@@ -136,3 +136,19 @@ def test_handle_mcp_validate_output_terms_tool_call(tmp_path):
     payload = response["result"]["content"][0]["json"]
     assert payload["status"] == "warn"
     assert payload["unknown"] == ["HS 7604.99X"]
+
+
+def test_handle_mcp_scan_code_symbols_tool_call():
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 7,
+            "method": "tools/call",
+            "params": {"name": "scan_code_symbols", "arguments": {"text": "v\u0430lue = 1\n", "source_name": "agent.py"}},
+        }
+    )
+
+    payload = response["result"]["content"][0]["json"]
+    assert payload["status"] == "warn"
+    assert payload["findings"][0]["unicode_hex"] == "U+0430"
+    assert payload["findings"][0]["source"] == "agent.py"

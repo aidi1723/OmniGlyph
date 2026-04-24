@@ -1,6 +1,8 @@
 import argparse
+import sys
 from pathlib import Path
 
+from omniglyph.code_linter import format_json_report, format_text_report, scan_path
 from omniglyph.config import settings
 from omniglyph.domain_pack import parse_domain_pack
 from omniglyph.normalizer import parse_unicode_data
@@ -115,6 +117,11 @@ def main() -> None:
     lookup = subcommands.add_parser("lookup")
     lookup.add_argument("text")
 
+    scan_code = subcommands.add_parser("scan-code")
+    scan_code.add_argument("path", type=Path)
+    scan_code.add_argument("--format", choices=["text", "json"], default="text")
+    scan_code.add_argument("--fail-on", choices=["never", "warning"], default="never")
+
     args = parser.parse_args()
     if args.command == "download-unicode":
         download_unicode()
@@ -134,6 +141,14 @@ def main() -> None:
             print(repository.find_by_glyph(args.text))
         else:
             print(repository.find_term(args.text))
+    elif args.command == "scan-code":
+        report = scan_path(args.path)
+        if args.format == "json":
+            print(format_json_report(report))
+        else:
+            print(format_text_report(report))
+        if args.fail_on == "warning" and report["status"] == "warn":
+            raise SystemExit(1)
 
 
 if __name__ == "__main__":
