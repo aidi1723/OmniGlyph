@@ -154,6 +154,27 @@ Codex 接入说明见：`docs/integrations/codex-mcp.md`。
 导入的数据集、Unicode/Unihan/CLDR 原始数据以及私有领域词库遵循各自的授权条款，本项目不会对其重新授权。
 
 
+
+## Agent 三明治防线架构
+
+OmniGlyph 可以挂载在 Agent/RAG 工作流的两端：
+
+```text
+原始输入
+  → OmniGlyph 前置标准化器
+  → RAG / LLM / Agent 推理
+  → OmniGlyph 输出守门员
+  → 客户回复 / 报价 / ERP / 工厂指令
+```
+
+作为 **Input Normalizer（前置标准化器）**，OmniGlyph 在检索和推理之前，把客户邮件、OCR 片段、行业缩写、多语言别名和贸易术语映射成 canonical ID。
+
+作为 **Output Guardrail（输出守门员）**，OmniGlyph 在模型生成内容发给客户或下游系统之前进行校验。如果模型编造了不存在的 HS code、材料名或型材型号，工作流可以标记、阻断或转人工复核。
+
+当前版本已经实现输入标准化侧的基础能力：`POST /api/v1/normalize` 和 MCP `normalize_tokens`，并新增最小输出 guardrail，用于已知/未知术语检查。完整的策略阻断、重写、ERP/邮件系统集成仍属于后续工作。
+
+详见：`docs/architecture/sandwich-architecture.md`。
+
 ## 实测数据与预期效果
 
 OmniGlyph 的目标是用本地、可追溯、结构化查询，替代 Agent 临时读网页或让模型直接猜，从而减少 token 浪费和字符/术语级幻觉风险。

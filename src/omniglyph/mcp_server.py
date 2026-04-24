@@ -3,6 +3,7 @@ import sys
 from typing import Any, TextIO
 
 from omniglyph.config import settings
+from omniglyph.guardrail import validate_output_terms
 from omniglyph.normalization import compact_normalize, normalize_tokens
 from omniglyph.repository import GlyphRepository
 
@@ -39,6 +40,15 @@ def build_tools_list() -> list[dict[str, Any]]:
                     "mode": {"type": "string", "enum": ["full", "compact"]},
                 },
                 "required": ["tokens"],
+            },
+        },
+        {
+            "name": "validate_output_terms",
+            "description": "Validate generated output terms against the local fact base.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {"terms": {"type": "array", "items": {"type": "string"}}},
+                "required": ["terms"],
             },
         },
     ]
@@ -95,6 +105,12 @@ def handle_mcp_request(request: dict[str, Any], repository: GlyphRepository | No
             results = normalize_tokens(glyph_repository, tokens)
             payload = compact_normalize(results) if mode == "compact" else {"results": results}
             return _result(request_id, {"content": [{"type": "json", "json": payload}]})
+
+        if tool_name == "validate_output_terms":
+            terms = arguments.get("terms")
+            if not isinstance(terms, list) or not all(isinstance(item, str) for item in terms):
+                return _error(request_id, -32602, "validate_output_terms requires a list of string terms")
+            return _result(request_id, {"content": [{"type": "json", "json": validate_output_terms(glyph_repository, terms)}]})
 
         return _error(request_id, -32601, f"Unknown tool: {tool_name}")
 

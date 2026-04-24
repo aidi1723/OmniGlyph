@@ -2,12 +2,17 @@ from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
 
 from omniglyph.config import settings
+from omniglyph.guardrail import validate_output_terms
 from omniglyph.normalization import compact_normalize, normalize_tokens
 from omniglyph.repository import GlyphRepository
 
 
 class NormalizeRequest(BaseModel):
     tokens: list[str]
+
+
+class GuardrailRequest(BaseModel):
+    terms: list[str]
 
 
 def create_app(repository: GlyphRepository | None = None) -> FastAPI:
@@ -43,6 +48,11 @@ def create_app(repository: GlyphRepository | None = None) -> FastAPI:
         if mode == "compact":
             return compact_normalize(results)
         return {"results": results}
+
+
+    @app.post("/api/v1/guardrail/validate-output")
+    def validate_output(request: GuardrailRequest) -> dict:
+        return validate_output_terms(glyph_repository, request.terms)
 
     return app
 
