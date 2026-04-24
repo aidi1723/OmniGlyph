@@ -49,6 +49,33 @@ Compact output:
 }
 ```
 
+## Tool: `validate_output_terms`
+
+Input:
+
+```json
+{"terms":["FOB","tempered glass","HS 7604.99X"]}
+```
+
+Output:
+
+```json
+{
+  "status": "warn",
+  "known": {
+    "FOB": "trade:fob",
+    "tempered glass": "material:tempered_glass"
+  },
+  "unknown": ["HS 7604.99X"],
+  "details": [
+    {"term":"FOB","status":"known","canonical_id":"trade:fob","entry_type":"trade_term","source_name":"building_materials_example"},
+    {"term":"HS 7604.99X","status":"unknown","canonical_id":null}
+  ]
+}
+```
+
+Use this as the output guardrail layer in Sandwich Architecture. Unknown generated terms should be reviewed, regenerated, or blocked before they reach customers or production systems.
+
 ## Agent Rule
 
 Before interpreting unknown symbols, trade terms, or building-material terms, call OmniGlyph first. Treat `unknown` and `null` as missing facts, not as permission to hallucinate.

@@ -111,3 +111,28 @@ def test_handle_mcp_normalize_tokens_tool_call(tmp_path):
     )
 
     assert response["result"]["content"][0]["json"] == {"known": {"铝": "glyph:U+94DD", "FOB": "trade:fob"}, "unknown": ["unknown"]}
+
+
+def test_handle_mcp_validate_output_terms_tool_call(tmp_path):
+    from pathlib import Path
+
+    from omniglyph.domain_pack import parse_domain_pack
+
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+    source_id = repository.add_source_snapshot(SourceSnapshot("Private Domain Pack", "file://domain", "fixture", "sha-domain-guard", "private", "domain"))
+    repository.insert_lexical_entries(list(parse_domain_pack(Path("examples/domain-packs/building_materials.csv"), "private_building_materials")), source_id)
+
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 6,
+            "method": "tools/call",
+            "params": {"name": "validate_output_terms", "arguments": {"terms": ["FOB", "HS 7604.99X"]}},
+        },
+        repository=repository,
+    )
+
+    payload = response["result"]["content"][0]["json"]
+    assert payload["status"] == "warn"
+    assert payload["unknown"] == ["HS 7604.99X"]

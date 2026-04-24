@@ -183,6 +183,27 @@ GET /api/v1/glyph?char=铝
 The key distinction is that global Unicode facts, Unihan lexical facts, and optional private domain traits are returned together but remain source-separated internally. Missing upstream facts remain `null`; for example, current Unihan readings provide `kMandarin` for `铝`, while `basic_meaning` may remain null unless another approved source supplies it. `domain_traits` appears only when an authorized private domain pack contributes matching properties.
 
 
+
+## Sandwich Architecture for Agents
+
+OmniGlyph can be mounted on both sides of an Agent/RAG workflow:
+
+```text
+Raw input
+  → OmniGlyph Input Normalizer
+  → RAG / LLM / Agent reasoning
+  → OmniGlyph Output Guardrail
+  → customer reply / quote / ERP / factory instruction
+```
+
+As an **Input Normalizer**, OmniGlyph maps noisy customer text, OCR fragments, abbreviations, multilingual aliases, and trade terms into canonical IDs before retrieval or reasoning.
+
+As an **Output Guardrail**, OmniGlyph checks generated text before it reaches customers or downstream systems. If a model invents an unknown HS code, material name, or profile model, the workflow can flag, block, or route the output for review.
+
+Current implementation covers the input-normalization side with `POST /api/v1/normalize` and MCP `normalize_tokens`, and adds a minimal output guardrail for known/unknown term checking. Full policy-based blocking, rewriting, and ERP/email integration are future work.
+
+See `docs/architecture/sandwich-architecture.md`.
+
 ## Measured Data and Expected Impact
 
 OmniGlyph is designed to reduce token waste and hallucination risk by replacing ad-hoc web reading or model guessing with local, source-backed lookups.

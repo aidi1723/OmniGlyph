@@ -12,3 +12,5 @@
 - Add private domain pack CSV ingestion.
 - Add `GET /api/v1/term` and `POST /api/v1/normalize` APIs with compact mode.
 - Add Dockerfile, docker-compose, GitHub Actions test workflow, migration SQL, benchmark script, notices, and data-source documentation.
+- Add Sandwich Architecture documentation for input normalization and output guardrail workflows.
+- Add minimal output guardrail API and MCP tool for deterministic known/unknown term validation.

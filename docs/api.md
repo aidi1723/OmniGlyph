@@ -78,3 +78,38 @@ POST /api/v1/normalize?mode=compact
 ```json
 {"known":{"铝":"glyph:U+94DD","FOB":"trade:fob"},"unknown":["unknown"]}
 ```
+
+## `POST /api/v1/guardrail/validate-output`
+
+Validate generated output terms before an agent sends an email, writes an ERP field, or calls a downstream system.
+
+This endpoint is intentionally deterministic: it only checks whether candidate terms exist in the local lexical/domain fact base. Unknown terms are returned as `warn`, not auto-rewritten.
+
+Request:
+
+```json
+{"terms":["FOB","tempered glass","HS 7604.99X"]}
+```
+
+Response:
+
+```json
+{
+  "status": "warn",
+  "known": {
+    "FOB": "trade:fob",
+    "tempered glass": "material:tempered_glass"
+  },
+  "unknown": ["HS 7604.99X"],
+  "details": [
+    {"term":"FOB","status":"known","canonical_id":"trade:fob","entry_type":"trade_term","source_name":"building_materials_example"},
+    {"term":"HS 7604.99X","status":"unknown","canonical_id":null}
+  ]
+}
+```
+
+Suggested agent behavior:
+
+- `pass`: continue normally.
+- `warn`: ask for verification, route to human review, or regenerate with stricter constraints.
+- `unknown`: treat as missing local fact, not as permission to invent an explanation.

@@ -9,9 +9,9 @@ Included:
 - UnicodeData parser and explicit ingestion command.
 - Unihan tab-separated parser and explicit ingestion command.
 - SQLite `source_snapshot`, `glyph_node`, and append-only `glyph_property` schema.
-- FastAPI `GET /api/v1/glyph` endpoint.
+- FastAPI `GET /api/v1/glyph`, `GET /api/v1/term`, `POST /api/v1/normalize`, and `POST /api/v1/guardrail/validate-output` endpoints.
 - Agent-friendly response fields: `unicode`, `lexical`, `domain_traits`, raw `properties`, and `sources`.
-- Minimal stdio MCP server exposing `lookup_glyph`.
+- Minimal stdio MCP server exposing `lookup_glyph`, `lookup_term`, `normalize_tokens`, and `validate_output_terms`.
 - Dockerfile, docker-compose file, GitHub Actions test workflow, benchmark script, and migration SQL.
 
 Excluded:
@@ -22,6 +22,7 @@ Excluded:
 - PostgreSQL/pgvector runtime.
 - OCR/image symbol recognition.
 - Semantic graph and semantic computation engine.
+- Policy-based output blocking, automatic rewriting, and human approval workflows.
 
 ## Pre-Release Commands
 
@@ -75,6 +76,7 @@ A v0.2.0-beta release is allowed only when:
 - `.venv/bin/python -m pytest -v` passes.
 - Fixture ingestion and benchmark pass.
 - Docker commands are either verified or explicitly marked unverified due to missing Docker runtime.
+- Output guardrail endpoint and MCP tool are covered by tests.
 
 
 ## Docker Runtime Status for This Workspace
@@ -115,6 +117,8 @@ The four core Agent-ready normalization features have been implemented in the wo
 - `GET /api/v1/term` term lookup.
 - `POST /api/v1/normalize` batch normalization with compact mode.
 - MCP `lookup_term` and `normalize_tokens` tools.
+
+A fifth Sandwich Architecture guardrail feature has also been added: `POST /api/v1/guardrail/validate-output` and MCP `validate_output_terms`.
 
 These features should be re-verified on N100/Docker before cutting the next release tag.
 
