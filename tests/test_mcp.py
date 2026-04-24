@@ -1,0 +1,113 @@
+from omniglyph.mcp_server import build_tools_list, handle_mcp_request
+from omniglyph.normalizer import GlyphRecord
+from omniglyph.repository import GlyphRepository, SourceSnapshot
+
+
+def test_build_tools_list_exposes_lookup_glyph_tool():
+    tools = build_tools_list()
+
+    assert tools[0]["name"] == "lookup_glyph"
+    assert tools[0]["inputSchema"]["required"] == ["char"]
+
+
+def test_handle_mcp_tools_list_request():
+    response = handle_mcp_request({"jsonrpc": "2.0", "id": 1, "method": "tools/list"})
+
+    assert response["jsonrpc"] == "2.0"
+    assert response["id"] == 1
+    assert response["result"]["tools"][0]["name"] == "lookup_glyph"
+
+
+def test_handle_mcp_lookup_glyph_tool_call(tmp_path):
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+    source_id = repository.add_source_snapshot(SourceSnapshot("Unicode Character Database", "file://fixture", "fixture", "sha", "Unicode Terms of Use", "fixture"))
+    repository.insert_glyph_records([
+        GlyphRecord(glyph="铝", unicode_hex="U+94DD", basic_definition="CJK UNIFIED IDEOGRAPH-94DD")
+    ], source_id=source_id)
+
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/call",
+            "params": {"name": "lookup_glyph", "arguments": {"char": "铝"}},
+        },
+        repository=repository,
+    )
+
+    assert response["id"] == 2
+    content = response["result"]["content"][0]
+    assert content["type"] == "json"
+    assert content["json"]["unicode"]["hex"] == "U+94DD"
+
+
+def test_handle_mcp_unknown_tool_returns_error(tmp_path):
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 3,
+            "method": "tools/call",
+            "params": {"name": "missing", "arguments": {}},
+        },
+        repository=repository,
+    )
+
+    assert response["error"]["code"] == -32601
+
+
+def test_mcp_tools_list_includes_term_and_normalize_tools():
+    names = {tool["name"] for tool in build_tools_list()}
+
+    assert {"lookup_glyph", "lookup_term", "normalize_tokens"}.issubset(names)
+
+
+def test_handle_mcp_lookup_term_tool_call(tmp_path):
+    from pathlib import Path
+
+    from omniglyph.domain_pack import parse_domain_pack
+
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+    source_id = repository.add_source_snapshot(SourceSnapshot("Private Domain Pack", "file://domain", "fixture", "sha-domain", "private", "domain"))
+    repository.insert_lexical_entries(list(parse_domain_pack(Path("tests/fixtures/domain_pack.csv"), "private_building_materials")), source_id)
+
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 4,
+            "method": "tools/call",
+            "params": {"name": "lookup_term", "arguments": {"text": "FOB"}},
+        },
+        repository=repository,
+    )
+
+    assert response["result"]["content"][0]["json"]["canonical_id"] == "trade:fob"
+
+
+def test_handle_mcp_normalize_tokens_tool_call(tmp_path):
+    from pathlib import Path
+
+    from omniglyph.domain_pack import parse_domain_pack
+
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+    glyph_source = repository.add_source_snapshot(SourceSnapshot("Unicode Character Database", "file://fixture", "fixture", "sha-u", "Unicode Terms of Use", "fixture"))
+    term_source = repository.add_source_snapshot(SourceSnapshot("Private Domain Pack", "file://domain", "fixture", "sha-d", "private", "domain"))
+    repository.insert_glyph_records([GlyphRecord(glyph="铝", unicode_hex="U+94DD", basic_definition="CJK UNIFIED IDEOGRAPH-94DD")], glyph_source)
+    repository.insert_lexical_entries(list(parse_domain_pack(Path("tests/fixtures/domain_pack.csv"), "private_building_materials")), term_source)
+
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 5,
+            "method": "tools/call",
+            "params": {"name": "normalize_tokens", "arguments": {"tokens": ["铝", "FOB", "unknown"], "mode": "compact"}},
+        },
+        repository=repository,
+    )
+
+    assert response["result"]["content"][0]["json"] == {"known": {"铝": "glyph:U+94DD", "FOB": "trade:fob"}, "unknown": ["unknown"]}
