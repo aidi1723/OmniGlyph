@@ -16,3 +16,4 @@
 - Add minimal output guardrail API and MCP tool for deterministic known/unknown term validation.
 - Add OmniGlyph Code Linter core scanner, CLI `scan-code`, MCP `scan_code_symbols`, and poisoned-code demo generator.
 - Add Claude Desktop/Claude Code MCP readiness docs, MCP server card, and MCP safety notes.
+- Add MCP Registry submission plan and draft `package-registry/server.json`.

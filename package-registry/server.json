@@ -1,0 +1,44 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.aidi1723/omniglyph",
+  "description": "Local-first Symbol Ground Truth MCP server for deterministic Unicode lookup, domain-term normalization, output guardrails, and code-symbol linting.",
+  "status": "active",
+  "repository": {
+    "url": "https://github.com/aidi1723/OmniGlyph",
+    "source": "github"
+  },
+  "version": "0.3.1-beta",
+  "packages": [
+    {
+      "identifier": "omniglyph",
+      "version": "0.3.1b0",
+      "transport": {
+        "type": "stdio"
+      },
+      "registryType": "pypi"
+    }
+  ],
+  "tools": [
+    {
+      "name": "lookup_glyph",
+      "description": "Look up one Unicode character in the local symbol fact base."
+    },
+    {
+      "name": "lookup_term",
+      "description": "Look up a private or curated lexical/domain term."
+    },
+    {
+      "name": "normalize_tokens",
+      "description": "Normalize glyphs and domain terms into canonical IDs."
+    },
+    {
+      "name": "validate_output_terms",
+      "description": "Validate generated output terms against the local fact base."
+    },
+    {
+      "name": "scan_code_symbols",
+      "description": "Scan source code text for invisible Unicode controls, Bidi controls, and cross-script homoglyph risks."
+    }
+  ],
+  "title": "OmniGlyph"
+}
