@@ -407,6 +407,9 @@ Example output maps `aluminum profile`, `tempered glass`, `FOB`, and `MOQ` to ca
 - MCP tools: `docs/mcp-tools.md`
 - Codex MCP integration: `docs/integrations/codex-mcp.md`
 - Claude Desktop MCP integration: `docs/integrations/claude-desktop-mcp.md`
+- Claude Code MCP integration: `docs/integrations/claude-code-mcp.md`
+- MCP server card: `docs/mcp-server-card.md`
+- MCP safety notes: `docs/security/mcp-safety.md`
 
 
 
@@ -449,7 +452,7 @@ Compact response example:
 
 ## MCP Server
 
-OmniGlyph includes a minimal stdio MCP server exposing the `lookup_glyph` tool.
+OmniGlyph includes a local stdio MCP server for Claude Desktop, Claude Code, Codex-style agents, and custom MCP clients.
 
 Run it locally after installing the package:
 
@@ -463,7 +466,7 @@ Example JSON-RPC request over stdio:
 {"jsonrpc":"2.0","id":1,"method":"tools/list"}
 ```
 
-The MCP server reads from the same local SQLite symbol fact base used by `/api/v1/glyph`. It exposes `lookup_glyph`, `lookup_term`, and `normalize_tokens`.
+The MCP server reads from the same local SQLite symbol fact base used by `/api/v1/glyph`. It exposes `lookup_glyph`, `lookup_term`, `normalize_tokens`, `validate_output_terms`, and `scan_code_symbols`.
 
 ## Local MVP Commands
 

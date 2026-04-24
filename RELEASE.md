@@ -1,5 +1,23 @@
 # Release Checklist
 
+## v0.3.1-beta Development Scope
+
+This upcoming release focuses on MCP ecosystem readiness for Claude Desktop, Claude Code, and MCP server directories.
+
+Included in the working tree:
+
+- Hardened Claude Desktop MCP integration guide.
+- New Claude Code MCP integration guide.
+- New MCP server card suitable for MCP directory/registry submissions.
+- New MCP safety notes documenting read-only tool boundaries.
+- README links updated for MCP tools and safety documentation.
+
+Release gate for v0.3.1-beta:
+
+- Full test suite passes.
+- `tools/list` stdio smoke test returns all five MCP tools.
+- Documentation references `lookup_glyph`, `lookup_term`, `normalize_tokens`, `validate_output_terms`, and `scan_code_symbols`.
+
 ## v0.3.0-beta Development Scope
 
 This upcoming release adds the first developer-facing dogfooding use case: OmniGlyph Code Linter.

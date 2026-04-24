@@ -171,8 +171,10 @@ Need aluminum profile and tempered glass, FOB Bangkok, MOQ 500 sets.
 - `lookup_glyph`
 - `lookup_term`
 - `normalize_tokens`
+- `validate_output_terms`
+- `scan_code_symbols`
 
-Codex 接入说明见：`docs/integrations/codex-mcp.md`。
+Codex 接入说明见：`docs/integrations/codex-mcp.md`。Claude Desktop / Claude Code 接入见 `docs/integrations/claude-desktop-mcp.md` 和 `docs/integrations/claude-code-mcp.md`。MCP 安全说明见 `docs/security/mcp-safety.md`。
 
 ## 许可证
 
