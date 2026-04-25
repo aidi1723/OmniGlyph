@@ -71,3 +71,11 @@ def test_health_check_returns_service_status(tmp_path):
 
     assert response.status_code == 200
     assert response.json() == {"status": "ok", "service": "omniglyph", "version": __version__}
+
+
+def test_api_metadata_uses_package_version(tmp_path):
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    app = create_app(repository)
+
+    assert __version__ == "0.4.0b0"
+    assert app.version == __version__

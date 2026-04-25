@@ -40,13 +40,13 @@ Canonical facts must point back to a `source_snapshot` row.
 ### CLDR
 
 - Purpose: locale display names, script names, emoji annotations, and multilingual labels.
-- Status: planned, not implemented in v0.2.0-beta.
+- Status: planned, not implemented in the current beta.
 - License/terms: CLDR/Unicode terms must be reviewed before ingestion.
 
 ### Private Domain Packs
 
 - Purpose: private business vocabulary such as architectural profiles, glass specifications, HS codes, logistics terms, and trade abbreviations.
-- Status: namespace-supported through `private_*` properties; access control is not implemented in v0.2.0-beta.
+- Status: namespace-supported through `private_*` properties; access control is not implemented in the current beta.
 - Requirement: private terms must not overwrite global Unicode, Unihan, or CLDR facts.
 
 ## Redistribution Warning

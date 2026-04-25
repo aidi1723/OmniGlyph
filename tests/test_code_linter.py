@@ -33,6 +33,26 @@ def test_scan_text_detects_bidi_control():
     assert report["findings"][0]["unicode_hex"] == "U+202E"
 
 
+def test_scan_text_detects_fullwidth_and_halfwidth_forms():
+    report = scan_text("Ａ = 1\n", source_name="sample.py")
+
+    assert report["status"] == "warn"
+    finding = report["findings"][0]
+    assert finding["rule_id"] == "unicode-fullwidth-halfwidth-form"
+    assert finding["unicode_hex"] == "U+FF21"
+    assert finding["normalized"] == "A"
+
+
+def test_scan_text_detects_nfkc_normalization_changes():
+    report = scan_text("K = 1\n", source_name="sample.py")
+
+    assert report["status"] == "warn"
+    finding = report["findings"][0]
+    assert finding["rule_id"] == "unicode-nfkc-normalization-change"
+    assert finding["unicode_hex"] == "U+212A"
+    assert finding["normalized"] == "K"
+
+
 def test_scan_text_allows_clean_ascii_code():
     report = scan_text("value = 42\nprint(value)\n", source_name="sample.py")
 

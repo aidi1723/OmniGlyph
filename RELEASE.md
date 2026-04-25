@@ -1,5 +1,26 @@
 # Release Checklist
 
+## v0.4.0-beta Development Scope
+
+This release hardens OmniGlyph for version-consistent, reproducible, faster, and deeper Unicode-security beta usage.
+
+Included in the working tree:
+
+- Runtime metadata aligned on `0.4.0b0` across package version, API health, and MCP initialize responses.
+- Optional expected SHA-256 validation for local source registration and source downloads.
+- CLI `--expected-sha256` options for UnicodeData, Unihan, and private domain pack ingestion.
+- SQLite indexes for glyph-property and lexical lookup hot paths.
+- Code-symbol linter warnings for fullwidth/halfwidth forms and NFKC normalization changes.
+- Release-facing README, API, PyPI, and MCP Registry metadata updates.
+
+Release gate for v0.4.0-beta:
+
+- Full test suite passes.
+- MCP `tools/list` smoke test returns all five MCP tools.
+- Package build succeeds.
+- `twine check dist/*` passes.
+- Public upload credentials are available for TestPyPI/PyPI.
+
 ## v0.3.1-beta Development Scope
 
 This upcoming release focuses on MCP ecosystem readiness for Claude Desktop, Claude Code, and MCP server directories.

@@ -13,7 +13,7 @@ Returns service status.
 Response:
 
 ```json
-{"status":"ok","service":"omniglyph","version":"0.2.0b0"}
+{"status":"ok","service":"omniglyph","version":"0.4.0b0"}
 ```
 
 ## `GET /api/v1/glyph`
