@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.0-beta - Unreleased
+
+- Add `omniglyph.oes` runtime helpers so OES is a project protocol, not only a document.
+- Add Unicode Security Pack metadata for source-backed `unicode-confusable` findings with `confusable_with`, `why_it_matters`, `suggested_action`, and `auto_fixable`.
+- Add OES-shaped `explain_code_security` runtime helper, API endpoint, and MCP tool.
+- Add `POST /api/v1/security/scan` and MCP `scan_unicode_security` for developer-friendly scan reports.
+- Add `examples/domain-packs/software_development.csv` with software and security terminology.
+- Add `omniglyph.audit` event builder plus `/api/v1/audit/explain`, `/api/v1/audit/security-scan`, and MCP `audit_explain`.
+
 ## 0.5.0-beta - Unreleased
 
 - Add OmniGlyph Explanation Standard v0.1 documentation for source-backed glyph, term, concept, and safety explanations.

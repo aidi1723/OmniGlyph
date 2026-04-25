@@ -1,6 +1,6 @@
 [project]
 name = "omniglyph"
-version = "0.5.0b0"
+version = "0.6.0b0"
 description = "Local-first symbol ground truth MCP server for AI agents"
 readme = "README.md"
 license = "Apache-2.0"
@@ -41,6 +41,9 @@ build-backend = "setuptools.build_meta"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+
+[tool.setuptools.package-data]
+"omniglyph.domain_packs" = ["*.csv"]
 
 [project.urls]
 Homepage = "https://github.com/aidi1723/OmniGlyph"

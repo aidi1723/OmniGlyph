@@ -13,7 +13,7 @@ Returns service status.
 Response:
 
 ```json
-{"status":"ok","service":"omniglyph","version":"0.5.0b0"}
+{"status":"ok","service":"omniglyph","version":"0.6.0b0"}
 ```
 
 ## `GET /api/v1/glyph`
@@ -89,6 +89,120 @@ Response excerpt:
   "status": "matched",
   "canonical_id": "trade:fob",
   "input": {"text": "FOB", "kind": "term", "normalized": "fob"}
+}
+```
+
+## `POST /api/v1/explain/code-security`
+
+Wrap a Unicode security scan in an OES payload.
+
+Request:
+
+```json
+{"text":"vаlue = 1\n","source_name":"agent.py"}
+```
+
+Response excerpt:
+
+```json
+{
+  "schema": "oes:0.1",
+  "status": "unsafe",
+  "input": {"text": "agent.py", "kind": "code", "normalized": "agent.py"},
+  "safety": {
+    "risk_level": "medium",
+    "findings": [
+      {
+        "rule_id": "unicode-confusable",
+        "unicode_hex": "U+0430",
+        "confusable_with": "a",
+        "suggested_action": "review",
+        "auto_fixable": false
+      }
+    ]
+  }
+}
+```
+
+## `POST /api/v1/security/scan`
+
+Return a developer-friendly Unicode Security Pack report without wrapping it in OES.
+
+Request:
+
+```json
+{"text":"vаlue = 1\n","source_name":"agent.py"}
+```
+
+Response excerpt:
+
+```json
+{
+  "status": "warn",
+  "summary": {
+    "finding_count": 1,
+    "risk_level": "medium",
+    "rule_counts": {"unicode-confusable": 1}
+  },
+  "findings": [
+    {
+      "rule_id": "unicode-confusable",
+      "confusable_with": "a",
+      "why_it_matters": "Cyrillic small letter a can look like Latin small letter a in identifiers.",
+      "source_id": "source:unicode-confusables:minimal"
+    }
+  ]
+}
+```
+
+## `POST /api/v1/audit/explain`
+
+Return an explanation plus an audit event that records who queried what, what sources were used, and what remained unknown.
+
+Request:
+
+```json
+{"actor_id":"user:alice","kind":"term","text":"FOB"}
+```
+
+Response excerpt:
+
+```json
+{
+  "result": {"schema": "oes:0.1", "status": "matched", "canonical_id": "trade:fob"},
+  "audit": {
+    "schema": "omniglyph.audit:0.1",
+    "actor": {"id": "user:alice"},
+    "action": "explain_term",
+    "status": "matched",
+    "source_ids": ["..."],
+    "unknowns": []
+  }
+}
+```
+
+Supported `kind` values are `glyph`, `term`, and `code`.
+
+## `POST /api/v1/audit/security-scan`
+
+Return a Unicode Security Pack scan plus an audit event.
+
+Request:
+
+```json
+{"actor_id":"agent:codex","text":"vаlue = 1\n","source_name":"agent.py"}
+```
+
+Response excerpt:
+
+```json
+{
+  "result": {"status": "warn", "summary": {"risk_level": "medium"}},
+  "audit": {
+    "action": "scan_unicode_security",
+    "source_ids": ["source:unicode-confusables:minimal"],
+    "findings": [{"rule_id": "unicode-confusable"}]
+  }
 }
 ```
 

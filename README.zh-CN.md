@@ -14,14 +14,14 @@ OmniGlyph 不是传统字典。传统字典主要给人类阅读；OmniGlyph 给
 
 OmniGlyph 已作为 Python 包和 MCP Registry server 发布。
 
-- PyPI 包：`omniglyph==0.5.0b0`
+- PyPI 包：`omniglyph==0.6.0b0`
 - MCP Registry server：`io.github.aidi1723/omniglyph`
 - 传输方式：本地 stdio MCP server
 
 从 PyPI 安装：
 
 ```bash
-pip install omniglyph==0.5.0b0
+pip install omniglyph==0.6.0b0
 ```
 
 启动 MCP server：
@@ -36,7 +36,7 @@ omniglyph-mcp
 printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | omniglyph-mcp
 ```
 
-当前 MCP 工具：`lookup_glyph`、`lookup_term`、`explain_glyph`、`explain_term`、`normalize_tokens`、`validate_output_terms`、`scan_code_symbols`。
+当前 MCP 工具：`lookup_glyph`、`lookup_term`、`explain_glyph`、`explain_term`、`explain_code_security`、`normalize_tokens`、`validate_output_terms`、`scan_code_symbols`、`scan_unicode_security`、`audit_explain`。
 
 ## 为什么说它是 Agent 基础设施
 
@@ -128,7 +128,11 @@ OmniGlyph 把字符、别名、缩写和领域术语转换为 canonical ID、JSO
 - `GET /api/v1/term` 术语查询。
 - `POST /api/v1/normalize` 批量标准化。
 - `omniglyph scan-code` 代码符号审查器。
-- MCP 工具：`lookup_glyph`、`lookup_term`、`explain_glyph`、`explain_term`、`normalize_tokens`、`validate_output_terms`、`scan_code_symbols`。
+- OES v0.1 解释协议：`explain_glyph`、`explain_term`、`explain_code_security`。
+- Unicode Security Pack：带 `source_id`、`why_it_matters`、`suggested_action` 的开发者友好扫描结果。
+- 软件开发领域词库 starter pack：`examples/domain-packs/software_development.csv`。
+- Audit Workflow：记录谁查询了什么、来源是什么、哪里未知。
+- MCP 工具：`lookup_glyph`、`lookup_term`、`explain_glyph`、`explain_term`、`explain_code_security`、`normalize_tokens`、`validate_output_terms`、`scan_code_symbols`、`scan_unicode_security`、`audit_explain`。
 - 建材外贸 demo pack 与跨境询盘 demo。
 - Docker、CI、release check、N100 验证记录。
 
@@ -145,6 +149,7 @@ UV_CACHE_DIR=.uv-cache uv pip install -e '.[dev]'
 ```bash
 .venv/bin/omniglyph ingest-unicode --source tests/fixtures/UnicodeData.sample.txt --source-version fixture
 .venv/bin/omniglyph ingest-domain-pack --source examples/domain-packs/building_materials.csv --namespace private_building_materials --source-version example
+.venv/bin/omniglyph ingest-domain-pack --source examples/domain-packs/software_development.csv --namespace public_software_development --source-version 0.1.0
 ```
 
 启动 API：
@@ -218,9 +223,14 @@ Need aluminum profile and tempered glass, FOB Bangkok, MOQ 500 sets.
 
 - `lookup_glyph`
 - `lookup_term`
+- `explain_glyph`
+- `explain_term`
+- `explain_code_security`
 - `normalize_tokens`
 - `validate_output_terms`
 - `scan_code_symbols`
+- `scan_unicode_security`
+- `audit_explain`
 
 Codex 接入说明见：`docs/integrations/codex-mcp.md`。Claude Desktop / Claude Code 接入见 `docs/integrations/claude-desktop-mcp.md` 和 `docs/integrations/claude-code-mcp.md`。MCP 安全说明见 `docs/security/mcp-safety.md`。
 
@@ -234,14 +244,14 @@ Codex 接入说明见：`docs/integrations/codex-mcp.md`。Claude Desktop / Clau
 
 ## 开发者场景：代码符号审查器
 
-OmniGlyph 现在把自己的符号事实层用于编码 Agent 场景。`scan-code` 命令可以检测隐形 Unicode 控制符、Bidi 控制符、跨文字系统同形字符等问题，这类问题会让源码看起来正确，但实际行为异常。
+OmniGlyph 现在把自己的符号事实层用于编码 Agent 场景。`scan-code` 命令可以检测隐形 Unicode 控制符、Bidi 控制符、来源可追溯的 confusable、跨文字系统同形字符、全角/半角字符和 NFKC 归一化变化，这类问题会让源码看起来正确，但实际行为异常。
 
 ```bash
 python examples/poisoned-code/generate_poison.py
 omniglyph scan-code examples/poisoned-code/test_bug.py
 ```
 
-该能力适合接入 pre-commit、CI，以及支持 MCP 的编码 Agent，让 Agent 在修改或解释代码之前，先看见源码的物理 Unicode 真相。详见 `docs/use-cases/code-linter.md`。
+该能力适合接入 pre-commit、CI，以及支持 MCP 的编码 Agent，让 Agent 在修改或解释代码之前，先看见源码的物理 Unicode 真相。企业流程需要留痕时，可以用 `audit_explain` 记录操作者、输入、来源和未知项。详见 `docs/use-cases/code-linter.md` 与 `docs/use-cases/security-dictionary-audit.md`。
 
 ## Agent 三明治防线架构
 
@@ -269,7 +279,7 @@ OmniGlyph 的目标是用本地、可追溯、结构化查询，替代 Agent 临
 
 ### 已验证数据
 
-当前 `v0.5.0-beta` 候选版本已在本地验证：
+当前 `v0.6.0-beta` 候选版本已在本地验证：
 
 | 指标 | 结果 |
 | --- | ---: |
@@ -277,7 +287,7 @@ OmniGlyph 的目标是用本地、可追溯、结构化查询，替代 Agent 临
 | Unihan_Readings 导入 | `291,227` 条 properties |
 | Unihan_DictionaryLikeData 导入 | `156,251` 条 properties |
 | 已验证 Unihan 属性总量 | `447,478` 条 properties |
-| 本地测试 | `47 passed` |
+| 本地测试 | `85 passed` |
 | N100 Linux 测试 | beta 分支曾验证通过 |
 | Docker build/run/healthcheck | N100 曾验证通过 |
 | `铝` 的 SQLite 查询 benchmark | 1000 次查询 P95 约 `0.17ms` |
@@ -329,7 +339,7 @@ OmniGlyph 当前通过以下规则降低字符、符号和术语级幻觉：
 
 ## 当前阶段
 
-当前版本适合作为 `v0.5.0-beta` 开源发布候选：
+当前版本适合作为 `v0.6.0-beta` 开源发布候选：
 
 - 可用于本地评估。
 - 可用于 Agent 工具集成实验。

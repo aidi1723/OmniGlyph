@@ -1,6 +1,7 @@
 import csv
 import json
 from dataclasses import dataclass
+from importlib.resources import files
 from pathlib import Path
 from typing import Iterator
 
@@ -46,3 +47,9 @@ def parse_domain_pack(path: Path, namespace: str) -> Iterator[DomainEntry]:
                 traits=traits,
                 namespace=namespace,
             )
+
+
+def bundled_domain_pack(name: str):
+    if name != "software_development":
+        raise ValueError(f"unknown bundled domain pack: {name}")
+    return files("omniglyph.domain_packs").joinpath("software_development.csv")

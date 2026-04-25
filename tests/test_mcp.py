@@ -46,7 +46,7 @@ def test_handle_mcp_tools_list_request():
 def test_handle_mcp_initialize_uses_package_version():
     response = handle_mcp_request({"jsonrpc": "2.0", "id": 1, "method": "initialize"})
 
-    assert __version__ == "0.5.0b0"
+    assert __version__ == "0.6.0b0"
     assert response["result"]["serverInfo"]["version"] == __version__
 
 
@@ -101,6 +101,12 @@ def test_mcp_tools_list_includes_explain_tools():
     names = {tool["name"] for tool in build_tools_list()}
 
     assert {"explain_glyph", "explain_term"}.issubset(names)
+
+
+def test_mcp_tools_list_includes_security_and_audit_tools():
+    names = {tool["name"] for tool in build_tools_list()}
+
+    assert {"scan_unicode_security", "explain_code_security", "audit_explain"}.issubset(names)
 
 
 def test_handle_mcp_lookup_term_tool_call(tmp_path):
@@ -192,6 +198,22 @@ def test_handle_mcp_scan_code_symbols_tool_call():
     assert payload["findings"][0]["source"] == "agent.py"
 
 
+def test_handle_mcp_scan_unicode_security_tool_call():
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 10,
+            "method": "tools/call",
+            "params": {"name": "scan_unicode_security", "arguments": {"text": "v\u0430lue = 1\n", "source_name": "agent.py"}},
+        }
+    )
+
+    payload = response["result"]["content"][0]["json"]
+    assert payload["status"] == "warn"
+    assert payload["findings"][0]["rule_id"] == "unicode-confusable"
+    assert payload["findings"][0]["confusable_with"] == "a"
+
+
 def test_handle_mcp_explain_glyph_tool_call(tmp_path):
     response = handle_mcp_request(
         {
@@ -222,3 +244,52 @@ def test_handle_mcp_explain_term_tool_call(tmp_path):
     payload = response["result"]["content"][0]["json"]
     assert payload["schema"] == "oes:0.1"
     assert payload["canonical_id"] == "trade:fob"
+
+
+def test_handle_mcp_explain_code_security_tool_call():
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 11,
+            "method": "tools/call",
+            "params": {"name": "explain_code_security", "arguments": {"text": "v\u0430lue = 1\n", "source_name": "agent.py"}},
+        }
+    )
+
+    payload = response["result"]["content"][0]["json"]
+    assert payload["schema"] == "oes:0.1"
+    assert payload["status"] == "unsafe"
+    assert payload["safety"]["findings"][0]["source_id"] == "source:unicode-confusables:minimal"
+
+
+def test_handle_mcp_audit_explain_tool_call(tmp_path):
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 12,
+            "method": "tools/call",
+            "params": {"name": "audit_explain", "arguments": {"actor_id": "user:alice", "kind": "term", "text": "FOB"}},
+        },
+        repository=seeded_domain_repository(tmp_path),
+    )
+
+    payload = response["result"]["content"][0]["json"]
+    assert payload["result"]["canonical_id"] == "trade:fob"
+    assert payload["audit"]["actor"] == {"id": "user:alice"}
+    assert payload["audit"]["action"] == "explain_term"
+    assert payload["audit"]["source_ids"]
+
+
+def test_handle_mcp_audit_explain_rejects_invalid_glyph_text(tmp_path):
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 13,
+            "method": "tools/call",
+            "params": {"name": "audit_explain", "arguments": {"actor_id": "user:alice", "kind": "glyph", "text": "ab"}},
+        },
+        repository=seeded_glyph_repository(tmp_path),
+    )
+
+    assert response["error"]["code"] == -32602
+    assert "exactly one Unicode character" in response["error"]["message"]

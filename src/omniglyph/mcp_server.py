@@ -3,9 +3,10 @@ import sys
 from typing import Any, TextIO
 
 from omniglyph import __version__
+from omniglyph.audit import build_audit_event
 from omniglyph.code_linter import scan_text
 from omniglyph.config import settings
-from omniglyph.explanation import explain_glyph, explain_term
+from omniglyph.explanation import explain_code_security, explain_glyph, explain_term
 from omniglyph.guardrail import validate_output_terms
 from omniglyph.normalization import compact_normalize, normalize_tokens
 from omniglyph.repository import GlyphRepository
@@ -52,6 +53,18 @@ def build_tools_list() -> list[dict[str, Any]]:
             },
         },
         {
+            "name": "explain_code_security",
+            "description": "Explain Unicode source-code security findings using the OmniGlyph Explanation Standard.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "text": {"type": "string", "description": "Source code text to scan and explain."},
+                    "source_name": {"type": "string", "description": "Optional source label for findings."},
+                },
+                "required": ["text"],
+            },
+        },
+        {
             "name": "normalize_tokens",
             "description": "Normalize glyphs and known domain terms into canonical IDs.",
             "inputSchema": {
@@ -82,6 +95,32 @@ def build_tools_list() -> list[dict[str, Any]]:
                     "source_name": {"type": "string", "description": "Optional source label for findings."},
                 },
                 "required": ["text"],
+            },
+        },
+        {
+            "name": "scan_unicode_security",
+            "description": "Scan source code text with developer-friendly Unicode Security Pack findings.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "text": {"type": "string", "description": "Source code text to scan."},
+                    "source_name": {"type": "string", "description": "Optional source label for findings."},
+                },
+                "required": ["text"],
+            },
+        },
+        {
+            "name": "audit_explain",
+            "description": "Return an OES explanation together with an audit event showing actor, sources, and unknowns.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "actor_id": {"type": "string", "description": "User, service, or agent identifier."},
+                    "kind": {"type": "string", "enum": ["glyph", "term", "code"]},
+                    "text": {"type": "string", "description": "Glyph, term, or source-code text to explain."},
+                    "source_name": {"type": "string", "description": "Optional source label for code explanations."},
+                },
+                "required": ["actor_id", "kind", "text"],
             },
         },
     ]
@@ -142,6 +181,15 @@ def handle_mcp_request(request: dict[str, Any], repository: GlyphRepository | No
                 return _error(request_id, -32602, "explain_term requires non-empty text")
             return _result(request_id, {"content": [{"type": "json", "json": explain_term(glyph_repository, text)}]})
 
+        if tool_name == "explain_code_security":
+            text = arguments.get("text")
+            source_name = arguments.get("source_name", "<mcp-text>")
+            if not isinstance(text, str):
+                return _error(request_id, -32602, "explain_code_security requires source code text")
+            if not isinstance(source_name, str) or not source_name.strip():
+                return _error(request_id, -32602, "explain_code_security source_name must be a string")
+            return _result(request_id, {"content": [{"type": "json", "json": explain_code_security(text, source_name=source_name)}]})
+
         if tool_name == "normalize_tokens":
             tokens = arguments.get("tokens")
             mode = arguments.get("mode", "full")
@@ -165,6 +213,33 @@ def handle_mcp_request(request: dict[str, Any], repository: GlyphRepository | No
             if not isinstance(source_name, str) or not source_name.strip():
                 return _error(request_id, -32602, "scan_code_symbols source_name must be a string")
             return _result(request_id, {"content": [{"type": "json", "json": scan_text(text, source_name=source_name)}]})
+
+        if tool_name == "scan_unicode_security":
+            text = arguments.get("text")
+            source_name = arguments.get("source_name", "<mcp-text>")
+            if not isinstance(text, str):
+                return _error(request_id, -32602, "scan_unicode_security requires source code text")
+            if not isinstance(source_name, str) or not source_name.strip():
+                return _error(request_id, -32602, "scan_unicode_security source_name must be a string")
+            return _result(request_id, {"content": [{"type": "json", "json": scan_text(text, source_name=source_name)}]})
+
+        if tool_name == "audit_explain":
+            actor_id = arguments.get("actor_id")
+            kind = arguments.get("kind")
+            text = arguments.get("text")
+            source_name = arguments.get("source_name", "<mcp-text>")
+            if not isinstance(actor_id, str) or not actor_id.strip():
+                return _error(request_id, -32602, "audit_explain requires actor_id")
+            if not isinstance(kind, str) or kind not in {"glyph", "term", "code"}:
+                return _error(request_id, -32602, "audit_explain kind must be glyph, term, or code")
+            if not isinstance(text, str) or not text.strip():
+                return _error(request_id, -32602, "audit_explain requires text")
+            if kind == "glyph" and len(text) != 1:
+                return _error(request_id, -32602, "audit_explain glyph text must contain exactly one Unicode character")
+            if not isinstance(source_name, str) or not source_name.strip():
+                return _error(request_id, -32602, "audit_explain source_name must be a string")
+            result, action = _explain_for_audit(glyph_repository, kind, text, source_name)
+            return _result(request_id, {"content": [{"type": "json", "json": {"result": result, "audit": build_audit_event(actor_id, action, result)}}]})
 
         return _error(request_id, -32601, f"Unknown tool: {tool_name}")
 
@@ -197,6 +272,16 @@ def _result(request_id: Any, result: dict[str, Any]) -> dict[str, Any]:
 
 def _error(request_id: Any, code: int, message: str) -> dict[str, Any]:
     return {"jsonrpc": JSONRPC_VERSION, "id": request_id, "error": {"code": code, "message": message}}
+
+
+def _explain_for_audit(repository: GlyphRepository, kind: str, text: str, source_name: str) -> tuple[dict, str]:
+    if kind == "glyph":
+        if len(text) != 1:
+            raise ValueError("audit_explain glyph text must contain exactly one Unicode character")
+        return explain_glyph(repository, text), "explain_glyph"
+    if kind == "term":
+        return explain_term(repository, text), "explain_term"
+    return explain_code_security(text, source_name=source_name), "explain_code_security"
 
 if __name__ == "__main__":
     main()

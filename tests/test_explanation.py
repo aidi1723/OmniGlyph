@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from omniglyph.domain_pack import parse_domain_pack
-from omniglyph.explanation import explain_glyph, explain_term
+from omniglyph.explanation import explain_code_security, explain_glyph, explain_term
 from omniglyph.normalizer import GlyphRecord
 from omniglyph.repository import GlyphRepository, SourceSnapshot
 from omniglyph.unihan import parse_unihan_data
@@ -24,6 +24,19 @@ def seeded_domain_repository(tmp_path):
     repository.initialize()
     source_id = repository.add_source_snapshot(SourceSnapshot("Private Domain Pack", "file://domain", "fixture", "sha-domain", "private", "domain"))
     repository.insert_lexical_entries(list(parse_domain_pack(Path("tests/fixtures/domain_pack.csv"), "private_building_materials")), source_id)
+    return repository
+
+
+def seeded_software_repository(tmp_path):
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+    source_id = repository.add_source_snapshot(
+        SourceSnapshot("Software Development Domain Pack", "file://software", "0.1.0", "sha-software", "Apache-2.0", "software")
+    )
+    repository.insert_lexical_entries(
+        list(parse_domain_pack(Path("examples/domain-packs/software_development.csv"), "public_software_development")),
+        source_id,
+    )
     return repository
 
 
@@ -57,6 +70,31 @@ def test_explain_term_returns_oes_payload(tmp_path):
     assert payload["lexical"][0]["definition"] == "Free On Board international trade term"
     assert payload["lexical"][0]["entry_type"] == "trade_term"
     assert payload["sources"][0]["source_name"] == "Private Domain Pack"
+
+
+def test_explain_term_supports_software_development_pack(tmp_path):
+    payload = explain_term(seeded_software_repository(tmp_path), "Application Programming Interface")
+
+    assert payload["schema"] == "oes:0.1"
+    assert payload["status"] == "matched"
+    assert payload["canonical_id"] == "software:api"
+    assert payload["lexical"][0]["term"] == "API"
+    assert payload["lexical"][0]["matched_text"] == "Application Programming Interface"
+    assert payload["lexical"][0]["traits"]["domain"] == "software_development"
+    assert payload["sources"][0]["source_name"] == "Software Development Domain Pack"
+
+
+def test_explain_code_security_returns_oes_unsafe_payload():
+    payload = explain_code_security("v\u0430lue = 1\n", source_name="agent.py")
+
+    assert payload["schema"] == "oes:0.1"
+    assert payload["status"] == "unsafe"
+    assert payload["canonical_id"] is None
+    assert payload["input"] == {"text": "agent.py", "kind": "code", "normalized": "agent.py"}
+    assert payload["basic_facts"]["scanned_chars"] == 10
+    assert payload["safety"]["risk_level"] == "medium"
+    assert payload["safety"]["findings"][0]["rule_id"] == "unicode-confusable"
+    assert payload["sources"][0]["source_id"] == "source:unicode-confusables:minimal"
 
 
 def test_explain_unknown_values_are_explicit(tmp_path):

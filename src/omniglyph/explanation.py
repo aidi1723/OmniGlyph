@@ -1,12 +1,13 @@
+from omniglyph.code_linter import scan_text
+from omniglyph.oes import OES_SCHEMA, empty_safety, source_payload, unknown_payload
 from omniglyph.repository import GlyphRepository
-
-OES_SCHEMA = "oes:0.1"
+from omniglyph.security_pack import source_payloads_for_findings
 
 
 def explain_glyph(repository: GlyphRepository, char: str) -> dict:
     record = repository.find_by_glyph(char)
     if record is None:
-        return _unknown_payload(char, "glyph", "No local source-backed glyph explanation found.")
+        return unknown_payload(char, "glyph", "No local source-backed glyph explanation found.")
 
     unicode_facts = record["unicode"]
     lexical = _glyph_lexical(record)
@@ -24,8 +25,8 @@ def explain_glyph(repository: GlyphRepository, char: str) -> dict:
         },
         "lexical": lexical,
         "concept_links": [],
-        "safety": {"risk_level": "none", "findings": []},
-        "sources": [_source_payload(source, confidence=1.0) for source in record["sources"]],
+        "safety": empty_safety(),
+        "sources": [source_payload(source, confidence=1.0) for source in record["sources"]],
         "limits": [],
     }
 
@@ -34,7 +35,7 @@ def explain_term(repository: GlyphRepository, text: str) -> dict:
     record = repository.find_term(text)
     normalized = _normalize_text(text)
     if record is None:
-        return _unknown_payload(text, "term", "No local source-backed term explanation found.", normalized=normalized)
+        return unknown_payload(text, "term", "No local source-backed term explanation found.", normalized=normalized)
 
     return {
         "schema": OES_SCHEMA,
@@ -60,7 +61,7 @@ def explain_term(repository: GlyphRepository, text: str) -> dict:
             }
         ],
         "concept_links": [],
-        "safety": {"risk_level": "none", "findings": []},
+        "safety": empty_safety(),
         "sources": [
             {
                 "source_id": record["source_id"],
@@ -71,6 +72,27 @@ def explain_term(repository: GlyphRepository, text: str) -> dict:
             }
         ],
         "limits": [],
+    }
+
+
+def explain_code_security(text: str, source_name: str = "<text>") -> dict:
+    report = scan_text(text, source_name=source_name)
+    findings = report["findings"]
+    return {
+        "schema": OES_SCHEMA,
+        "input": {"text": source_name, "kind": "code", "normalized": source_name},
+        "status": "unsafe" if findings else "matched",
+        "canonical_id": None,
+        "basic_facts": {
+            "source_name": source_name,
+            "scanned_chars": report["summary"]["scanned_chars"],
+            "finding_count": report["summary"]["finding_count"],
+        },
+        "lexical": [],
+        "concept_links": [],
+        "safety": {"risk_level": report["summary"]["risk_level"], "findings": findings},
+        "sources": source_payloads_for_findings(findings),
+        "limits": ["Unicode security scan covers symbol-level risks only; it does not prove code behavior is safe."],
     }
 
 
@@ -103,31 +125,6 @@ def _source_id_by_name(sources: list[dict], source_name: str | None) -> str | No
         if source["source_name"] == source_name:
             return source["id"]
     return None
-
-
-def _source_payload(source: dict, confidence: float) -> dict:
-    return {
-        "source_id": source["id"],
-        "source_name": source["source_name"],
-        "source_version": source["source_version"],
-        "license": source["license"],
-        "confidence": confidence,
-    }
-
-
-def _unknown_payload(text: str, kind: str, message: str, normalized: str | None = None) -> dict:
-    return {
-        "schema": OES_SCHEMA,
-        "input": {"text": text, "kind": kind, "normalized": text if normalized is None else normalized},
-        "status": "unknown",
-        "canonical_id": None,
-        "basic_facts": {},
-        "lexical": [],
-        "concept_links": [],
-        "safety": {"risk_level": "none", "findings": []},
-        "sources": [],
-        "limits": [message],
-    }
 
 
 def _normalize_text(text: str) -> str:
