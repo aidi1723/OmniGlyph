@@ -15,3 +15,6 @@ data/
 # Build artifacts
 dist/
 build/
+
+# Local tooling
+.tools/

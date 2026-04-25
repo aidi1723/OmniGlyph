@@ -114,6 +114,14 @@ AI agents can hallucinate or miss low-level symbol facts, especially with invisi
 - Claude Code guide: https://github.com/aidi1723/OmniGlyph/blob/main/docs/integrations/claude-code-mcp.md
 ```
 
+## MCP Registry Publication Status
+
+Published successfully:
+
+- Server: `io.github.aidi1723/omniglyph`
+- Version: `0.3.2-beta`
+- Publisher output: `Successfully published`
+
 ## Recommended Submission Flow
 
 1. Verify current registry submission requirements.
