@@ -16,14 +16,14 @@ class GuardrailRequest(BaseModel):
 
 
 def create_app(repository: GlyphRepository | None = None) -> FastAPI:
-    app = FastAPI(title="OmniGlyph API", version="0.2.0b0")
+    app = FastAPI(title="OmniGlyph API", version="0.3.3b0")
     glyph_repository = repository or GlyphRepository(settings.sqlite_path)
     glyph_repository.initialize()
 
 
     @app.get("/api/v1/health")
     def health() -> dict:
-        return {"status": "ok", "service": "omniglyph", "version": "0.2.0b0"}
+        return {"status": "ok", "service": "omniglyph", "version": "0.3.3b0"}
 
     @app.get("/api/v1/glyph")
     def get_glyph(char: str = Query(...)) -> dict:

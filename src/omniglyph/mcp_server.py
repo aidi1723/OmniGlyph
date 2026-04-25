@@ -77,7 +77,7 @@ def handle_mcp_request(request: dict[str, Any], repository: GlyphRepository | No
             request_id,
             {
                 "protocolVersion": "2024-11-05",
-                "serverInfo": {"name": "omniglyph", "version": "0.1.0"},
+                "serverInfo": {"name": "omniglyph", "version": "0.3.3b0"},
                 "capabilities": {"tools": {}},
             },
         )

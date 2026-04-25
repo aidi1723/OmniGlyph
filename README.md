@@ -22,14 +22,14 @@ In the AGI era, agents need a deterministic substrate beneath probabilistic lang
 
 OmniGlyph is published as both a Python package and an MCP Registry server.
 
-- PyPI package: `omniglyph==0.3.2b0`
+- PyPI package: `omniglyph==0.3.3b0`
 - MCP Registry server: `io.github.aidi1723/omniglyph`
 - Transport: local stdio MCP server
 
 Install from PyPI:
 
 ```bash
-pip install omniglyph==0.3.2b0
+pip install omniglyph==0.3.3b0
 ```
 
 Run the MCP server:

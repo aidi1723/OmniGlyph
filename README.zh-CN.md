@@ -14,14 +14,14 @@ OmniGlyph 不是传统字典。传统字典主要给人类阅读；OmniGlyph 给
 
 OmniGlyph 已作为 Python 包和 MCP Registry server 发布。
 
-- PyPI 包：`omniglyph==0.3.2b0`
+- PyPI 包：`omniglyph==0.3.3b0`
 - MCP Registry server：`io.github.aidi1723/omniglyph`
 - 传输方式：本地 stdio MCP server
 
 从 PyPI 安装：
 
 ```bash
-pip install omniglyph==0.3.2b0
+pip install omniglyph==0.3.3b0
 ```
 
 启动 MCP server：

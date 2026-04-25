@@ -8,7 +8,7 @@ Submit OmniGlyph as a local stdio MCP server:
 
 - Repository: `https://github.com/aidi1723/OmniGlyph`
 - Server name candidate: `io.github.aidi1723/omniglyph`
-- Package: `omniglyph==0.3.2b0`
+- Package: `omniglyph==0.3.3b0`
 - Transport: stdio
 - License: Apache-2.0
 
@@ -29,17 +29,17 @@ Use `package-registry/server.json` as the machine-readable registry draft. The d
 
 ## PyPI Publication Status
 
-OmniGlyph `0.3.2b0` is published and verified:
+OmniGlyph `0.3.3b0` is published and verified:
 
-- PyPI: `https://pypi.org/project/omniglyph/0.3.2b0/`
-- TestPyPI: `https://test.pypi.org/project/omniglyph/0.3.2b0/`
-- Clean PyPI install verified with `pip install omniglyph==0.3.2b0`.
+- PyPI: `https://pypi.org/project/omniglyph/0.3.3b0/`
+- TestPyPI: `https://test.pypi.org/project/omniglyph/0.3.3b0/`
+- Clean PyPI install verified with `pip install omniglyph==0.3.3b0`.
 - Installed `omniglyph-mcp` returned all five MCP tools via `tools/list`.
 
 ## Validation Checklist
 
 - [x] `pyproject.toml` version matches the package version used in registry metadata.
-- [x] Package can be installed by a fresh user with `pip install omniglyph==0.3.2b0`.
+- [x] Package can be installed by a fresh user with `pip install omniglyph==0.3.3b0`.
 - [x] `omniglyph-mcp` starts without repository-local assumptions.
 - [x] `tools/list` returns all five tools.
 - [x] README links to Claude Desktop, Claude Code, server card, and safety docs.
@@ -52,7 +52,7 @@ From a clean environment:
 
 ```bash
 python3 -m venv /tmp/omniglyph-pypi-install
-/tmp/omniglyph-pypi-install/bin/pip install omniglyph==0.3.2b0
+/tmp/omniglyph-pypi-install/bin/pip install omniglyph==0.3.3b0
 printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | /tmp/omniglyph-pypi-install/bin/omniglyph-mcp
 ```
 
@@ -101,8 +101,8 @@ AI agents can hallucinate or miss low-level symbol facts, especially with invisi
 
 ## Verification
 
-- Published on PyPI: https://pypi.org/project/omniglyph/0.3.2b0/
-- Clean install verified with `pip install omniglyph==0.3.2b0`
+- Published on PyPI: https://pypi.org/project/omniglyph/0.3.3b0/
+- Clean install verified with `pip install omniglyph==0.3.3b0`
 - `omniglyph-mcp` `tools/list` returns all five tools
 
 ## Links
@@ -119,7 +119,7 @@ AI agents can hallucinate or miss low-level symbol facts, especially with invisi
 Published successfully:
 
 - Server: `io.github.aidi1723/omniglyph`
-- Version: `0.3.2-beta`
+- Version: `0.3.3-beta`
 - Publisher output: `Successfully published`
 
 ## Recommended Submission Flow
