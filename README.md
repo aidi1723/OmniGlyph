@@ -22,14 +22,14 @@ In the AGI era, agents need a deterministic substrate beneath probabilistic lang
 
 OmniGlyph is published as both a Python package and an MCP Registry server.
 
-- PyPI package: `omniglyph==0.4.0b0`
+- PyPI package: `omniglyph==0.5.0b0`
 - MCP Registry server: `io.github.aidi1723/omniglyph`
 - Transport: local stdio MCP server
 
 Install from PyPI:
 
 ```bash
-pip install omniglyph==0.4.0b0
+pip install omniglyph==0.5.0b0
 ```
 
 Run the MCP server:
@@ -44,7 +44,7 @@ Quick MCP smoke test:
 printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | omniglyph-mcp
 ```
 
-Available MCP tools: `lookup_glyph`, `lookup_term`, `normalize_tokens`, `validate_output_terms`, and `scan_code_symbols`.
+Available MCP tools: `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `normalize_tokens`, `validate_output_terms`, and `scan_code_symbols`.
 
 ## Why It Exists
 
@@ -293,7 +293,7 @@ OmniGlyph is designed to reduce token waste and hallucination risk by replacing 
 
 ### Verified Data
 
-The current `v0.4.0-beta` candidate has been verified locally with:
+The current `v0.5.0-beta` candidate has been verified locally with:
 
 | Metric | Result |
 | --- | ---: |
@@ -513,7 +513,7 @@ Example JSON-RPC request over stdio:
 {"jsonrpc":"2.0","id":1,"method":"tools/list"}
 ```
 
-The MCP server reads from the same local SQLite symbol fact base used by `/api/v1/glyph`. It exposes `lookup_glyph`, `lookup_term`, `normalize_tokens`, `validate_output_terms`, and `scan_code_symbols`.
+The MCP server reads from the same local SQLite symbol fact base used by `/api/v1/glyph`. It exposes `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `normalize_tokens`, `validate_output_terms`, and `scan_code_symbols`.
 
 ## Local MVP Commands
 

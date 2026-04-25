@@ -1,7 +1,31 @@
 from omniglyph import __version__
+from omniglyph.domain_pack import parse_domain_pack
 from omniglyph.mcp_server import build_tools_list, handle_mcp_request
 from omniglyph.normalizer import GlyphRecord
 from omniglyph.repository import GlyphRepository, SourceSnapshot
+from omniglyph.unihan import parse_unihan_data
+
+
+def seeded_glyph_repository(tmp_path):
+    from pathlib import Path
+
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+    unicode_source = repository.add_source_snapshot(SourceSnapshot("Unicode Character Database", "file://fixture", "fixture", "sha-u", "Unicode Terms of Use", "fixture"))
+    unihan_source = repository.add_source_snapshot(SourceSnapshot("Unihan Database", "file://unihan", "fixture", "sha-unihan", "Unicode Terms of Use", "unihan"))
+    repository.insert_glyph_records([GlyphRecord(glyph="铝", unicode_hex="U+94DD", basic_definition="CJK UNIFIED IDEOGRAPH-94DD")], unicode_source)
+    repository.insert_unihan_properties(list(parse_unihan_data(Path("tests/fixtures/Unihan.sample.txt"))), unihan_source)
+    return repository
+
+
+def seeded_domain_repository(tmp_path):
+    from pathlib import Path
+
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+    source_id = repository.add_source_snapshot(SourceSnapshot("Private Domain Pack", "file://domain", "fixture", "sha-domain", "private", "domain"))
+    repository.insert_lexical_entries(list(parse_domain_pack(Path("tests/fixtures/domain_pack.csv"), "private_building_materials")), source_id)
+    return repository
 
 
 def test_build_tools_list_exposes_lookup_glyph_tool():
@@ -22,7 +46,7 @@ def test_handle_mcp_tools_list_request():
 def test_handle_mcp_initialize_uses_package_version():
     response = handle_mcp_request({"jsonrpc": "2.0", "id": 1, "method": "initialize"})
 
-    assert __version__ == "0.4.0b0"
+    assert __version__ == "0.5.0b0"
     assert response["result"]["serverInfo"]["version"] == __version__
 
 
@@ -71,6 +95,12 @@ def test_mcp_tools_list_includes_term_and_normalize_tools():
     names = {tool["name"] for tool in build_tools_list()}
 
     assert {"lookup_glyph", "lookup_term", "normalize_tokens"}.issubset(names)
+
+
+def test_mcp_tools_list_includes_explain_tools():
+    names = {tool["name"] for tool in build_tools_list()}
+
+    assert {"explain_glyph", "explain_term"}.issubset(names)
 
 
 def test_handle_mcp_lookup_term_tool_call(tmp_path):
@@ -160,3 +190,35 @@ def test_handle_mcp_scan_code_symbols_tool_call():
     assert payload["status"] == "warn"
     assert payload["findings"][0]["unicode_hex"] == "U+0430"
     assert payload["findings"][0]["source"] == "agent.py"
+
+
+def test_handle_mcp_explain_glyph_tool_call(tmp_path):
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 8,
+            "method": "tools/call",
+            "params": {"name": "explain_glyph", "arguments": {"char": "铝"}},
+        },
+        repository=seeded_glyph_repository(tmp_path),
+    )
+
+    payload = response["result"]["content"][0]["json"]
+    assert payload["schema"] == "oes:0.1"
+    assert payload["canonical_id"] == "glyph:U+94DD"
+
+
+def test_handle_mcp_explain_term_tool_call(tmp_path):
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 9,
+            "method": "tools/call",
+            "params": {"name": "explain_term", "arguments": {"text": "FOB"}},
+        },
+        repository=seeded_domain_repository(tmp_path),
+    )
+
+    payload = response["result"]["content"][0]["json"]
+    assert payload["schema"] == "oes:0.1"
+    assert payload["canonical_id"] == "trade:fob"

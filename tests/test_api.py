@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 
 from omniglyph import __version__
 from omniglyph.api import create_app
+from omniglyph.domain_pack import parse_domain_pack
 from omniglyph.normalizer import GlyphRecord
 from omniglyph.repository import GlyphRepository, SourceSnapshot
 from omniglyph.unihan import parse_unihan_data
@@ -18,6 +19,14 @@ def seeded_repository(tmp_path):
         GlyphRecord(glyph="铝", unicode_hex="U+94DD", basic_definition="CJK UNIFIED IDEOGRAPH-94DD", source_value="CJK UNIFIED IDEOGRAPH-94DD")
     ], source_id=source_id)
     repository.insert_unihan_properties(list(parse_unihan_data(Path("tests/fixtures/Unihan.sample.txt"))), unihan_id)
+    return repository
+
+
+def seeded_domain_repository(tmp_path):
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+    source_id = repository.add_source_snapshot(SourceSnapshot("Private Domain Pack", "file://domain", "fixture", "sha-domain", "private", "domain"))
+    repository.insert_lexical_entries(list(parse_domain_pack(Path("tests/fixtures/domain_pack.csv"), "private_building_materials")), source_id)
     return repository
 
 
@@ -77,5 +86,27 @@ def test_api_metadata_uses_package_version(tmp_path):
     repository = GlyphRepository(tmp_path / "test.sqlite3")
     app = create_app(repository)
 
-    assert __version__ == "0.4.0b0"
+    assert __version__ == "0.5.0b0"
     assert app.version == __version__
+
+
+def test_explain_glyph_endpoint_returns_oes_payload(tmp_path):
+    client = TestClient(create_app(seeded_repository(tmp_path)))
+
+    response = client.get("/api/v1/explain/glyph", params={"char": "铝"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["schema"] == "oes:0.1"
+    assert payload["canonical_id"] == "glyph:U+94DD"
+
+
+def test_explain_term_endpoint_returns_oes_payload(tmp_path):
+    client = TestClient(create_app(seeded_domain_repository(tmp_path)))
+
+    response = client.get("/api/v1/explain/term", params={"text": "FOB"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["schema"] == "oes:0.1"
+    assert payload["canonical_id"] == "trade:fob"
