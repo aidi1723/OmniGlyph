@@ -2,6 +2,7 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
+from omniglyph import __version__
 from omniglyph.api import create_app
 from omniglyph.normalizer import GlyphRecord
 from omniglyph.repository import GlyphRepository, SourceSnapshot
@@ -69,4 +70,4 @@ def test_health_check_returns_service_status(tmp_path):
     response = client.get("/api/v1/health")
 
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "service": "omniglyph", "version": "0.2.0b0"}
+    assert response.json() == {"status": "ok", "service": "omniglyph", "version": __version__}

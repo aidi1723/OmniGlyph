@@ -7,11 +7,11 @@
     "url": "https://github.com/aidi1723/OmniGlyph",
     "source": "github"
   },
-  "version": "0.3.2-beta",
+  "version": "0.3.3-beta",
   "packages": [
     {
       "identifier": "omniglyph",
-      "version": "0.3.2b0",
+      "version": "0.3.3b0",
       "transport": {
         "type": "stdio"
       },
