@@ -86,7 +86,7 @@ def test_api_metadata_uses_package_version(tmp_path):
     repository = GlyphRepository(tmp_path / "test.sqlite3")
     app = create_app(repository)
 
-    assert __version__ == "0.5.0b0"
+    assert __version__ == "0.6.0b0"
     assert app.version == __version__
 
 
@@ -110,3 +110,72 @@ def test_explain_term_endpoint_returns_oes_payload(tmp_path):
     payload = response.json()
     assert payload["schema"] == "oes:0.1"
     assert payload["canonical_id"] == "trade:fob"
+
+
+def test_security_scan_endpoint_returns_developer_friendly_finding(tmp_path):
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    client = TestClient(create_app(repository))
+
+    response = client.post("/api/v1/security/scan", json={"text": "v\u0430lue = 1\n", "source_name": "agent.py"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "warn"
+    assert payload["summary"]["risk_level"] == "medium"
+    assert payload["findings"][0]["rule_id"] == "unicode-confusable"
+    assert payload["findings"][0]["confusable_with"] == "a"
+    assert payload["findings"][0]["suggested_action"] == "review"
+
+
+def test_explain_code_security_endpoint_returns_oes_payload(tmp_path):
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    client = TestClient(create_app(repository))
+
+    response = client.post("/api/v1/explain/code-security", json={"text": "v\u0430lue = 1\n", "source_name": "agent.py"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["schema"] == "oes:0.1"
+    assert payload["status"] == "unsafe"
+    assert payload["input"]["kind"] == "code"
+    assert payload["safety"]["findings"][0]["source_id"] == "source:unicode-confusables:minimal"
+
+
+def test_audit_explain_endpoint_records_actor_source_and_result(tmp_path):
+    client = TestClient(create_app(seeded_domain_repository(tmp_path)))
+
+    response = client.post("/api/v1/audit/explain", json={"actor_id": "user:alice", "kind": "term", "text": "FOB"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["result"]["canonical_id"] == "trade:fob"
+    assert payload["audit"]["actor"] == {"id": "user:alice"}
+    assert payload["audit"]["action"] == "explain_term"
+    assert payload["audit"]["status"] == "matched"
+    assert payload["audit"]["source_ids"]
+
+
+def test_audit_explain_endpoint_records_unknown_limits(tmp_path):
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+    client = TestClient(create_app(repository))
+
+    response = client.post("/api/v1/audit/explain", json={"actor_id": "agent:codex", "kind": "term", "text": "missing"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["result"]["status"] == "unknown"
+    assert payload["audit"]["unknowns"] == ["No local source-backed term explanation found."]
+
+
+def test_audit_security_scan_endpoint_records_findings(tmp_path):
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    client = TestClient(create_app(repository))
+
+    response = client.post("/api/v1/audit/security-scan", json={"actor_id": "agent:codex", "text": "v\u0430lue = 1\n", "source_name": "agent.py"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["result"]["status"] == "warn"
+    assert payload["audit"]["action"] == "scan_unicode_security"
+    assert payload["audit"]["source_ids"] == ["source:unicode-confusables:minimal"]

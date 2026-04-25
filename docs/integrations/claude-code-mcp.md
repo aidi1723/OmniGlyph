@@ -57,7 +57,7 @@ Module-mode fallback:
 
 ## Coding-Agent Use Case
 
-Ask Claude Code to call `scan_code_symbols` before debugging copied code, invisible syntax errors, suspicious diffs, or homoglyph risks.
+Ask Claude Code to call `scan_unicode_security` or `scan_code_symbols` before debugging copied code, invisible syntax errors, suspicious diffs, or homoglyph risks. Use `explain_code_security` when the finding should be passed downstream as an OES payload.
 
 Example suspicious text:
 
@@ -69,9 +69,11 @@ Expected finding:
 
 ```json
 {
-  "rule_id": "unicode-cross-script-homoglyph-risk",
+  "rule_id": "unicode-confusable",
   "unicode_hex": "U+0430",
-  "name": "CYRILLIC SMALL LETTER A"
+  "name": "CYRILLIC SMALL LETTER A",
+  "confusable_with": "a",
+  "suggested_action": "review"
 }
 ```
 

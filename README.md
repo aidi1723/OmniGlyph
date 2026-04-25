@@ -22,14 +22,14 @@ In the AGI era, agents need a deterministic substrate beneath probabilistic lang
 
 OmniGlyph is published as both a Python package and an MCP Registry server.
 
-- PyPI package: `omniglyph==0.5.0b0`
+- PyPI package: `omniglyph==0.6.0b0`
 - MCP Registry server: `io.github.aidi1723/omniglyph`
 - Transport: local stdio MCP server
 
 Install from PyPI:
 
 ```bash
-pip install omniglyph==0.5.0b0
+pip install omniglyph==0.6.0b0
 ```
 
 Run the MCP server:
@@ -44,7 +44,7 @@ Quick MCP smoke test:
 printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | omniglyph-mcp
 ```
 
-Available MCP tools: `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `normalize_tokens`, `validate_output_terms`, and `scan_code_symbols`.
+Available MCP tools: `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `explain_code_security`, `normalize_tokens`, `validate_output_terms`, `scan_code_symbols`, `scan_unicode_security`, and `audit_explain`.
 
 ## Why It Exists
 
@@ -258,14 +258,14 @@ The key distinction is that global Unicode facts, Unihan lexical facts, and opti
 
 ## Developer Use Case: Code Symbol Linter
 
-OmniGlyph now dogfoods its own symbol fact layer for coding agents. The `scan-code` command detects invisible Unicode controls, Bidi controls, and cross-script homoglyph risks that can make source code look correct while behaving incorrectly.
+OmniGlyph now dogfoods its own symbol fact layer for coding agents. The `scan-code` command detects invisible Unicode controls, Bidi controls, source-backed confusables, cross-script homoglyph risks, fullwidth/halfwidth forms, and NFKC normalization changes that can make source code look correct while behaving incorrectly.
 
 ```bash
 python examples/poisoned-code/generate_poison.py
 omniglyph scan-code examples/poisoned-code/test_bug.py
 ```
 
-This is designed for pre-commit hooks, CI, and MCP-enabled coding agents that should inspect the physical Unicode layer before editing or explaining code. See `docs/use-cases/code-linter.md`.
+This is designed for pre-commit hooks, CI, and MCP-enabled coding agents that should inspect the physical Unicode layer before editing or explaining code. Use `explain_code_security` for an OES-shaped payload and `audit_explain` when an enterprise workflow needs traceability. See `docs/use-cases/code-linter.md` and `docs/use-cases/security-dictionary-audit.md`.
 
 ## Sandwich Architecture for Agents
 
@@ -293,7 +293,7 @@ OmniGlyph is designed to reduce token waste and hallucination risk by replacing 
 
 ### Verified Data
 
-The current `v0.5.0-beta` candidate has been verified locally with:
+The current `v0.6.0-beta` candidate has been verified locally with:
 
 | Metric | Result |
 | --- | ---: |
@@ -301,7 +301,7 @@ The current `v0.5.0-beta` candidate has been verified locally with:
 | Unihan_Readings import | `291,227` properties |
 | Unihan_DictionaryLikeData import | `156,251` properties |
 | Total verified Unihan properties | `447,478` properties |
-| Local test suite | `47 passed` |
+| Local test suite | `85 passed` |
 | N100 Linux test suite | Previously verified on beta branch |
 | Docker build/run/healthcheck | Previously verified on N100 |
 | SQLite lookup benchmark for `铝` | P95 about `0.17ms` over 1,000 lookups |
@@ -453,6 +453,7 @@ Example output maps `aluminum profile`, `tempered glass`, `FOB`, and `MOQ` to ca
 - Codex MCP integration: `docs/integrations/codex-mcp.md`
 - Claude Desktop MCP integration: `docs/integrations/claude-desktop-mcp.md`
 - Claude Code MCP integration: `docs/integrations/claude-code-mcp.md`
+- Security, dictionary, and audit workflow: `docs/use-cases/security-dictionary-audit.md`
 - MCP server card: `docs/mcp-server-card.md`
 - MCP safety notes: `docs/security/mcp-safety.md`
 - Project status and maturity: `docs/product/project-status.md`
@@ -468,6 +469,12 @@ Import a CSV domain pack:
 
 ```bash
 omniglyph ingest-domain-pack --source tests/fixtures/domain_pack.csv --namespace private_building_materials --source-version fixture
+```
+
+The software-development starter pack is available at:
+
+```bash
+omniglyph ingest-domain-pack --source examples/domain-packs/software_development.csv --namespace public_software_development --source-version 0.1.0
 ```
 
 Look up a term:
@@ -513,7 +520,7 @@ Example JSON-RPC request over stdio:
 {"jsonrpc":"2.0","id":1,"method":"tools/list"}
 ```
 
-The MCP server reads from the same local SQLite symbol fact base used by `/api/v1/glyph`. It exposes `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `normalize_tokens`, `validate_output_terms`, and `scan_code_symbols`.
+The MCP server reads from the same local SQLite symbol fact base used by `/api/v1/glyph`. It exposes `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `explain_code_security`, `normalize_tokens`, `validate_output_terms`, `scan_code_symbols`, `scan_unicode_security`, and `audit_explain`.
 
 ## Local MVP Commands
 

@@ -1,17 +1,17 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.aidi1723/omniglyph",
-  "description": "Local symbol ground truth MCP server for Unicode lookup and code-symbol linting.",
+  "description": "Local symbol ground truth MCP server for Unicode lookup, OES explanations, security scanning, and audit evidence.",
   "status": "active",
   "repository": {
     "url": "https://github.com/aidi1723/OmniGlyph",
     "source": "github"
   },
-  "version": "0.5.0-beta",
+  "version": "0.6.0-beta",
   "packages": [
     {
       "identifier": "omniglyph",
-      "version": "0.5.0b0",
+      "version": "0.6.0b0",
       "transport": {
         "type": "stdio"
       },
@@ -36,6 +36,10 @@
       "description": "Explain a lexical/domain term using OmniGlyph Explanation Standard v0.1."
     },
     {
+      "name": "explain_code_security",
+      "description": "Explain Unicode source-code security findings using OmniGlyph Explanation Standard v0.1."
+    },
+    {
       "name": "normalize_tokens",
       "description": "Normalize glyphs and domain terms into canonical IDs."
     },
@@ -46,6 +50,14 @@
     {
       "name": "scan_code_symbols",
       "description": "Scan source code text for invisible Unicode controls, Bidi controls, and cross-script homoglyph risks."
+    },
+    {
+      "name": "scan_unicode_security",
+      "description": "Scan source code text with developer-friendly Unicode Security Pack findings."
+    },
+    {
+      "name": "audit_explain",
+      "description": "Return an OES explanation together with audit evidence for actor, sources, findings, and unknowns."
     }
   ],
   "title": "OmniGlyph"

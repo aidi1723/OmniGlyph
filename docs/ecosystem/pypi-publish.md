@@ -1,11 +1,11 @@
 # PyPI Publish Checklist
 
-This checklist prepares OmniGlyph for PyPI publication so it can be referenced by MCP registry metadata.
+This checklist records the OmniGlyph PyPI publication flow so it can be repeated safely and referenced by MCP registry metadata.
 
 ## Package Identity
 
 - PyPI name: `omniglyph`
-- Current package version: `0.5.0b0`
+- Current package version: `0.6.0b0`
 - MCP server name: `io.github.aidi1723/omniglyph`
 - Console scripts:
   - `omniglyph`
@@ -54,7 +54,7 @@ Use a clean temporary virtual environment:
 
 ```bash
 python3 -m venv /tmp/omniglyph-wheel-test
-/tmp/omniglyph-wheel-test/bin/pip install dist/omniglyph-0.5.0b0-py3-none-any.whl
+/tmp/omniglyph-wheel-test/bin/pip install dist/omniglyph-0.6.0b0-py3-none-any.whl
 printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | /tmp/omniglyph-wheel-test/bin/omniglyph-mcp
 ```
 
@@ -64,9 +64,12 @@ Expected tools:
 - `lookup_term`
 - `explain_glyph`
 - `explain_term`
+- `explain_code_security`
 - `normalize_tokens`
 - `validate_output_terms`
 - `scan_code_symbols`
+- `scan_unicode_security`
+- `audit_explain`
 
 ## Publish to TestPyPI First
 
@@ -80,8 +83,10 @@ Install from TestPyPI in a clean environment and rerun the MCP smoke test.
 
 Only after TestPyPI succeeds:
 
+Use exact filenames so old artifacts in `dist/` are not uploaded accidentally:
+
 ```bash
-.venv/bin/python -m twine upload dist/*
+TWINE_NON_INTERACTIVE=1 TWINE_USERNAME=__token__ TWINE_PASSWORD="$PYPI_TOKEN" .venv/bin/python -m twine upload dist/omniglyph-0.6.0b0.tar.gz dist/omniglyph-0.6.0b0-py3-none-any.whl
 ```
 
 ## MCP Registry Follow-Up
@@ -92,14 +97,16 @@ After PyPI publication:
 2. Confirm `package-registry/server.json` references the exact published version.
 3. Submit the MCP registry PR using `docs/ecosystem/mcp-registry-submission.md`.
 
-## Release Candidate Status
+## Release Status
 
-Local verification passed; public upload is pending TestPyPI/PyPI credentials:
+Published on PyPI on 2026-04-25:
 
-- TestPyPI: `https://test.pypi.org/project/omniglyph/0.5.0b0/`
-- PyPI: `https://pypi.org/project/omniglyph/0.5.0b0/`
+- TestPyPI: `https://test.pypi.org/project/omniglyph/0.6.0b0/`
+- PyPI: `https://pypi.org/project/omniglyph/0.6.0b0/`
 - Local package build and metadata checks pass.
 - Local wheel install smoke test passes.
-- TestPyPI upload attempt reached TestPyPI but failed because no API token was configured.
-- Clean PyPI install verification should be completed after upload.
-- Installed `omniglyph-mcp` should return all seven MCP tools via `tools/list`.
+- Formal PyPI upload completed for `omniglyph-0.6.0b0.tar.gz` and `omniglyph-0.6.0b0-py3-none-any.whl`.
+- A stale `omniglyph-0.5.0b0.tar.gz` artifact was also uploaded because `dist/*` was used during manual publication. Future uploads should use exact filenames.
+- Clean PyPI install verification passed with `omniglyph==0.6.0b0`.
+- Installed `omniglyph-mcp` returns all ten MCP tools via `tools/list`.
+- Packaged `software_development` domain pack loads from the published wheel.

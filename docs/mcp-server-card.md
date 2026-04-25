@@ -6,7 +6,7 @@ OmniGlyph
 
 ## Summary
 
-A local-first Symbol Ground Truth MCP server for AI agents. OmniGlyph provides deterministic Unicode glyph lookup, private/domain term normalization, output term validation, and code-symbol linting for invisible Unicode and homoglyph risks.
+A local-first Symbol Ground Truth MCP server for AI agents. OmniGlyph provides deterministic Unicode glyph lookup, private/domain term normalization, OES explanations, output term validation, Unicode security scanning, and audit events for source-backed agent workflows.
 
 ## Repository
 
@@ -100,6 +100,16 @@ Input:
 {"text":"FOB"}
 ```
 
+### `explain_code_security`
+
+Explains Unicode security findings using OmniGlyph Explanation Standard v0.1.
+
+Input:
+
+```json
+{"text":"vаlue = 1\n","source_name":"agent.py"}
+```
+
 ### `normalize_tokens`
 
 Normalizes glyphs and domain terms into canonical IDs.
@@ -130,12 +140,34 @@ Input:
 {"text":"vаlue = 1\n","source_name":"agent.py"}
 ```
 
+### `scan_unicode_security`
+
+Returns developer-friendly Unicode Security Pack findings with `source_id`, `why_it_matters`, `suggested_action`, and `auto_fixable`.
+
+Input:
+
+```json
+{"text":"vаlue = 1\n","source_name":"agent.py"}
+```
+
+### `audit_explain`
+
+Returns an explanation plus an audit event showing actor, input, status, sources, findings, and unknown limits.
+
+Input:
+
+```json
+{"actor_id":"user:alice","kind":"term","text":"FOB"}
+```
+
 ## Primary Use Cases
 
 - Claude Desktop / Claude Code deterministic Unicode lookup
 - code-symbol linting before agents edit copied or generated code
+- OES-shaped Unicode security explanations
 - RAG preprocessing for multilingual/domain terms
 - output guardrail checks for generated trade/material terms
+- audit evidence for enterprise agent workflows
 - local private domain glossary lookup
 
 ## Safety Notes

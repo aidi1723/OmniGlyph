@@ -72,14 +72,19 @@ Expected tools:
 
 - `lookup_glyph`
 - `lookup_term`
+- `explain_glyph`
+- `explain_term`
+- `explain_code_security`
 - `normalize_tokens`
 - `validate_output_terms`
 - `scan_code_symbols`
+- `scan_unicode_security`
+- `audit_explain`
 
 ## 5. Recommended Claude Prompt
 
 ```text
-Before interpreting unknown Unicode symbols, trade terms, or suspicious source code characters, call OmniGlyph first. Treat unknown results as missing facts, not as permission to guess.
+Before interpreting unknown Unicode symbols, trade terms, suspicious source code characters, or enterprise audit-sensitive checks, call OmniGlyph first. Treat unknown results as missing facts, not as permission to guess.
 ```
 
 ## 6. Example Tool Uses
