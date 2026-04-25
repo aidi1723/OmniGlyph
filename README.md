@@ -1,6 +1,10 @@
 <!-- mcp-name: io.github.aidi1723/omniglyph -->
 # OmniGlyph（万象文枢）
 
+[![PyPI](https://img.shields.io/pypi/v/omniglyph?label=PyPI)](https://pypi.org/project/omniglyph/)
+[![MCP Registry](https://img.shields.io/badge/MCP%20Registry-io.github.aidi1723%2Fomniglyph-blue)](https://registry.modelcontextprotocol.io/)
+[![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
+
 [中文文档 / Chinese README](README.zh-CN.md)
 
 > AI Agent 的全球符号真值层。  
@@ -13,6 +17,34 @@ Its core philosophy is:
 > 字符即封装，语义即运算。
 
 In the AGI era, agents need a deterministic substrate beneath probabilistic language models. OmniGlyph turns Unicode characters, scripts, multilingual terms, technical symbols, industry abbreviations, and eventually domain concepts into structured facts that agents can query, verify, and compute against.
+
+## Available on PyPI + MCP Registry
+
+OmniGlyph is published as both a Python package and an MCP Registry server.
+
+- PyPI package: `omniglyph==0.3.2b0`
+- MCP Registry server: `io.github.aidi1723/omniglyph`
+- Transport: local stdio MCP server
+
+Install from PyPI:
+
+```bash
+pip install omniglyph==0.3.2b0
+```
+
+Run the MCP server:
+
+```bash
+omniglyph-mcp
+```
+
+Quick MCP smoke test:
+
+```bash
+printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | omniglyph-mcp
+```
+
+Available MCP tools: `lookup_glyph`, `lookup_term`, `normalize_tokens`, `validate_output_terms`, and `scan_code_symbols`.
 
 ## Why It Exists
 
