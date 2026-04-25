@@ -443,6 +443,8 @@ Example output maps `aluminum profile`, `tempered glass`, `FOB`, and `MOQ` to ca
 - Claude Code MCP integration: `docs/integrations/claude-code-mcp.md`
 - MCP server card: `docs/mcp-server-card.md`
 - MCP safety notes: `docs/security/mcp-safety.md`
+- Project status and maturity: `docs/product/project-status.md`
+- Roadmap: `ROADMAP.md`
 
 
 
