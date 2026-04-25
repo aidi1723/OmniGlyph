@@ -1,3 +1,4 @@
+import importlib.util
 from pathlib import Path
 
 from omniglyph.domain_pack import parse_domain_pack
@@ -15,9 +16,13 @@ def test_building_materials_example_pack_is_parseable():
 
 
 def test_cross_border_demo_normalizes_expected_terms():
-    from examples.scripts.run_cross_border_demo import run_demo
+    demo_path = Path("examples/scripts/run_cross_border_demo.py")
+    spec = importlib.util.spec_from_file_location("run_cross_border_demo", demo_path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
 
-    output = run_demo()
+    output = module.run_demo()
 
     assert output["normalization"]["known"]["aluminum profile"] == "material:aluminum_profile"
     assert output["normalization"]["known"]["tempered glass"] == "material:tempered_glass"
