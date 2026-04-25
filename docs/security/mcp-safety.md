@@ -14,9 +14,12 @@ The stdio MCP server exposes lookup and scanning tools only. It does not provide
 | `lookup_term` | yes | no | no | no | no |
 | `explain_glyph` | yes | no | no | no | no |
 | `explain_term` | yes | provided text | no | no | no |
+| `explain_code_security` | no | provided text | no | no | no |
 | `normalize_tokens` | yes | provided tokens | no | no | no |
 | `validate_output_terms` | yes | provided terms | no | no | no |
 | `scan_code_symbols` | no | provided text | no | no | no |
+| `scan_unicode_security` | no | provided text | no | no | no |
+| `audit_explain` | yes for glyph/term | provided text | no | no | no |
 
 ## Data Handling
 
@@ -25,6 +28,7 @@ The stdio MCP server exposes lookup and scanning tools only. It does not provide
 - The server does not persist MCP request payloads.
 - Lookup results come from the local SQLite database and imported source snapshots.
 - Unknown values remain `unknown` or `null`; the server does not generate definitions.
+- Audit events are returned to the caller but are not persisted by the MCP server.
 
 ## Recommended Deployment
 
@@ -44,6 +48,6 @@ OmniGlyph is a deterministic lookup, explanation, and scanning tool. Use it to v
 
 ## Known Limitations
 
-- `scan_code_symbols` detects suspicious Unicode patterns, but it is not a complete security scanner.
-- Homoglyph detection is rule-based in the current beta; full Unicode confusables data is a future enhancement.
+- `scan_code_symbols` and `scan_unicode_security` detect suspicious Unicode patterns, but they are not complete security scanners.
+- Confusable detection uses a minimal bundled map in the current beta; full Unicode confusables ingestion is a future enhancement.
 - The server trusts the local database. Data-source integrity depends on explicit ingestion and source tracking.

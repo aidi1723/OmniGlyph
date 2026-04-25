@@ -16,14 +16,21 @@ It is suitable for experimentation, local agent workflows, RAG preprocessing, co
 - UnicodeData ingestion and glyph lookup.
 - Unihan property ingestion for CJK-friendly lexical facts.
 - Private domain pack CSV ingestion.
-- `GET /api/v1/glyph`, `GET /api/v1/term`, and `POST /api/v1/normalize` APIs.
-- MCP stdio server with five tools:
+- `GET /api/v1/glyph`, `GET /api/v1/term`, `POST /api/v1/normalize`, OES explanation, Unicode security scan, and audit APIs.
+- MCP stdio server with ten tools:
   - `lookup_glyph`
   - `lookup_term`
+  - `explain_glyph`
+  - `explain_term`
+  - `explain_code_security`
   - `normalize_tokens`
   - `validate_output_terms`
   - `scan_code_symbols`
-- Code-symbol linting for zero-width characters, Bidi controls, unexpected controls, and cross-script homoglyph risks.
+  - `scan_unicode_security`
+  - `audit_explain`
+- Code-symbol linting for zero-width characters, Bidi controls, unexpected controls, source-backed confusables, fullwidth/halfwidth forms, NFKC changes, and cross-script homoglyph risks.
+- Software-development domain pack example under `examples/domain-packs/software_development.csv`.
+- Structured audit events that report actor, action, input, source IDs, findings, and unknown limits.
 - PyPI distribution and MCP Registry publication.
 
 ## Best-Fit Users
@@ -50,8 +57,8 @@ OmniGlyph is not yet ideal for:
 
 - Community adoption is still early.
 - Current output guardrail is known/unknown validation, not full policy orchestration.
-- Homoglyph detection is rule-based; Unicode confusables data is planned.
-- OmniGlyph Explanation Standard v0.1 has an initial runtime wrapper for glyph and term explanations; broader CLDR, confusables, and concept graph integrations are still planned.
+- Homoglyph detection is rule-based with a minimal confusables map; full Unicode confusables data ingestion is planned.
+- OmniGlyph Explanation Standard v0.1 has runtime wrappers for glyph, term, and code-security explanations; broader CLDR and concept graph integrations are still planned.
 - No automatic source-code mutation or rewrite is performed.
 - Stage 3/4 semantic graph and computation layers are roadmap items, not current production features.
 

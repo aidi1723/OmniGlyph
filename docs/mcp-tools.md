@@ -48,6 +48,16 @@ Input:
 
 Returns an OES v0.1 payload for a lexical/domain term. Unknown terms return `status: "unknown"` and do not invent definitions.
 
+## Tool: `explain_code_security`
+
+Input:
+
+```json
+{"text":"vаlue = 1\n","source_name":"agent.py"}
+```
+
+Returns an OES v0.1 payload for source-code Unicode security findings. Unsafe code snippets use `status: "unsafe"` and put the rule evidence under `safety.findings`.
+
 ## Tool: `normalize_tokens`
 
 Input:
@@ -105,6 +115,57 @@ Input:
 ```
 
 Returns a code-symbol scan report for invisible Unicode controls, Bidi controls, and cross-script homoglyph risks. Use it before an agent edits copied code, reviews suspicious diffs, or explains compiler errors that may be caused by hidden characters.
+
+## Tool: `scan_unicode_security`
+
+Input:
+
+```json
+{"text":"vаlue = 1\n","source_name":"agent.py"}
+```
+
+Returns the same scan engine with Unicode Security Pack fields designed for developer review:
+
+```json
+{
+  "status": "warn",
+  "summary": {"risk_level": "medium", "rule_counts": {"unicode-confusable": 1}},
+  "findings": [
+    {
+      "rule_id": "unicode-confusable",
+      "confusable_with": "a",
+      "suggested_action": "review",
+      "auto_fixable": false,
+      "source_id": "source:unicode-confusables:minimal"
+    }
+  ]
+}
+```
+
+## Tool: `audit_explain`
+
+Input:
+
+```json
+{"actor_id":"user:alice","kind":"term","text":"FOB"}
+```
+
+Returns:
+
+```json
+{
+  "result": {"schema": "oes:0.1", "status": "matched", "canonical_id": "trade:fob"},
+  "audit": {
+    "schema": "omniglyph.audit:0.1",
+    "actor": {"id": "user:alice"},
+    "action": "explain_term",
+    "source_ids": ["..."],
+    "unknowns": []
+  }
+}
+```
+
+Use this when an enterprise workflow needs evidence that an agent queried OmniGlyph before acting.
 
 ## Agent Rule
 

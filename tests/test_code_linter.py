@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from omniglyph.code_linter import scan_file, scan_text
+from omniglyph.code_linter import format_text_report, scan_file, scan_text
 
 
 def test_scan_text_detects_zero_width_space():
@@ -20,15 +20,24 @@ def test_scan_text_detects_cyrillic_homoglyph_in_latin_code():
     report = scan_text("v\u0430lue = 42\n", source_name="sample.py")
 
     assert report["status"] == "warn"
-    assert report["findings"][0]["rule_id"] == "unicode-cross-script-homoglyph-risk"
-    assert report["findings"][0]["unicode_hex"] == "U+0430"
-    assert report["findings"][0]["script_hint"] == "Cyrillic"
+    assert report["summary"]["risk_level"] == "medium"
+    assert report["summary"]["rule_counts"] == {"unicode-confusable": 1}
+    finding = report["findings"][0]
+    assert finding["rule_id"] == "unicode-confusable"
+    assert finding["unicode_hex"] == "U+0430"
+    assert finding["script_hint"] == "Cyrillic"
+    assert finding["confusable_with"] == "a"
+    assert finding["source_id"] == "source:unicode-confusables:minimal"
+    assert finding["suggested_action"] == "review"
+    assert finding["auto_fixable"] is False
+    assert "Latin" in finding["why_it_matters"]
 
 
 def test_scan_text_detects_bidi_control():
     report = scan_text("safe = True # \u202e hidden\n", source_name="sample.py")
 
     assert report["status"] == "warn"
+    assert report["summary"]["risk_level"] == "high"
     assert report["findings"][0]["rule_id"] == "unicode-bidi-control"
     assert report["findings"][0]["unicode_hex"] == "U+202E"
 
@@ -58,7 +67,18 @@ def test_scan_text_allows_clean_ascii_code():
 
     assert report["status"] == "pass"
     assert report["summary"]["finding_count"] == 0
+    assert report["summary"]["risk_level"] == "none"
+    assert report["summary"]["rule_counts"] == {}
     assert report["findings"] == []
+
+
+def test_format_text_report_includes_review_guidance():
+    report = scan_text("v\u0430lue = 1\n", source_name="sample.py")
+
+    output = format_text_report(report)
+
+    assert "confusable with a" in output
+    assert "action=review" in output
 
 
 def test_scan_file_reports_file_path(tmp_path):
