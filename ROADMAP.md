@@ -36,6 +36,10 @@ Planned. This track expands the code-symbol linter into general text/security au
 
 Goals:
 
+- OmniGlyph Explanation Standard v0.1 for source-backed glyph, term, concept, and safety explanations.
+- OES-shaped `explain_glyph` and `explain_term` responses.
+- Unicode confusables data ingestion and source-backed confusable findings.
+- CLDR fixture ingestion for emoji, script, language, and locale labels.
 - `omniglyph audit-text` CLI.
 - JSONL / CSV / TSV field scanning.
 - OCR text audit examples.

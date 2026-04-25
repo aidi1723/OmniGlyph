@@ -15,23 +15,25 @@ UNICODE_LICENSE = "Unicode Terms of Use"
 UNIHAN_LICENSE = "Unicode Terms of Use"
 
 
-def download_unicode() -> Path:
+def download_unicode(expected_sha256: str | None = None) -> Path:
     artifact = download_source(
         settings.unicode_data_url,
         settings.raw_dir / "UnicodeData.txt",
         source_version="latest",
         license=UNICODE_LICENSE,
+        expected_sha256=expected_sha256,
     )
     print(f"Downloaded {artifact.path} sha256={artifact.sha256}")
     return artifact.path
 
 
-def ingest_unicode(source_path: Path, source_version: str = "local") -> int:
+def ingest_unicode(source_path: Path, source_version: str = "local", expected_sha256: str | None = None) -> int:
     artifact = register_local_source(
         source_path,
         source_url=source_path.as_uri() if source_path.is_absolute() else f"file://{source_path}",
         source_version=source_version,
         license=UNICODE_LICENSE,
+        expected_sha256=expected_sha256,
     )
     records = list(parse_unicode_data(source_path))
     repository = GlyphRepository(settings.sqlite_path)
@@ -50,12 +52,13 @@ def ingest_unicode(source_path: Path, source_version: str = "local") -> int:
     return len(records)
 
 
-def ingest_unihan(source_path: Path, source_version: str = "local") -> int:
+def ingest_unihan(source_path: Path, source_version: str = "local", expected_sha256: str | None = None) -> int:
     artifact = register_local_source(
         source_path,
         source_url=source_path.as_uri() if source_path.is_absolute() else f"file://{source_path}",
         source_version=source_version,
         license=UNIHAN_LICENSE,
+        expected_sha256=expected_sha256,
     )
     properties = list(parse_unihan_data(source_path))
     repository = GlyphRepository(settings.sqlite_path)
@@ -73,12 +76,13 @@ def ingest_unihan(source_path: Path, source_version: str = "local") -> int:
     return repository.insert_unihan_properties(properties, source_id=source_id)
 
 
-def ingest_domain_pack(source_path: Path, namespace: str, source_version: str = "local") -> int:
+def ingest_domain_pack(source_path: Path, namespace: str, source_version: str = "local", expected_sha256: str | None = None) -> int:
     artifact = register_local_source(
         source_path,
         source_url=source_path.as_uri() if source_path.is_absolute() else f"file://{source_path}",
         source_version=source_version,
         license="private",
+        expected_sha256=expected_sha256,
     )
     entries = list(parse_domain_pack(source_path, namespace=namespace))
     repository = GlyphRepository(settings.sqlite_path)
@@ -101,20 +105,24 @@ def main() -> None:
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     subcommands = parser.add_subparsers(dest="command", required=True)
 
-    subcommands.add_parser("download-unicode")
+    download = subcommands.add_parser("download-unicode")
+    download.add_argument("--expected-sha256")
 
     ingest = subcommands.add_parser("ingest-unicode")
     ingest.add_argument("--source", type=Path, required=True)
     ingest.add_argument("--source-version", default="local")
+    ingest.add_argument("--expected-sha256")
 
     ingest_unihan_parser = subcommands.add_parser("ingest-unihan")
     ingest_unihan_parser.add_argument("--source", type=Path, required=True)
     ingest_unihan_parser.add_argument("--source-version", default="local")
+    ingest_unihan_parser.add_argument("--expected-sha256")
 
     domain = subcommands.add_parser("ingest-domain-pack")
     domain.add_argument("--source", type=Path, required=True)
     domain.add_argument("--namespace", required=True)
     domain.add_argument("--source-version", default="local")
+    domain.add_argument("--expected-sha256")
 
     lookup = subcommands.add_parser("lookup")
     lookup.add_argument("text")
@@ -126,15 +134,15 @@ def main() -> None:
 
     args = parser.parse_args()
     if args.command == "download-unicode":
-        download_unicode()
+        download_unicode(args.expected_sha256)
     elif args.command == "ingest-unicode":
-        count = ingest_unicode(args.source, args.source_version)
+        count = ingest_unicode(args.source, args.source_version, args.expected_sha256)
         print(f"Ingested {count} glyph records")
     elif args.command == "ingest-unihan":
-        count = ingest_unihan(args.source, args.source_version)
+        count = ingest_unihan(args.source, args.source_version, args.expected_sha256)
         print(f"Ingested {count} Unihan properties")
     elif args.command == "ingest-domain-pack":
-        count = ingest_domain_pack(args.source, args.namespace, args.source_version)
+        count = ingest_domain_pack(args.source, args.namespace, args.source_version, args.expected_sha256)
         print(f"Ingested {count} domain entries")
     elif args.command == "lookup":
         repository = GlyphRepository(settings.sqlite_path)

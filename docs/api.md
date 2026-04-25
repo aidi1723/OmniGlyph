@@ -13,7 +13,7 @@ Returns service status.
 Response:
 
 ```json
-{"status":"ok","service":"omniglyph","version":"0.2.0b0"}
+{"status":"ok","service":"omniglyph","version":"0.5.0b0"}
 ```
 
 ## `GET /api/v1/glyph`
@@ -46,6 +46,51 @@ Responses:
 
 - `200`: term found.
 - `404`: term not found.
+
+## `GET /api/v1/explain/glyph`
+
+Explain one Unicode character using OmniGlyph Explanation Standard v0.1.
+
+Request:
+
+```text
+GET /api/v1/explain/glyph?char=铝
+```
+
+Response excerpt:
+
+```json
+{
+  "schema": "oes:0.1",
+  "status": "matched",
+  "canonical_id": "glyph:U+94DD",
+  "input": {"text": "铝", "kind": "glyph", "normalized": "铝"},
+  "safety": {"risk_level": "none", "findings": []}
+}
+```
+
+Unknown glyphs return `status: "unknown"` with an explicit `limits` entry instead of a generated definition.
+
+## `GET /api/v1/explain/term`
+
+Explain one lexical/domain term using OmniGlyph Explanation Standard v0.1.
+
+Request:
+
+```text
+GET /api/v1/explain/term?text=FOB
+```
+
+Response excerpt:
+
+```json
+{
+  "schema": "oes:0.1",
+  "status": "matched",
+  "canonical_id": "trade:fob",
+  "input": {"text": "FOB", "kind": "term", "normalized": "fob"}
+}
+```
 
 ## `POST /api/v1/normalize`
 

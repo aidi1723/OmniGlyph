@@ -11,7 +11,7 @@ import sys
 
 payload = json.load(sys.stdin)
 tools = {tool["name"] for tool in payload["result"]["tools"]}
-expected = {"lookup_glyph", "lookup_term", "normalize_tokens", "validate_output_terms", "scan_code_symbols"}
+expected = {"lookup_glyph", "lookup_term", "explain_glyph", "explain_term", "normalize_tokens", "validate_output_terms", "scan_code_symbols"}
 missing = expected - tools
 if missing:
     raise SystemExit(f"missing MCP tools: {sorted(missing)}")

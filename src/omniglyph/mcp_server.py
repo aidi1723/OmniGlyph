@@ -2,8 +2,10 @@ import json
 import sys
 from typing import Any, TextIO
 
+from omniglyph import __version__
 from omniglyph.code_linter import scan_text
 from omniglyph.config import settings
+from omniglyph.explanation import explain_glyph, explain_term
 from omniglyph.guardrail import validate_output_terms
 from omniglyph.normalization import compact_normalize, normalize_tokens
 from omniglyph.repository import GlyphRepository
@@ -28,6 +30,24 @@ def build_tools_list() -> list[dict[str, Any]]:
             "inputSchema": {
                 "type": "object",
                 "properties": {"text": {"type": "string", "description": "Term text or alias to look up."}},
+                "required": ["text"],
+            },
+        },
+        {
+            "name": "explain_glyph",
+            "description": "Explain one Unicode character using the OmniGlyph Explanation Standard.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {"char": {"type": "string", "description": "Exactly one Unicode character to explain."}},
+                "required": ["char"],
+            },
+        },
+        {
+            "name": "explain_term",
+            "description": "Explain a lexical/domain term using the OmniGlyph Explanation Standard.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {"text": {"type": "string", "description": "Term text or alias to explain."}},
                 "required": ["text"],
             },
         },
@@ -77,7 +97,7 @@ def handle_mcp_request(request: dict[str, Any], repository: GlyphRepository | No
             request_id,
             {
                 "protocolVersion": "2024-11-05",
-                "serverInfo": {"name": "omniglyph", "version": "0.3.3b0"},
+                "serverInfo": {"name": "omniglyph", "version": __version__},
                 "capabilities": {"tools": {}},
             },
         )
@@ -109,6 +129,18 @@ def handle_mcp_request(request: dict[str, Any], repository: GlyphRepository | No
             if record is None:
                 return _result(request_id, {"content": [{"type": "text", "text": f"Term not found: {text}"}], "isError": True})
             return _result(request_id, {"content": [{"type": "json", "json": record}]})
+
+        if tool_name == "explain_glyph":
+            char = arguments.get("char")
+            if not isinstance(char, str) or len(char) != 1:
+                return _error(request_id, -32602, "explain_glyph requires exactly one Unicode character")
+            return _result(request_id, {"content": [{"type": "json", "json": explain_glyph(glyph_repository, char)}]})
+
+        if tool_name == "explain_term":
+            text = arguments.get("text")
+            if not isinstance(text, str) or not text.strip():
+                return _error(request_id, -32602, "explain_term requires non-empty text")
+            return _result(request_id, {"content": [{"type": "json", "json": explain_term(glyph_repository, text)}]})
 
         if tool_name == "normalize_tokens":
             tokens = arguments.get("tokens")

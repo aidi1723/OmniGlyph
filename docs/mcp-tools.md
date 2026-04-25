@@ -28,6 +28,26 @@ Input:
 
 Returns lexical/domain term data.
 
+## Tool: `explain_glyph`
+
+Input:
+
+```json
+{"char":"铝"}
+```
+
+Returns an OmniGlyph Explanation Standard v0.1 payload with `schema: "oes:0.1"`, source-backed basic facts, lexical facts when available, safety findings, sources, and explicit limits.
+
+## Tool: `explain_term`
+
+Input:
+
+```json
+{"text":"FOB"}
+```
+
+Returns an OES v0.1 payload for a lexical/domain term. Unknown terms return `status: "unknown"` and do not invent definitions.
+
 ## Tool: `normalize_tokens`
 
 Input:

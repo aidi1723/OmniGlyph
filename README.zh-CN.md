@@ -14,14 +14,14 @@ OmniGlyph 不是传统字典。传统字典主要给人类阅读；OmniGlyph 给
 
 OmniGlyph 已作为 Python 包和 MCP Registry server 发布。
 
-- PyPI 包：`omniglyph==0.3.3b0`
+- PyPI 包：`omniglyph==0.5.0b0`
 - MCP Registry server：`io.github.aidi1723/omniglyph`
 - 传输方式：本地 stdio MCP server
 
 从 PyPI 安装：
 
 ```bash
-pip install omniglyph==0.3.3b0
+pip install omniglyph==0.5.0b0
 ```
 
 启动 MCP server：
@@ -36,7 +36,7 @@ omniglyph-mcp
 printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | omniglyph-mcp
 ```
 
-当前 MCP 工具：`lookup_glyph`、`lookup_term`、`normalize_tokens`、`validate_output_terms`、`scan_code_symbols`。
+当前 MCP 工具：`lookup_glyph`、`lookup_term`、`explain_glyph`、`explain_term`、`normalize_tokens`、`validate_output_terms`、`scan_code_symbols`。
 
 ## 为什么说它是 Agent 基础设施
 
@@ -128,7 +128,7 @@ OmniGlyph 把字符、别名、缩写和领域术语转换为 canonical ID、JSO
 - `GET /api/v1/term` 术语查询。
 - `POST /api/v1/normalize` 批量标准化。
 - `omniglyph scan-code` 代码符号审查器。
-- MCP 工具：`lookup_glyph`、`lookup_term`、`normalize_tokens`、`validate_output_terms`、`scan_code_symbols`。
+- MCP 工具：`lookup_glyph`、`lookup_term`、`explain_glyph`、`explain_term`、`normalize_tokens`、`validate_output_terms`、`scan_code_symbols`。
 - 建材外贸 demo pack 与跨境询盘 demo。
 - Docker、CI、release check、N100 验证记录。
 
@@ -269,7 +269,7 @@ OmniGlyph 的目标是用本地、可追溯、结构化查询，替代 Agent 临
 
 ### 已验证数据
 
-当前 `v0.2.0-beta` 候选版本已验证：
+当前 `v0.5.0-beta` 候选版本已在本地验证：
 
 | 指标 | 结果 |
 | --- | ---: |
@@ -277,9 +277,9 @@ OmniGlyph 的目标是用本地、可追溯、结构化查询，替代 Agent 临
 | Unihan_Readings 导入 | `291,227` 条 properties |
 | Unihan_DictionaryLikeData 导入 | `156,251` 条 properties |
 | 已验证 Unihan 属性总量 | `447,478` 条 properties |
-| 本地测试 | `34 passed` |
-| N100 Linux 测试 | `34 passed` |
-| Docker build/run/healthcheck | N100 验证通过 |
+| 本地测试 | `47 passed` |
+| N100 Linux 测试 | beta 分支曾验证通过 |
+| Docker build/run/healthcheck | N100 曾验证通过 |
 | `铝` 的 SQLite 查询 benchmark | 1000 次查询 P95 约 `0.17ms` |
 
 示例询盘：
@@ -329,7 +329,7 @@ OmniGlyph 当前通过以下规则降低字符、符号和术语级幻觉：
 
 ## 当前阶段
 
-当前版本适合作为 `v0.2.0-beta` 开源发布候选：
+当前版本适合作为 `v0.5.0-beta` 开源发布候选：
 
 - 可用于本地评估。
 - 可用于 Agent 工具集成实验。
