@@ -22,14 +22,14 @@ In the AGI era, agents need a deterministic substrate beneath probabilistic lang
 
 OmniGlyph is published as both a Python package and an MCP Registry server.
 
-- PyPI package: `omniglyph==0.3.3b0`
+- PyPI package: `omniglyph==0.4.0b0`
 - MCP Registry server: `io.github.aidi1723/omniglyph`
 - Transport: local stdio MCP server
 
 Install from PyPI:
 
 ```bash
-pip install omniglyph==0.3.3b0
+pip install omniglyph==0.4.0b0
 ```
 
 Run the MCP server:
@@ -293,7 +293,7 @@ OmniGlyph is designed to reduce token waste and hallucination risk by replacing 
 
 ### Verified Data
 
-The current `v0.2.0-beta` candidate has been verified with:
+The current `v0.4.0-beta` candidate has been verified locally with:
 
 | Metric | Result |
 | --- | ---: |
@@ -301,9 +301,9 @@ The current `v0.2.0-beta` candidate has been verified with:
 | Unihan_Readings import | `291,227` properties |
 | Unihan_DictionaryLikeData import | `156,251` properties |
 | Total verified Unihan properties | `447,478` properties |
-| Local test suite | `34 passed` |
-| N100 Linux test suite | `34 passed` |
-| Docker build/run/healthcheck | Passed on N100 |
+| Local test suite | `47 passed` |
+| N100 Linux test suite | Previously verified on beta branch |
+| Docker build/run/healthcheck | Previously verified on N100 |
 | SQLite lookup benchmark for `铝` | P95 about `0.17ms` over 1,000 lookups |
 
 Example normalization:

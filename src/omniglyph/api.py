@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
 
+from omniglyph import __version__
 from omniglyph.config import settings
 from omniglyph.guardrail import validate_output_terms
 from omniglyph.normalization import compact_normalize, normalize_tokens
@@ -16,14 +17,14 @@ class GuardrailRequest(BaseModel):
 
 
 def create_app(repository: GlyphRepository | None = None) -> FastAPI:
-    app = FastAPI(title="OmniGlyph API", version="0.3.3b0")
+    app = FastAPI(title="OmniGlyph API", version=__version__)
     glyph_repository = repository or GlyphRepository(settings.sqlite_path)
     glyph_repository.initialize()
 
 
     @app.get("/api/v1/health")
     def health() -> dict:
-        return {"status": "ok", "service": "omniglyph", "version": "0.3.3b0"}
+        return {"status": "ok", "service": "omniglyph", "version": __version__}
 
     @app.get("/api/v1/glyph")
     def get_glyph(char: str = Query(...)) -> dict:

@@ -2,6 +2,7 @@ import json
 import sys
 from typing import Any, TextIO
 
+from omniglyph import __version__
 from omniglyph.code_linter import scan_text
 from omniglyph.config import settings
 from omniglyph.guardrail import validate_output_terms
@@ -77,7 +78,7 @@ def handle_mcp_request(request: dict[str, Any], repository: GlyphRepository | No
             request_id,
             {
                 "protocolVersion": "2024-11-05",
-                "serverInfo": {"name": "omniglyph", "version": "0.3.3b0"},
+                "serverInfo": {"name": "omniglyph", "version": __version__},
                 "capabilities": {"tools": {}},
             },
         )
