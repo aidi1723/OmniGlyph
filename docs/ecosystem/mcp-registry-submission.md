@@ -8,7 +8,7 @@ Submit OmniGlyph as a local stdio MCP server:
 
 - Repository: `https://github.com/aidi1723/OmniGlyph`
 - Server name candidate: `io.github.aidi1723/omniglyph`
-- Package: `omniglyph==0.3.3b0`
+- Package: `omniglyph==0.5.0b0`
 - Transport: stdio
 - License: Apache-2.0
 
@@ -27,24 +27,27 @@ Use `docs/mcp-server-card.md` as the human-readable project card.
 
 Use `package-registry/server.json` as the machine-readable registry draft. The draft follows the current public MCP Registry package metadata shape using `registryType` and schema `2025-12-11`; verify again before final submission because the registry is still in preview.
 
-## PyPI Publication Status
+## PyPI Release Candidate Status
 
-OmniGlyph `0.3.3b0` is published and verified:
+OmniGlyph `0.5.0b0` is locally verified and prepared for publication:
 
-- PyPI: `https://pypi.org/project/omniglyph/0.3.3b0/`
-- TestPyPI: `https://test.pypi.org/project/omniglyph/0.3.3b0/`
-- Clean PyPI install verified with `pip install omniglyph==0.3.3b0`.
-- Installed `omniglyph-mcp` returned all five MCP tools via `tools/list`.
+- PyPI: `https://pypi.org/project/omniglyph/0.5.0b0/`
+- TestPyPI: `https://test.pypi.org/project/omniglyph/0.5.0b0/`
+- Local wheel install and MCP smoke test pass.
+- TestPyPI upload is pending an API token.
+- Clean PyPI install verification should be completed after upload with `pip install omniglyph==0.5.0b0`.
+- Installed `omniglyph-mcp` should return all seven MCP tools via `tools/list`.
 
 ## Validation Checklist
 
 - [x] `pyproject.toml` version matches the package version used in registry metadata.
-- [x] Package can be installed by a fresh user with `pip install omniglyph==0.3.3b0`.
+- [x] Local wheel can be installed by a fresh virtual environment.
+- [ ] Published package can be installed by a fresh user with `pip install omniglyph==0.5.0b0`.
 - [x] `omniglyph-mcp` starts without repository-local assumptions.
-- [x] `tools/list` returns all five tools.
+- [x] `tools/list` returns all seven tools.
 - [x] README links to Claude Desktop, Claude Code, server card, and safety docs.
 - [x] `docs/security/mcp-safety.md` explains read-only boundaries.
-- [x] Release page exists for the submitted version.
+- [ ] Release page exists for the submitted version.
 
 ## Smoke Test
 
@@ -52,7 +55,7 @@ From a clean environment:
 
 ```bash
 python3 -m venv /tmp/omniglyph-pypi-install
-/tmp/omniglyph-pypi-install/bin/pip install omniglyph==0.3.3b0
+/tmp/omniglyph-pypi-install/bin/pip install omniglyph==0.5.0b0
 printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | /tmp/omniglyph-pypi-install/bin/omniglyph-mcp
 ```
 
@@ -60,6 +63,8 @@ Expected tools:
 
 - `lookup_glyph`
 - `lookup_term`
+- `explain_glyph`
+- `explain_term`
 - `normalize_tokens`
 - `validate_output_terms`
 - `scan_code_symbols`
@@ -85,6 +90,8 @@ AI agents can hallucinate or miss low-level symbol facts, especially with invisi
 
 - `lookup_glyph`
 - `lookup_term`
+- `explain_glyph`
+- `explain_term`
 - `normalize_tokens`
 - `validate_output_terms`
 - `scan_code_symbols`
@@ -101,9 +108,9 @@ AI agents can hallucinate or miss low-level symbol facts, especially with invisi
 
 ## Verification
 
-- Published on PyPI: https://pypi.org/project/omniglyph/0.3.3b0/
-- Clean install verified with `pip install omniglyph==0.3.3b0`
-- `omniglyph-mcp` `tools/list` returns all five tools
+- PyPI target: https://pypi.org/project/omniglyph/0.5.0b0/
+- Clean install to verify with `pip install omniglyph==0.5.0b0`
+- `omniglyph-mcp` `tools/list` should return all seven tools
 
 ## Links
 
@@ -116,11 +123,11 @@ AI agents can hallucinate or miss low-level symbol facts, especially with invisi
 
 ## MCP Registry Publication Status
 
-Published successfully:
+Prepared for publication:
 
 - Server: `io.github.aidi1723/omniglyph`
-- Version: `0.3.3-beta`
-- Publisher output: `Successfully published`
+- Version: `0.5.0-beta`
+- Publisher output: pending
 
 ## Recommended Submission Flow
 

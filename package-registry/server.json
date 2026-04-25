@@ -7,11 +7,11 @@
     "url": "https://github.com/aidi1723/OmniGlyph",
     "source": "github"
   },
-  "version": "0.3.3-beta",
+  "version": "0.5.0-beta",
   "packages": [
     {
       "identifier": "omniglyph",
-      "version": "0.3.3b0",
+      "version": "0.5.0b0",
       "transport": {
         "type": "stdio"
       },
@@ -26,6 +26,14 @@
     {
       "name": "lookup_term",
       "description": "Look up a private or curated lexical/domain term."
+    },
+    {
+      "name": "explain_glyph",
+      "description": "Explain one Unicode character using OmniGlyph Explanation Standard v0.1."
+    },
+    {
+      "name": "explain_term",
+      "description": "Explain a lexical/domain term using OmniGlyph Explanation Standard v0.1."
     },
     {
       "name": "normalize_tokens",

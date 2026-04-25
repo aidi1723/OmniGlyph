@@ -4,7 +4,7 @@ These are small, useful tasks for new contributors.
 
 ## Documentation
 
-- Add a Claude Desktop screenshot-free walkthrough using `pip install omniglyph==0.3.2b0`.
+- Add a Claude Desktop screenshot-free walkthrough using `pip install omniglyph==0.4.0b0`.
 - Add a `pipx install omniglyph` verification note once tested across macOS/Linux.
 - Add more `scan_code_symbols` examples for JavaScript, Bash, and Markdown.
 - Add a short FAQ explaining why OmniGlyph returns `null` instead of guessing.

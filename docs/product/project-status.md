@@ -51,6 +51,7 @@ OmniGlyph is not yet ideal for:
 - Community adoption is still early.
 - Current output guardrail is known/unknown validation, not full policy orchestration.
 - Homoglyph detection is rule-based; Unicode confusables data is planned.
+- OmniGlyph Explanation Standard v0.1 has an initial runtime wrapper for glyph and term explanations; broader CLDR, confusables, and concept graph integrations are still planned.
 - No automatic source-code mutation or rewrite is performed.
 - Stage 3/4 semantic graph and computation layers are roadmap items, not current production features.
 

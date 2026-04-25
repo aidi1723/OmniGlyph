@@ -34,6 +34,7 @@ class GlyphRepository:
     def initialize(self) -> None:
         with self.connect() as connection:
             connection.executescript(SCHEMA_SQL)
+            connection.executescript(INDEX_SQL)
 
     def add_source_snapshot(self, source: SourceSnapshot) -> str:
         source_id = str(uuid.uuid5(uuid.NAMESPACE_URL, f"omniglyph:source:{source.source_name}:{source.source_version}:{source.sha256}"))
@@ -434,4 +435,16 @@ CREATE TABLE IF NOT EXISTS lexical_alias (
     FOREIGN KEY (source_id) REFERENCES source_snapshot(id),
     UNIQUE(lexical_entry_id, normalized_alias, source_id)
 );
+"""
+
+
+INDEX_SQL = """
+CREATE INDEX IF NOT EXISTS idx_glyph_property_glyph_uid
+ON glyph_property(glyph_uid);
+
+CREATE INDEX IF NOT EXISTS idx_lexical_entry_normalized_term
+ON lexical_entry(normalized_term);
+
+CREATE INDEX IF NOT EXISTS idx_lexical_alias_normalized_alias
+ON lexical_alias(normalized_alias);
 """

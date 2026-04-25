@@ -1,7 +1,9 @@
 from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
 
+from omniglyph import __version__
 from omniglyph.config import settings
+from omniglyph.explanation import explain_glyph, explain_term
 from omniglyph.guardrail import validate_output_terms
 from omniglyph.normalization import compact_normalize, normalize_tokens
 from omniglyph.repository import GlyphRepository
@@ -16,14 +18,14 @@ class GuardrailRequest(BaseModel):
 
 
 def create_app(repository: GlyphRepository | None = None) -> FastAPI:
-    app = FastAPI(title="OmniGlyph API", version="0.3.3b0")
+    app = FastAPI(title="OmniGlyph API", version=__version__)
     glyph_repository = repository or GlyphRepository(settings.sqlite_path)
     glyph_repository.initialize()
 
 
     @app.get("/api/v1/health")
     def health() -> dict:
-        return {"status": "ok", "service": "omniglyph", "version": "0.3.3b0"}
+        return {"status": "ok", "service": "omniglyph", "version": __version__}
 
     @app.get("/api/v1/glyph")
     def get_glyph(char: str = Query(...)) -> dict:
@@ -41,6 +43,16 @@ def create_app(repository: GlyphRepository | None = None) -> FastAPI:
         if record is None:
             raise HTTPException(status_code=404, detail="term not found")
         return record
+
+    @app.get("/api/v1/explain/glyph")
+    def explain_glyph_endpoint(char: str = Query(...)) -> dict:
+        if len(char) != 1:
+            raise HTTPException(status_code=400, detail="char must contain exactly one Unicode character")
+        return explain_glyph(glyph_repository, char)
+
+    @app.get("/api/v1/explain/term")
+    def explain_term_endpoint(text: str = Query(..., min_length=1)) -> dict:
+        return explain_term(glyph_repository, text)
 
     @app.post("/api/v1/normalize")
     def normalize(request: NormalizeRequest, mode: str = Query("full")) -> dict:

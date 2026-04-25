@@ -80,6 +80,26 @@ Input:
 {"text":"FOB"}
 ```
 
+### `explain_glyph`
+
+Explains one Unicode character using OmniGlyph Explanation Standard v0.1.
+
+Input:
+
+```json
+{"char":"铝"}
+```
+
+### `explain_term`
+
+Explains a private or curated lexical/domain term using OmniGlyph Explanation Standard v0.1.
+
+Input:
+
+```json
+{"text":"FOB"}
+```
+
 ### `normalize_tokens`
 
 Normalizes glyphs and domain terms into canonical IDs.
