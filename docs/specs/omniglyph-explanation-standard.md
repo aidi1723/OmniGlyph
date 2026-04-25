@@ -4,6 +4,8 @@ OmniGlyph Explanation Standard (OES) defines how OmniGlyph explains symbols, ter
 
 The goal is not to write a human-style dictionary article. The goal is to return compact, source-backed, machine-computable explanations that agents can verify, compare, route, and reason over without inventing missing facts.
 
+As of `0.6.0b0`, OES is a runtime protocol as well as a document. Shared constants and payload helpers live in `omniglyph.oes`, and glyph, term, and code-security explanations all use `schema: "oes:0.1"`.
+
 ## Core Rule
 
 Every explanation separates six layers:
@@ -243,6 +245,7 @@ Future APIs should be additive:
 
 - `GET /api/v1/explain/glyph?char=水`
 - `GET /api/v1/explain/term?text=water`
+- `POST /api/v1/explain/code-security`
 - `POST /api/v1/explain`
 - `POST /api/v1/audit-text`
 
@@ -250,8 +253,36 @@ MCP tools should mirror these capabilities:
 
 - `explain_glyph`
 - `explain_term`
+- `explain_code_security`
 - `audit_text`
 - existing `scan_code_symbols`
+
+## Audit Event Object
+
+OES-compatible audit events are separate from explanations. They record the workflow evidence around an explanation or scan:
+
+```json
+{
+  "schema": "omniglyph.audit:0.1",
+  "event_id": "4cc6...",
+  "created_at": "2026-04-25T00:00:00+00:00",
+  "actor": {"id": "user:alice"},
+  "action": "explain_term",
+  "input": {"text": "API", "kind": "term", "normalized": "api"},
+  "status": "matched",
+  "canonical_id": "software:api",
+  "source_ids": ["source:software-dev:0.1.0"],
+  "unknowns": [],
+  "findings": []
+}
+```
+
+The audit layer answers four enterprise questions:
+
+- who made the query
+- what input was checked
+- which source IDs supported the result
+- which limits or unknowns remained
 
 ## v0.5 Scope Recommendation
 
@@ -262,6 +293,16 @@ The first OES implementation should stay small:
 3. Add CLDR fixture ingestion for a small set of emoji/script/language labels.
 4. Keep Wiktionary as a fixture-backed prototype until the schema proves stable.
 5. Add tests that assert missing values remain `null` or `unknown`.
+
+## v0.6 Implemented Slice
+
+The `0.6.0b0` slice adds:
+
+- shared OES runtime helpers in `omniglyph.oes`
+- OES code-security explanations through `explain_code_security`
+- a minimal Unicode confusables security pack with source-backed findings
+- `examples/domain-packs/software_development.csv`
+- audit events through `omniglyph.audit`, `/api/v1/audit/explain`, `/api/v1/audit/security-scan`, and `audit_explain`
 
 ## Non-Goals
 

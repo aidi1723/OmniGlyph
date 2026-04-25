@@ -8,8 +8,12 @@ It does not replace syntax linters such as Ruff, ESLint, or ShellCheck. It scans
 
 - invisible format characters such as `U+200B ZERO WIDTH SPACE`
 - Bidi controls such as `U+202E RIGHT-TO-LEFT OVERRIDE`
-- cross-script homoglyph risks such as `U+0430 CYRILLIC SMALL LETTER A`
+- source-backed confusables such as `U+0430 CYRILLIC SMALL LETTER A`, which can be mistaken for Latin `a`
+- generic cross-script homoglyph risks when a character is not in the bundled confusables map
 - unexpected control characters in source text
+- fullwidth/halfwidth forms and NFKC normalization changes
+
+Each finding includes a stable rule ID, `risk_level`, `source_id`, `why_it_matters`, `suggested_action`, and `auto_fixable`. OmniGlyph recommends review by default and does not rewrite code automatically.
 
 ## Generate a Poisoned Sample
 
@@ -49,6 +53,17 @@ Agents can call `scan_code_symbols` before editing or reviewing source code:
 ```
 
 The tool returns a structured report with line, column, Unicode code point, official Unicode name, category, and rule ID.
+
+For an OES-shaped payload, use `explain_code_security` instead:
+
+```json
+{
+  "text": "vаlue = 1\n",
+  "source_name": "agent.py"
+}
+```
+
+This returns `schema: "oes:0.1"` with findings under `safety.findings`.
 
 ## Agent Rule
 

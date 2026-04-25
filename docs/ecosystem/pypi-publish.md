@@ -5,7 +5,7 @@ This checklist prepares OmniGlyph for PyPI publication so it can be referenced b
 ## Package Identity
 
 - PyPI name: `omniglyph`
-- Current package version: `0.5.0b0`
+- Current package version: `0.6.0b0`
 - MCP server name: `io.github.aidi1723/omniglyph`
 - Console scripts:
   - `omniglyph`
@@ -54,7 +54,7 @@ Use a clean temporary virtual environment:
 
 ```bash
 python3 -m venv /tmp/omniglyph-wheel-test
-/tmp/omniglyph-wheel-test/bin/pip install dist/omniglyph-0.5.0b0-py3-none-any.whl
+/tmp/omniglyph-wheel-test/bin/pip install dist/omniglyph-0.6.0b0-py3-none-any.whl
 printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | /tmp/omniglyph-wheel-test/bin/omniglyph-mcp
 ```
 
@@ -64,9 +64,12 @@ Expected tools:
 - `lookup_term`
 - `explain_glyph`
 - `explain_term`
+- `explain_code_security`
 - `normalize_tokens`
 - `validate_output_terms`
 - `scan_code_symbols`
+- `scan_unicode_security`
+- `audit_explain`
 
 ## Publish to TestPyPI First
 
@@ -96,10 +99,10 @@ After PyPI publication:
 
 Local verification passed; public upload is pending TestPyPI/PyPI credentials:
 
-- TestPyPI: `https://test.pypi.org/project/omniglyph/0.5.0b0/`
-- PyPI: `https://pypi.org/project/omniglyph/0.5.0b0/`
+- TestPyPI: `https://test.pypi.org/project/omniglyph/0.6.0b0/`
+- PyPI: `https://pypi.org/project/omniglyph/0.6.0b0/`
 - Local package build and metadata checks pass.
 - Local wheel install smoke test passes.
 - TestPyPI upload attempt reached TestPyPI but failed because no API token was configured.
 - Clean PyPI install verification should be completed after upload.
-- Installed `omniglyph-mcp` should return all seven MCP tools via `tools/list`.
+- Installed `omniglyph-mcp` should return all ten MCP tools via `tools/list`.

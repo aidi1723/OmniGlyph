@@ -1,5 +1,26 @@
 # Release Checklist
 
+## v0.6.0-beta Development Scope
+
+This release turns OES into a reusable project protocol and adds the first enterprise-facing audit slice.
+
+Included in the working tree:
+
+- Shared OES helpers under `src/omniglyph/oes.py`.
+- Unicode Security Pack metadata for source-backed `unicode-confusable` findings.
+- `explain_code_security` helper, API endpoint, and MCP tool.
+- `POST /api/v1/security/scan` and MCP `scan_unicode_security`.
+- Software-development domain pack under `examples/domain-packs/software_development.csv`.
+- Structured audit events through `src/omniglyph/audit.py`, `/api/v1/audit/explain`, `/api/v1/audit/security-scan`, and MCP `audit_explain`.
+
+Release gate for v0.6.0-beta:
+
+- Full test suite passes.
+- MCP `tools/list` smoke test returns all ten MCP tools.
+- Package build succeeds.
+- `twine check dist/*` passes.
+- Security findings remain review-only and do not mutate source code automatically.
+
 ## v0.5.0-beta Development Scope
 
 This release starts the OmniGlyph Explanation Standard runtime layer.

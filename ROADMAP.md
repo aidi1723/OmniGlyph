@@ -17,28 +17,29 @@ Goals:
 
 ## v0.4.x — Unicode Security Rules
 
-Planned. This is the next practical focus because it gives developers and coding agents a concrete, testable use case: finding symbol-level bugs and spoofing risks that humans and LLMs often miss.
+Partially implemented. This is the practical focus because it gives developers and coding agents a concrete, testable use case: finding symbol-level bugs and spoofing risks that humans and LLMs often miss.
 
 Goals:
 
-- Unicode confusables data ingestion.
-- Stronger homoglyph detection and mapping.
-- Fullwidth/halfwidth detection.
-- NFC/NFKC normalization diff reports.
-- Trojan Source / Bidi rule pack.
+- Unicode confusables data ingestion. Initial minimal pack shipped in `0.6.0b0`.
+- Stronger homoglyph detection and mapping. Initial source-backed `unicode-confusable` findings shipped in `0.6.0b0`.
+- Fullwidth/halfwidth detection. Implemented.
+- NFC/NFKC normalization diff reports. Implemented for single-character findings.
+- Trojan Source / Bidi rule pack. Initial Bidi control detection implemented.
 - Domain spoofing and username validation helpers.
 - Math/science/programming symbol starter pack for `∂`, `∇`, `λ`, `σ`, `∑`, and similar dense technical symbols.
 - Optional `--suggest-fix` reports without automatic mutation.
 
 ## v0.5.x — Text Audit Workflows
 
-Planned. This track expands the code-symbol linter into general text/security audit pipelines.
+Partially implemented. This track expands the code-symbol linter into OES-shaped explanations and structured audit evidence.
 
 Goals:
 
-- OmniGlyph Explanation Standard v0.1 for source-backed glyph, term, concept, and safety explanations.
-- OES-shaped `explain_glyph` and `explain_term` responses.
-- Unicode confusables data ingestion and source-backed confusable findings.
+- OmniGlyph Explanation Standard v0.1 for source-backed glyph, term, concept, and safety explanations. Implemented as docs plus `omniglyph.oes` helpers.
+- OES-shaped `explain_glyph`, `explain_term`, and `explain_code_security` responses.
+- Unicode confusables data ingestion and source-backed confusable findings. Initial minimal pack implemented.
+- Audit events that show actor, action, input, status, source IDs, findings, and unknown limits.
 - CLDR fixture ingestion for emoji, script, language, and locale labels.
 - `omniglyph audit-text` CLI.
 - JSONL / CSV / TSV field scanning.
@@ -54,6 +55,7 @@ Partially implemented.
 Current:
 
 - private domain pack CSV ingestion
+- software development domain pack example
 - `lookup_term`
 - `normalize_tokens`
 - `validate_output_terms`

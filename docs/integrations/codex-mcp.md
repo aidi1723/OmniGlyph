@@ -16,6 +16,7 @@ UV_CACHE_DIR=.uv-cache uv pip install -e '.[dev]'
 ```bash
 .venv/bin/omniglyph ingest-unicode --source tests/fixtures/UnicodeData.sample.txt --source-version fixture
 .venv/bin/omniglyph ingest-domain-pack --source examples/domain-packs/building_materials.csv --namespace private_building_materials --source-version example
+.venv/bin/omniglyph ingest-domain-pack --source examples/domain-packs/software_development.csv --namespace public_software_development --source-version 0.1.0
 ```
 
 For real Unicode data:
@@ -93,6 +94,36 @@ Input:
 
 Use when the agent needs a private/domain term such as trade terms or building-material terms.
 
+### `explain_glyph`
+
+Input:
+
+```json
+{"char": "铝"}
+```
+
+Use when the agent needs an OES payload with source-backed glyph facts.
+
+### `explain_term`
+
+Input:
+
+```json
+{"text": "API"}
+```
+
+Use when the agent needs an OES payload for a domain term.
+
+### `explain_code_security`
+
+Input:
+
+```json
+{"text": "vаlue = 1\n", "source_name": "agent.py"}
+```
+
+Use when Unicode security findings should be returned under `safety.findings`.
+
 ### `normalize_tokens`
 
 Input:
@@ -114,6 +145,26 @@ Compact output:
 }
 ```
 
+### `scan_unicode_security`
+
+Input:
+
+```json
+{"text": "vаlue = 1\n", "source_name": "agent.py"}
+```
+
+Use before editing copied code or suspicious diffs. Findings include `confusable_with`, `why_it_matters`, `source_id`, and review guidance.
+
+### `audit_explain`
+
+Input:
+
+```json
+{"actor_id": "agent:codex", "kind": "term", "text": "API"}
+```
+
+Use when a workflow needs to show who checked a term, which source backed it, and what remained unknown.
+
 ## 6. Recommended Agent Rule
 
-Before interpreting unknown symbols, trade terms, or building-material terms, call OmniGlyph first. Use returned canonical IDs and treat `unknown` or `null` fields as missing facts, not as a reason to guess.
+Before interpreting unknown symbols, trade terms, software-development terms, or suspicious Unicode source code, call OmniGlyph first. Use returned canonical IDs and treat `unknown` or `null` fields as missing facts, not as a reason to guess.
