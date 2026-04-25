@@ -19,3 +19,4 @@
 - Add MCP Registry submission plan and draft `package-registry/server.json`.
 - Prepare PyPI packaging metadata and publish checklist for MCP Registry submission.
 - Publish and verify `omniglyph==0.3.2b0` on TestPyPI and PyPI.
+- Publish `io.github.aidi1723/omniglyph` version `0.3.2-beta` to the MCP Registry.

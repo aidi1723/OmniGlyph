@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.aidi1723/omniglyph",
-  "description": "Local-first Symbol Ground Truth MCP server for deterministic Unicode lookup, domain-term normalization, output guardrails, and code-symbol linting.",
+  "description": "Local symbol ground truth MCP server for Unicode lookup and code-symbol linting.",
   "status": "active",
   "repository": {
     "url": "https://github.com/aidi1723/OmniGlyph",
