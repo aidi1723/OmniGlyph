@@ -1,3 +1,4 @@
+from omniglyph import __version__
 from omniglyph.mcp_server import build_tools_list, handle_mcp_request
 from omniglyph.normalizer import GlyphRecord
 from omniglyph.repository import GlyphRepository, SourceSnapshot
@@ -16,6 +17,13 @@ def test_handle_mcp_tools_list_request():
     assert response["jsonrpc"] == "2.0"
     assert response["id"] == 1
     assert response["result"]["tools"][0]["name"] == "lookup_glyph"
+
+
+def test_handle_mcp_initialize_uses_package_version():
+    response = handle_mcp_request({"jsonrpc": "2.0", "id": 1, "method": "initialize"})
+
+    assert __version__ == "0.4.0b0"
+    assert response["result"]["serverInfo"]["version"] == __version__
 
 
 def test_handle_mcp_lookup_glyph_tool_call(tmp_path):

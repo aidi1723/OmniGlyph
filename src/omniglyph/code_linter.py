@@ -118,19 +118,34 @@ def _inspect_char(char: str, line_number: int, column_number: int) -> dict | Non
     name = _unicode_name(char)
     category = unicodedata.category(char)
     script_hint = _script_hint(name)
+    normalized = unicodedata.normalize("NFKC", char)
     if code_point in BIDI_CONTROL_CODEPOINTS:
         return _finding("unicode-bidi-control", "Bidi control character can visually reorder source code", char, name, category, script_hint, line_number, column_number)
     if category == "Cf":
         return _finding("unicode-invisible-format", "Invisible format character in source code", char, name, category, script_hint, line_number, column_number)
     if category == "Cc" and char not in {"\t", "\n", "\r"}:
         return _finding("unicode-control-character", "Unexpected control character in source code", char, name, category, script_hint, line_number, column_number)
+    if _is_fullwidth_or_halfwidth(code_point):
+        return _finding("unicode-fullwidth-halfwidth-form", "Fullwidth or halfwidth character may hide source-code intent", char, name, category, script_hint, line_number, column_number, normalized=normalized)
     if script_hint in {"Cyrillic", "Greek"}:
         return _finding("unicode-cross-script-homoglyph-risk", "Cross-script character may be confusable with Latin source code", char, name, category, script_hint, line_number, column_number)
+    if normalized != char:
+        return _finding("unicode-nfkc-normalization-change", "Character changes under NFKC normalization", char, name, category, script_hint, line_number, column_number, normalized=normalized)
     return None
 
 
-def _finding(rule_id: str, message: str, char: str, name: str, category: str, script_hint: str | None, line_number: int, column_number: int) -> dict:
-    return {
+def _finding(
+    rule_id: str,
+    message: str,
+    char: str,
+    name: str,
+    category: str,
+    script_hint: str | None,
+    line_number: int,
+    column_number: int,
+    normalized: str | None = None,
+) -> dict:
+    finding = {
         "rule_id": rule_id,
         "severity": "warning",
         "message": message,
@@ -142,6 +157,9 @@ def _finding(rule_id: str, message: str, char: str, name: str, category: str, sc
         "category": category,
         "script_hint": script_hint,
     }
+    if normalized is not None:
+        finding["normalized"] = normalized
+    return finding
 
 
 def _report(source_name: str, scanned_chars: int, findings: list[dict]) -> dict:
@@ -167,6 +185,10 @@ def _script_hint(name: str) -> str | None:
         if marker in name:
             return script
     return None
+
+
+def _is_fullwidth_or_halfwidth(code_point: int) -> bool:
+    return 0xFF00 <= code_point <= 0xFFEF
 
 
 def _iter_text_files(root: Path) -> Iterable[Path]:

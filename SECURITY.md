@@ -17,7 +17,7 @@ Open a private security advisory if hosted on GitHub, or contact the maintainers
 
 ## MCP Boundary
 
-The MCP server exposes local lookup and normalization tools. It does not implement authentication or access control in v0.2.0-beta. Run it only in trusted local environments.
+The MCP server exposes local lookup and normalization tools. It does not implement authentication or access control in the current beta. Run it only in trusted local environments.
 
 ## Private Namespace Warning
 

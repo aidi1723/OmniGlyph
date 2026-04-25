@@ -121,3 +121,18 @@ def test_repository_imports_and_finds_domain_entries(tmp_path):
     assert entry["matched_text"] == "aluminium profile"
     assert entry["term"] == "aluminum profile"
     assert entry["traits"] == {"material": "aluminum", "domain": "construction"}
+
+
+def test_repository_initialization_creates_lookup_indexes(tmp_path):
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+
+    with repository.connect() as connection:
+        index_names = set()
+        for table in ("glyph_property", "lexical_entry", "lexical_alias"):
+            rows = connection.execute(f"PRAGMA index_list({table})").fetchall()
+            index_names.update(row["name"] for row in rows)
+
+    assert "idx_glyph_property_glyph_uid" in index_names
+    assert "idx_lexical_entry_normalized_term" in index_names
+    assert "idx_lexical_alias_normalized_alias" in index_names
