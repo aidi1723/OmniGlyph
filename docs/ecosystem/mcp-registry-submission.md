@@ -8,7 +8,7 @@ Submit OmniGlyph as a local stdio MCP server:
 
 - Repository: `https://github.com/aidi1723/OmniGlyph`
 - Server name candidate: `io.github.aidi1723/omniglyph`
-- Package candidate: `omniglyph`
+- Package: `omniglyph==0.3.2b0`
 - Transport: stdio
 - License: Apache-2.0
 
@@ -25,38 +25,35 @@ Based on current MCP Registry documentation:
 
 Use `docs/mcp-server-card.md` as the human-readable project card.
 
-Use `package-registry/server.json` as the machine-readable draft. The draft follows the current public MCP Registry package metadata shape using `registryType` and schema `2025-12-11`; verify again before final submission because the registry is still in preview.
+Use `package-registry/server.json` as the machine-readable registry draft. The draft follows the current public MCP Registry package metadata shape using `registryType` and schema `2025-12-11`; verify again before final submission because the registry is still in preview.
 
-## Important Pre-Submission Gap
+## PyPI Publication Status
 
-The draft `server.json` assumes a PyPI package named `omniglyph` with version `0.3.2b0`.
+OmniGlyph `0.3.2b0` is published and verified:
 
-Before submitting to the registry, complete one of these:
-
-1. Bump the Python package version to `0.3.2b0` in `pyproject.toml` and `src/omniglyph/__init__.py`.
-2. Publish OmniGlyph to PyPI as `omniglyph`.
-3. Confirm the PyPI long description contains `mcp-name: io.github.aidi1723/omniglyph`.
-
-Until this is done, treat `package-registry/server.json` as a draft rather than a final registry artifact.
+- PyPI: `https://pypi.org/project/omniglyph/0.3.2b0/`
+- TestPyPI: `https://test.pypi.org/project/omniglyph/0.3.2b0/`
+- Clean PyPI install verified with `pip install omniglyph==0.3.2b0`.
+- Installed `omniglyph-mcp` returned all five MCP tools via `tools/list`.
 
 ## Validation Checklist
 
-- [ ] `pyproject.toml` version matches the package version used in registry metadata.
-- [ ] Package can be installed by a fresh user with `pipx install omniglyph` or equivalent.
-- [ ] `omniglyph-mcp` starts without repository-local assumptions.
-- [ ] `tools/list` returns all five tools.
-- [ ] README links to Claude Desktop, Claude Code, server card, and safety docs.
-- [ ] `docs/security/mcp-safety.md` explains read-only boundaries.
-- [ ] Release page exists for the submitted version.
+- [x] `pyproject.toml` version matches the package version used in registry metadata.
+- [x] Package can be installed by a fresh user with `pip install omniglyph==0.3.2b0`.
+- [x] `omniglyph-mcp` starts without repository-local assumptions.
+- [x] `tools/list` returns all five tools.
+- [x] README links to Claude Desktop, Claude Code, server card, and safety docs.
+- [x] `docs/security/mcp-safety.md` explains read-only boundaries.
+- [x] Release page exists for the submitted version.
 
 ## Smoke Test
 
-From a clean local checkout:
+From a clean environment:
 
 ```bash
-UV_CACHE_DIR=.uv-cache uv venv .venv --python 3.11
-UV_CACHE_DIR=.uv-cache uv pip install -e '.[dev]'
-printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | .venv/bin/omniglyph-mcp
+python3 -m venv /tmp/omniglyph-pypi-install
+/tmp/omniglyph-pypi-install/bin/pip install omniglyph==0.3.2b0
+printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | /tmp/omniglyph-pypi-install/bin/omniglyph-mcp
 ```
 
 Expected tools:
@@ -102,6 +99,12 @@ AI agents can hallucinate or miss low-level symbol facts, especially with invisi
 - no remote API calls by default
 - missing facts remain `unknown` / `null`
 
+## Verification
+
+- Published on PyPI: https://pypi.org/project/omniglyph/0.3.2b0/
+- Clean install verified with `pip install omniglyph==0.3.2b0`
+- `omniglyph-mcp` `tools/list` returns all five tools
+
 ## Links
 
 - Repository: https://github.com/aidi1723/OmniGlyph
@@ -114,9 +117,8 @@ AI agents can hallucinate or miss low-level symbol facts, especially with invisi
 ## Recommended Submission Flow
 
 1. Verify current registry submission requirements.
-2. Publish package or adapt install metadata.
-3. Update `package-registry/server.json` to match the exact schema.
-4. Fork the registry repository.
-5. Add OmniGlyph metadata according to registry layout.
-6. Open PR with the suggested title/body above.
-7. Respond to maintainer feedback with minimal, focused changes.
+2. Update `package-registry/server.json` if schema requirements changed.
+3. Fork the registry repository.
+4. Add OmniGlyph metadata according to registry layout.
+5. Open PR with the suggested title/body above.
+6. Respond to maintainer feedback with minimal, focused changes.

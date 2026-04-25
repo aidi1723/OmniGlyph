@@ -89,3 +89,12 @@ After PyPI publication:
 1. Confirm the PyPI project page renders the README and includes `mcp-name: io.github.aidi1723/omniglyph`.
 2. Confirm `package-registry/server.json` references the exact published version.
 3. Submit the MCP registry PR using `docs/ecosystem/mcp-registry-submission.md`.
+
+## Publication Status
+
+Published and verified:
+
+- TestPyPI: `https://test.pypi.org/project/omniglyph/0.3.2b0/`
+- PyPI: `https://pypi.org/project/omniglyph/0.3.2b0/`
+- Clean PyPI install verified with `pip install omniglyph==0.3.2b0`.
+- Installed `omniglyph-mcp` returned all five MCP tools via `tools/list`.

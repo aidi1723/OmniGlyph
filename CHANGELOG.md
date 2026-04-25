@@ -18,3 +18,4 @@
 - Add Claude Desktop/Claude Code MCP readiness docs, MCP server card, and MCP safety notes.
 - Add MCP Registry submission plan and draft `package-registry/server.json`.
 - Prepare PyPI packaging metadata and publish checklist for MCP Registry submission.
+- Publish and verify `omniglyph==0.3.2b0` on TestPyPI and PyPI.
