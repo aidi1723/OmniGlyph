@@ -103,6 +103,10 @@ OmniGlyph 把字符、别名、缩写和领域术语转换为 canonical ID、JSO
 
 一句话：OmniGlyph 是符号与术语层面的实用防幻觉滤网。它不声称消灭所有模型幻觉，而是通过本地、可追溯的事实层，在推理前后降低一类关键底层错误。
 
+## 项目成熟度说明
+
+当前项目仍处于 beta 阶段，适合本地 Agent 增强、RAG 预处理、代码符号审查和 OCR/文本清洗原型。它不是通用大模型，也不是完整生产级语义计算引擎。详细状态见 `docs/product/project-status.md`，路线图见 `ROADMAP.md`。
+
 ## 当前能力
 
 - UnicodeData 导入与字符查询。

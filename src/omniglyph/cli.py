@@ -2,6 +2,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from omniglyph import __version__
 from omniglyph.code_linter import format_json_report, format_text_report, scan_path
 from omniglyph.config import settings
 from omniglyph.domain_pack import parse_domain_pack
@@ -97,6 +98,7 @@ def ingest_domain_pack(source_path: Path, namespace: str, source_version: str = 
 
 def main() -> None:
     parser = argparse.ArgumentParser(prog="omniglyph")
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     subcommands = parser.add_subparsers(dest="command", required=True)
 
     subcommands.add_parser("download-unicode")
