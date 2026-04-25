@@ -1,5 +1,23 @@
 # Release Checklist
 
+## v0.5.0-beta Development Scope
+
+This release starts the OmniGlyph Explanation Standard runtime layer.
+
+Included in the working tree:
+
+- OES v0.1 specification under `docs/specs/omniglyph-explanation-standard.md`.
+- `explain_glyph` and `explain_term` helpers returning `schema: "oes:0.1"` payloads.
+- HTTP endpoints for glyph and term explanations.
+- MCP tools for glyph and term explanations.
+- Existing lookup, normalization, guardrail, and code-symbol scanning behavior preserved.
+
+Release gate for v0.5.0-beta:
+
+- Full test suite passes.
+- MCP `tools/list` smoke test returns all seven MCP tools.
+- OES tests cover matched glyph, matched term, and explicit unknown values.
+
 ## v0.4.0-beta Development Scope
 
 This release hardens OmniGlyph for version-consistent, reproducible, faster, and deeper Unicode-security beta usage.

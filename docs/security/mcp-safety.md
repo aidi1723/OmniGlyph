@@ -12,6 +12,8 @@ The stdio MCP server exposes lookup and scanning tools only. It does not provide
 | --- | --- | --- | --- | --- | --- |
 | `lookup_glyph` | yes | no | no | no | no |
 | `lookup_term` | yes | no | no | no | no |
+| `explain_glyph` | yes | no | no | no | no |
+| `explain_term` | yes | provided text | no | no | no |
 | `normalize_tokens` | yes | provided tokens | no | no | no |
 | `validate_output_terms` | yes | provided terms | no | no | no |
 | `scan_code_symbols` | no | provided text | no | no | no |
@@ -37,7 +39,7 @@ The stdio MCP server exposes lookup and scanning tools only. It does not provide
 Recommended system instruction for MCP clients:
 
 ```text
-OmniGlyph is a deterministic lookup and scanning tool. Use it to verify symbols, terms, and suspicious Unicode code characters. Do not ask it to execute code, modify files, browse the web, or invent missing definitions. Treat unknown results as missing facts.
+OmniGlyph is a deterministic lookup, explanation, and scanning tool. Use it to verify symbols, terms, and suspicious Unicode code characters. Do not ask it to execute code, modify files, browse the web, or invent missing definitions. Treat unknown results as missing facts.
 ```
 
 ## Known Limitations
