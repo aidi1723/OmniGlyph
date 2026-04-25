@@ -58,6 +58,18 @@ Agent encounters symbol → calls local OmniGlyph → receives traceable structu
 
 This converts dictionaries from pages that humans read into computation fuel that agents execute against.
 
+
+## Scope and Boundaries
+
+OmniGlyph is intentionally narrow at the current beta stage:
+
+- It analyzes Unicode text/code points, not raw images. OCR or visual glyph recognition should happen before OmniGlyph.
+- It returns source-backed facts and rule-based findings, not generative interpretations.
+- It can reduce symbol/term-layer hallucinations, but it does not eliminate every model hallucination.
+- It treats global Unicode facts, Unihan facts, and private domain packs as separate layers so business vocabulary does not pollute the public ground truth.
+
+See `docs/product/positioning.md` for the detailed positioning and non-goals.
+
 ## Strategic Positioning
 
 OmniGlyph is designed as the local knowledge heart of private agent systems such as OpenClaw / AgentCore OS:

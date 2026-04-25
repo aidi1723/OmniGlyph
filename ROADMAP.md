@@ -17,7 +17,7 @@ Goals:
 
 ## v0.4.x — Unicode Security Rules
 
-Planned.
+Planned. This is the next practical focus because it gives developers and coding agents a concrete, testable use case: finding symbol-level bugs and spoofing risks that humans and LLMs often miss.
 
 Goals:
 
@@ -26,11 +26,13 @@ Goals:
 - Fullwidth/halfwidth detection.
 - NFC/NFKC normalization diff reports.
 - Trojan Source / Bidi rule pack.
+- Domain spoofing and username validation helpers.
+- Math/science/programming symbol starter pack for `∂`, `∇`, `λ`, `σ`, `∑`, and similar dense technical symbols.
 - Optional `--suggest-fix` reports without automatic mutation.
 
 ## v0.5.x — Text Audit Workflows
 
-Planned.
+Planned. This track expands the code-symbol linter into general text/security audit pipelines.
 
 Goals:
 
@@ -38,6 +40,7 @@ Goals:
 - JSONL / CSV / TSV field scanning.
 - OCR text audit examples.
 - Community Notes / social-text Unicode audit demo.
+- Phishing-text and suspicious-link Unicode audit examples.
 - Summary reports by rule, field, and record.
 
 ## Stage 2 — Agent Lexical Intelligence

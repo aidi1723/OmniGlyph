@@ -57,3 +57,15 @@ OmniGlyph is not yet ideal for:
 ## Design Principle
 
 Missing facts should remain missing. OmniGlyph intentionally avoids generating definitions or guessing unsupported facts because the project exists to reduce hallucination at the symbol and terminology layer.
+
+## External Evaluation Adjustments
+
+Recent external-style evaluation framed OmniGlyph as a possible Unicode/glyph semantic project. The useful parts are being adopted with stricter wording:
+
+- **Adopted:** Homoglyph detection, invisible-character scanning, and Unicode security workflows are first-class practical use cases.
+- **Adopted:** Agent symbol grounding remains the central positioning, but as deterministic lookup and validation rather than broad semantic understanding.
+- **Adopted:** Math, science, and programming symbols are strong candidates for curated packs because they are dense, ambiguous, and common in agent workflows.
+- **Deferred:** Symbol knowledge graphs belong to Stage 3 and should not be described as current capability.
+- **Rejected as current claim:** Raw visual glyph recognition, OCR, automatic symbol-to-concept mapping, and generative dictionary definitions are outside the current beta scope.
+
+The current project should be described as useful beta infrastructure, not as a finished universal symbol-intelligence engine.
