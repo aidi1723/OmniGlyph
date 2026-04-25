@@ -1,10 +1,42 @@
 # OmniGlyph（万象文枢）
 
+[![PyPI](https://img.shields.io/pypi/v/omniglyph?label=PyPI)](https://pypi.org/project/omniglyph/)
+[![MCP Registry](https://img.shields.io/badge/MCP%20Registry-io.github.aidi1723%2Fomniglyph-blue)](https://registry.modelcontextprotocol.io/)
+[![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
+
 > AI Agent 的本地符号真值层。  
 > 面向 Codex、OpenClaw、Claude Desktop 和自定义 Agent 的字符事实查询与术语标准化基础设施。
 
 OmniGlyph 不是传统字典。传统字典主要给人类阅读；OmniGlyph 给 Agent 调用。它将 Unicode 字符、Unihan 属性、私有领域词典和来源快照组织成可追溯、可查询、可通过 API/MCP 调用的结构化事实层。
 
+
+## 已发布到 PyPI + MCP Registry
+
+OmniGlyph 已作为 Python 包和 MCP Registry server 发布。
+
+- PyPI 包：`omniglyph==0.3.2b0`
+- MCP Registry server：`io.github.aidi1723/omniglyph`
+- 传输方式：本地 stdio MCP server
+
+从 PyPI 安装：
+
+```bash
+pip install omniglyph==0.3.2b0
+```
+
+启动 MCP server：
+
+```bash
+omniglyph-mcp
+```
+
+快速验证 MCP tools：
+
+```bash
+printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | omniglyph-mcp
+```
+
+当前 MCP 工具：`lookup_glyph`、`lookup_term`、`normalize_tokens`、`validate_output_terms`、`scan_code_symbols`。
 
 ## 为什么说它是 Agent 基础设施
 
