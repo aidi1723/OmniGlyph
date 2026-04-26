@@ -20,6 +20,8 @@ In the AGI era, agents need a deterministic substrate beneath probabilistic lang
 
 OmniGlyph can also run as a **Deterministic MCP Guardrail**: a source-grounded boundary that lets enterprise agents speak only with facts, terms, and symbols approved by the local knowledge base. This is a branch capability of the same foundation, not a replacement for the global symbol and language infrastructure mission.
 
+OmniGlyph now also includes an early **Language Security Gateway** track. It treats natural language as an executable attack surface: scan inputs for prompt-injection directives, scan outputs for data leakage, and force agent actions through deterministic intent manifests. This is a safety boundary layer; it does not execute commands or replace the symbol ground-truth mission.
+
 ## Available on PyPI + MCP Registry
 
 OmniGlyph is published as both a Python package and an MCP Registry server.
@@ -46,7 +48,9 @@ Quick MCP smoke test:
 printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | omniglyph-mcp
 ```
 
-Available MCP tools: `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `explain_code_security`, `normalize_tokens`, `validate_output_terms`, `enforce_grounded_output`, `scan_code_symbols`, `scan_unicode_security`, and `audit_explain`.
+The published `0.6.0b0` package exposes the v0.6 MCP tool set. The current source branch adds unreleased v0.7 tools for grounded output and language security.
+
+Current source MCP tools: `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `explain_code_security`, `normalize_tokens`, `validate_output_terms`, `enforce_grounded_output`, `scan_code_symbols`, `scan_unicode_security`, `scan_language_input`, `scan_output_dlp`, `enforce_intent`, and `audit_explain`.
 
 ## Why It Exists
 
@@ -310,6 +314,29 @@ The current strict-source-grounding policy returns:
 
 This does not replace the language and symbol foundation. It is the enterprise boundary-control use case built on top of that foundation.
 
+## Language Security Gateway
+
+The Language Security Gateway branch applies the same deterministic philosophy to agent security:
+
+```text
+External text
+  → scan_language_input
+  → block prompt-injection directives or hidden Unicode attacks
+  → model reasoning
+  → scan_output_dlp
+  → redact credentials or business-confidential terms
+  → enforce_intent
+  → allow, review, or block tool execution requests
+```
+
+Implemented surfaces:
+
+- `scan_language_input`: detects prompt-injection directives plus high-risk hidden Unicode patterns before model ingestion.
+- `scan_output_dlp`: detects API keys, AWS access keys, email addresses, and caller-provided secret terms, returning `[REDACTED]` text.
+- `enforce_intent`: validates a requested intent against a manifest and returns `allow`, `review`, or `block` without executing shell commands.
+
+This is not a promise that prompt injection is globally solved. It is a deterministic safety checkpoint that limits what untrusted language can make an agent ingest, reveal, or execute.
+
 ## Measured Data and Expected Impact
 
 OmniGlyph is designed to reduce token waste and hallucination risk by replacing ad-hoc web reading or model guessing with local, source-backed lookups.
@@ -474,6 +501,7 @@ Example output maps `aluminum profile`, `tempered glass`, `FOB`, and `MOQ` to ca
 - API reference: `docs/api.md`
 - MCP tools: `docs/mcp-tools.md`
 - Deterministic MCP Guardrail architecture: `docs/architecture/deterministic-mcp-guardrail.md`
+- Language Security Gateway architecture: `docs/architecture/language-security-gateway.md`
 - Codex MCP integration: `docs/integrations/codex-mcp.md`
 - Claude Desktop MCP integration: `docs/integrations/claude-desktop-mcp.md`
 - Claude Code MCP integration: `docs/integrations/claude-code-mcp.md`
@@ -544,7 +572,7 @@ Example JSON-RPC request over stdio:
 {"jsonrpc":"2.0","id":1,"method":"tools/list"}
 ```
 
-The MCP server reads from the same local SQLite symbol fact base used by `/api/v1/glyph`. It exposes `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `explain_code_security`, `normalize_tokens`, `validate_output_terms`, `enforce_grounded_output`, `scan_code_symbols`, `scan_unicode_security`, and `audit_explain`.
+The MCP server reads from the same local SQLite symbol fact base used by `/api/v1/glyph`. In the current source branch, it exposes `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `explain_code_security`, `normalize_tokens`, `validate_output_terms`, `enforce_grounded_output`, `scan_code_symbols`, `scan_unicode_security`, `scan_language_input`, `scan_output_dlp`, `enforce_intent`, and `audit_explain`.
 
 ## Local MVP Commands
 

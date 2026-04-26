@@ -27,7 +27,7 @@ Use `docs/mcp-server-card.md` as the human-readable project card.
 
 Use `package-registry/server.json` as the machine-readable registry draft. The draft follows the current public MCP Registry package metadata shape using `registryType` and schema `2025-12-11`; verify again before final submission because the registry is still in preview.
 
-Note: the current source branch adds the unreleased `enforce_grounded_output` MCP tool for the v0.7 guardrail track. Do not update the machine-readable registry package metadata to advertise that tool until the matching PyPI package version is built, published, and smoke-tested.
+Note: the current source branch adds unreleased v0.7 MCP tools for strict source-grounding and Language Security Gateway workflows: `enforce_grounded_output`, `scan_language_input`, `scan_output_dlp`, and `enforce_intent`. Do not update the machine-readable registry package metadata to advertise those tools until the matching PyPI package version is built, published, and smoke-tested.
 
 ## PyPI Release Status
 

@@ -14,6 +14,8 @@ If the answer is no, the value must be excluded from canonical storage, marked a
 
 The Deterministic MCP Guardrail is a branch capability of this mission. It must use the same source-backed data and provenance rules as the language foundation. Do not turn it into an isolated allowlist product that bypasses OmniGlyph's symbol, lexical, OES, and audit layers.
 
+The Language Security Gateway is also a branch capability. It treats untrusted language as a security-sensitive surface, but it must remain a deterministic checker. It may return `allow`, `review`, `block`, findings, redactions, and limits; it must not execute shell commands, call networks, or silently mutate user data.
+
 ## Core Principles
 
 ### 1. Facts Before Fluency
@@ -101,6 +103,20 @@ Prompt instructions are useful, but they are not enforcement.
 Guardrail code must return machine-readable decisions such as `allow`, `block`, or `review`, backed by known canonical IDs, unknown values, source IDs, and audit evidence. A workflow can then enforce the decision outside the model.
 
 Guardrail code must not claim global hallucination elimination. It controls the checked layer: symbols, terms, Unicode findings, source-backed facts, and approved domain vocabulary.
+
+### 9. Language Security Is Evidence, Not Execution
+
+Language-security code may inspect inputs, outputs, and intent manifests.
+
+It must not:
+
+- execute commands listed in a manifest
+- browse remote URLs
+- send secrets to an external scanner
+- claim complete prompt-injection immunity
+- replace operating-system sandboxing, IAM, or human approval
+
+It should produce deterministic evidence that a host workflow can enforce outside the model.
 
 ## System Architecture
 

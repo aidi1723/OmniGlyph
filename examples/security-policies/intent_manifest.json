@@ -1,0 +1,24 @@
+{
+  "schema": "omniglyph.intent_manifest:0.1",
+  "description": "Example deterministic intent sandbox manifest. OmniGlyph validates this policy but never executes commands.",
+  "intents": [
+    {
+      "intent_id": "network.restart",
+      "canonical_phrase": "restart network service",
+      "allowed_commands": ["systemctl restart network"],
+      "risk_level": "high",
+      "requires_approval": true,
+      "allowed_roles": ["admin"],
+      "audit_required": true
+    },
+    {
+      "intent_id": "report.generate_quote_summary",
+      "canonical_phrase": "generate quote summary report",
+      "allowed_commands": [],
+      "risk_level": "low",
+      "requires_approval": false,
+      "allowed_roles": ["admin", "operator"],
+      "audit_required": true
+    }
+  ]
+}

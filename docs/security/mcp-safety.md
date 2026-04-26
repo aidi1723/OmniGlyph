@@ -20,6 +20,9 @@ The stdio MCP server exposes lookup and scanning tools only. It does not provide
 | `enforce_grounded_output` | yes | provided terms | no | no | no |
 | `scan_code_symbols` | no | provided text | no | no | no |
 | `scan_unicode_security` | no | provided text | no | no | no |
+| `scan_language_input` | no | provided text | no | no | no |
+| `scan_output_dlp` | no | provided text | no | no | no |
+| `enforce_intent` | no | provided manifest | no | no | no |
 | `audit_explain` | yes for glyph/term | provided text | no | no | no |
 
 ## Data Handling
@@ -31,6 +34,7 @@ The stdio MCP server exposes lookup and scanning tools only. It does not provide
 - Unknown values remain `unknown` or `null`; the server does not generate definitions.
 - Audit events are returned to the caller but are not persisted by the MCP server.
 - Guardrail decisions are deterministic allow/block evidence for checked terms; they do not rewrite output automatically.
+- Language Security Gateway tools return scan, redaction, or intent decisions only. They do not execute commands, send network requests, or persist secrets.
 
 ## Recommended Deployment
 
@@ -45,11 +49,13 @@ The stdio MCP server exposes lookup and scanning tools only. It does not provide
 Recommended system instruction for MCP clients:
 
 ```text
-OmniGlyph is a deterministic lookup, explanation, scanning, and source-grounding tool. Use it to verify symbols, terms, generated output terms, and suspicious Unicode code characters. Do not ask it to execute code, modify files, browse the web, or invent missing definitions. Treat unknown results as missing facts and treat guardrail `block` decisions as a stop condition for delivery.
+OmniGlyph is a deterministic lookup, explanation, scanning, source-grounding, and language-security tool. Use it to verify symbols, terms, generated output terms, suspicious Unicode code characters, untrusted natural-language input, outbound text, and requested action intents. Do not ask it to execute code, modify files, browse the web, or invent missing definitions. Treat unknown results as missing facts and treat guardrail or language-security `block` decisions as a stop condition for delivery or execution.
 ```
 
 ## Known Limitations
 
 - `scan_code_symbols` and `scan_unicode_security` detect suspicious Unicode patterns, but they are not complete security scanners.
+- `scan_language_input` and `scan_output_dlp` are deterministic security checks, not complete prompt-injection or DLP products.
+- `enforce_intent` validates manifest policy but does not replace OS sandboxing, IAM, approval workflows, or endpoint security.
 - Confusable detection uses a minimal bundled map in the current beta; full Unicode confusables ingestion is a future enhancement.
 - The server trusts the local database. Data-source integrity depends on explicit ingestion and source tracking.
