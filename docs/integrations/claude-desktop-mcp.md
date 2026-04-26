@@ -77,6 +77,7 @@ Expected tools:
 - `explain_code_security`
 - `normalize_tokens`
 - `validate_output_terms`
+- `enforce_grounded_output`
 - `scan_code_symbols`
 - `scan_unicode_security`
 - `audit_explain`
@@ -101,6 +102,12 @@ Normalize domain tokens:
 {"tokens":["铝","FOB","tempered glass","unknown"],"mode":"compact"}
 ```
 
+Enforce source-grounded output terms:
+
+```json
+{"terms":["FOB","HS 7604.99X"],"actor_id":"agent:quote"}
+```
+
 Scan suspicious code text:
 
 ```json
@@ -109,4 +116,4 @@ Scan suspicious code text:
 
 ## Safety Boundary
 
-OmniGlyph MCP is read-only by design. It does not execute shell commands, edit files, call external APIs by default, or automatically rewrite model output. See `docs/security/mcp-safety.md`.
+OmniGlyph MCP is read-only by design. It does not execute shell commands, edit files, call external APIs by default, or automatically rewrite model output. `enforce_grounded_output` returns deterministic allow/block evidence for checked terms; the MCP client decides how to halt, regenerate, or escalate. See `docs/security/mcp-safety.md`.

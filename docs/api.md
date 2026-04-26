@@ -261,7 +261,7 @@ Response:
   },
   "unknown": ["HS 7604.99X"],
   "details": [
-    {"term":"FOB","status":"known","canonical_id":"trade:fob","entry_type":"trade_term","source_name":"building_materials_example"},
+    {"term":"FOB","status":"known","canonical_id":"trade:fob","entry_type":"trade_term","source_id":"...","source_name":"building_materials_example"},
     {"term":"HS 7604.99X","status":"unknown","canonical_id":null}
   ]
 }
@@ -272,3 +272,45 @@ Suggested agent behavior:
 - `pass`: continue normally.
 - `warn`: ask for verification, route to human review, or regenerate with stricter constraints.
 - `unknown`: treat as missing local fact, not as permission to invent an explanation.
+
+## `POST /api/v1/guardrail/enforce-output`
+
+Apply strict source-grounding policy to candidate output terms.
+
+This endpoint is the Deterministic MCP Guardrail API surface. It uses the same local lexical/domain fact base as `validate-output`, but returns an explicit `allow` or `block` decision.
+
+Request:
+
+```json
+{"terms":["FOB","HS 7604.99X"],"actor_id":"agent:quote"}
+```
+
+Response:
+
+```json
+{
+  "schema": "omniglyph.guardrail:0.1",
+  "mode": "strict_source_grounding",
+  "decision": "block",
+  "status": "warn",
+  "known": {
+    "FOB": "trade:fob"
+  },
+  "unknown": ["HS 7604.99X"],
+  "source_ids": ["..."],
+  "limits": [
+    "Unknown terms must be reviewed or removed before model output is trusted."
+  ],
+  "audit": {
+    "schema": "omniglyph.audit:0.1",
+    "actor": {"id": "agent:quote"},
+    "action": "enforce_grounded_output",
+    "unknowns": ["HS 7604.99X"]
+  }
+}
+```
+
+Suggested host behavior:
+
+- `allow`: deliver or continue the workflow.
+- `block`: stop delivery, route to review, or ask the model to rewrite using verified terms only.

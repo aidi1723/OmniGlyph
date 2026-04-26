@@ -106,6 +106,36 @@ Output:
 
 Use this as the output guardrail layer in Sandwich Architecture. Unknown generated terms should be reviewed, regenerated, or blocked before they reach customers or production systems.
 
+## Tool: `enforce_grounded_output`
+
+Input:
+
+```json
+{"terms":["FOB","HS 7604.99X"],"actor_id":"agent:quote"}
+```
+
+Output:
+
+```json
+{
+  "schema": "omniglyph.guardrail:0.1",
+  "mode": "strict_source_grounding",
+  "decision": "block",
+  "status": "warn",
+  "known": {"FOB": "trade:fob"},
+  "unknown": ["HS 7604.99X"],
+  "source_ids": ["..."],
+  "limits": ["Unknown terms must be reviewed or removed before model output is trusted."],
+  "audit": {
+    "schema": "omniglyph.audit:0.1",
+    "actor": {"id": "agent:quote"},
+    "action": "enforce_grounded_output"
+  }
+}
+```
+
+Use this as the stricter Deterministic MCP Guardrail mode. `validate_output_terms` reports known and unknown terms; `enforce_grounded_output` turns that evidence into an allow/block decision.
+
 ## Tool: `scan_code_symbols`
 
 Input:

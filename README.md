@@ -18,6 +18,8 @@ Its core philosophy is:
 
 In the AGI era, agents need a deterministic substrate beneath probabilistic language models. OmniGlyph turns Unicode characters, scripts, multilingual terms, technical symbols, industry abbreviations, and eventually domain concepts into structured facts that agents can query, verify, and compute against.
 
+OmniGlyph can also run as a **Deterministic MCP Guardrail**: a source-grounded boundary that lets enterprise agents speak only with facts, terms, and symbols approved by the local knowledge base. This is a branch capability of the same foundation, not a replacement for the global symbol and language infrastructure mission.
+
 ## Available on PyPI + MCP Registry
 
 OmniGlyph is published as both a Python package and an MCP Registry server.
@@ -44,7 +46,7 @@ Quick MCP smoke test:
 printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | omniglyph-mcp
 ```
 
-Available MCP tools: `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `explain_code_security`, `normalize_tokens`, `validate_output_terms`, `scan_code_symbols`, `scan_unicode_security`, and `audit_explain`.
+Available MCP tools: `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `explain_code_security`, `normalize_tokens`, `validate_output_terms`, `enforce_grounded_output`, `scan_code_symbols`, `scan_unicode_security`, and `audit_explain`.
 
 ## Why It Exists
 
@@ -287,6 +289,27 @@ Current implementation covers the input-normalization side with `POST /api/v1/no
 
 See `docs/architecture/sandwich-architecture.md`.
 
+## Deterministic MCP Guardrail
+
+The guardrail branch is one deployment mode of OmniGlyph. It uses the same source-backed glyph, term, OES, and audit layers to define what an agent is allowed to claim in a controlled workflow.
+
+```text
+User / system output
+  → extract candidate terms
+  → OmniGlyph enforce_grounded_output
+  → allow if all terms are source-backed
+  → block or review if unknown terms appear
+```
+
+The current strict-source-grounding policy returns:
+
+- `decision: "allow"` when every candidate term exists in the local fact base.
+- `decision: "block"` when any candidate term is unknown.
+- `source_ids` for the known facts used by the decision.
+- `audit` evidence when an `actor_id` is provided.
+
+This does not replace the language and symbol foundation. It is the enterprise boundary-control use case built on top of that foundation.
+
 ## Measured Data and Expected Impact
 
 OmniGlyph is designed to reduce token waste and hallucination risk by replacing ad-hoc web reading or model guessing with local, source-backed lookups.
@@ -450,6 +473,7 @@ Example output maps `aluminum profile`, `tempered glass`, `FOB`, and `MOQ` to ca
 - Quickstart: `docs/quickstart.md`
 - API reference: `docs/api.md`
 - MCP tools: `docs/mcp-tools.md`
+- Deterministic MCP Guardrail architecture: `docs/architecture/deterministic-mcp-guardrail.md`
 - Codex MCP integration: `docs/integrations/codex-mcp.md`
 - Claude Desktop MCP integration: `docs/integrations/claude-desktop-mcp.md`
 - Claude Code MCP integration: `docs/integrations/claude-code-mcp.md`
@@ -520,7 +544,7 @@ Example JSON-RPC request over stdio:
 {"jsonrpc":"2.0","id":1,"method":"tools/list"}
 ```
 
-The MCP server reads from the same local SQLite symbol fact base used by `/api/v1/glyph`. It exposes `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `explain_code_security`, `normalize_tokens`, `validate_output_terms`, `scan_code_symbols`, `scan_unicode_security`, and `audit_explain`.
+The MCP server reads from the same local SQLite symbol fact base used by `/api/v1/glyph`. It exposes `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `explain_code_security`, `normalize_tokens`, `validate_output_terms`, `enforce_grounded_output`, `scan_code_symbols`, `scan_unicode_security`, and `audit_explain`.
 
 ## Local MVP Commands
 
