@@ -9,16 +9,42 @@
 
 OmniGlyph 不是传统字典。传统字典主要给人类阅读；OmniGlyph 给 Agent 调用。它将 Unicode 字符、Unihan 属性、私有领域词典和来源快照组织成可追溯、可查询、可通过 API/MCP 调用的结构化事实层。
 
+## 产品主线
+
+OmniGlyph 现在围绕三层能力建设，但三层都共享同一个确定性符号真值底座。
+
+### 1. 全球符号真知层
+
+OmniGlyph 为 Agent 提供本地、可追溯、确定性的符号与术语事实层。它帮助 Agent 在推理前识别 Unicode 码点、同形字符、零宽字符、Bidi 控制符、全角/半角异常和私有业务术语。
+
+这不是“消灭所有幻觉”的承诺，而是降低一类非常具体的字符、符号、术语层错误：让底层文本基座可检查、可追溯、可被机器稳定调用。
+
+### 2. 企业级确定性护栏
+
+基于符号真值层，OmniGlyph 可以作为企业工作流里的确定性 MCP 护栏。用户可以挂载私有 Lexicon Pack，把业务术语、SKU、材料名、供应商词汇、敏感词和 approved alias 接入本地真值库。
+
+Agent 输出前可通过 `validate_output_terms` 和 `enforce_grounded_output` 检查。未知、未审核或无来源支持的词条可以被阻断或转人工复核，避免进入客户回复、报价、ERP 或下游工具。
+
+### 3. Language-as-Code 安全网关
+
+OmniGlyph 也把自然语言当作运行时攻击面处理。`scan_language_input` 检查不可信输入中的 prompt-injection 指令和隐藏 Unicode 攻击；`scan_output_dlp` 对出境文本做脱敏；`enforce_intent` 用 intent manifest 校验 Agent 动作请求。
+
+这一层不执行 shell 命令，也不承诺彻底解决所有 prompt injection。它提供机器可读的 `allow`、`review`、`block` 证据，让执行和交付决策发生在模型外部。
+
+一句话：
+
+> OmniGlyph 是面向 AI Agent 的本地符号真值层、确定性企业护栏与语言安全网关。
 
 ## 已发布到 PyPI + MCP Registry
 
-OmniGlyph 已作为 Python 包和 MCP Registry server 发布。
+OmniGlyph 已准备为 Python 包和 MCP Registry server。
 
-- PyPI 包：`omniglyph==0.6.0b0`
+- 当前源码包版本：`omniglyph==0.7.0b0`
+- 最新已发布 PyPI 包：`omniglyph==0.6.0b0`
 - MCP Registry server：`io.github.aidi1723/omniglyph`
 - 传输方式：本地 stdio MCP server
 
-从 PyPI 安装：
+安装最新已发布的 PyPI 包：
 
 ```bash
 pip install omniglyph==0.6.0b0
@@ -36,7 +62,9 @@ omniglyph-mcp
 printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | omniglyph-mcp
 ```
 
-当前 MCP 工具：`lookup_glyph`、`lookup_term`、`explain_glyph`、`explain_term`、`explain_code_security`、`normalize_tokens`、`validate_output_terms`、`scan_code_symbols`、`scan_unicode_security`、`audit_explain`。
+当前源码分支版本为 `0.7.0b0`，已经提供 v0.7 MCP 工具集。`0.7.0b0` 的 PyPI 发布属于单独 release 步骤。
+
+当前源码 MCP 工具：`lookup_glyph`、`lookup_term`、`explain_glyph`、`explain_term`、`explain_code_security`、`normalize_tokens`、`list_namespaces`、`validate_lexicon_pack`、`validate_output_terms`、`enforce_grounded_output`、`scan_code_symbols`、`scan_unicode_security`、`scan_language_input`、`scan_output_dlp`、`enforce_intent`、`audit_explain`。
 
 ## 为什么说它是 Agent 基础设施
 
@@ -132,7 +160,8 @@ OmniGlyph 把字符、别名、缩写和领域术语转换为 canonical ID、JSO
 - Unicode Security Pack：带 `source_id`、`why_it_matters`、`suggested_action` 的开发者友好扫描结果。
 - 软件开发领域词库 starter pack：`examples/domain-packs/software_development.csv`。
 - Audit Workflow：记录谁查询了什么、来源是什么、哪里未知。
-- MCP 工具：`lookup_glyph`、`lookup_term`、`explain_glyph`、`explain_term`、`explain_code_security`、`normalize_tokens`、`validate_output_terms`、`scan_code_symbols`、`scan_unicode_security`、`audit_explain`。
+- Language Security Gateway：输入 prompt-injection 扫描、输出 DLP 脱敏、intent manifest 沙盒决策。
+- MCP 工具：`lookup_glyph`、`lookup_term`、`explain_glyph`、`explain_term`、`explain_code_security`、`normalize_tokens`、`validate_output_terms`、`enforce_grounded_output`、`scan_code_symbols`、`scan_unicode_security`、`scan_language_input`、`scan_output_dlp`、`enforce_intent`、`audit_explain`。
 - 建材外贸 demo pack 与跨境询盘 demo。
 - Docker、CI、release check、N100 验证记录。
 
@@ -150,6 +179,15 @@ UV_CACHE_DIR=.uv-cache uv pip install -e '.[dev]'
 .venv/bin/omniglyph ingest-unicode --source tests/fixtures/UnicodeData.sample.txt --source-version fixture
 .venv/bin/omniglyph ingest-domain-pack --source examples/domain-packs/building_materials.csv --namespace private_building_materials --source-version example
 .venv/bin/omniglyph ingest-domain-pack --source examples/domain-packs/software_development.csv --namespace public_software_development --source-version 0.1.0
+```
+
+创建和导入自己的企业/个人词库：
+
+```bash
+.venv/bin/omniglyph init-lexicon-pack my-pack --namespace private_acme --pack-id company.acme.trade_terms --name "ACME Trade Terms"
+.venv/bin/omniglyph validate-domain-pack my-pack
+.venv/bin/omniglyph ingest-domain-pack --source my-pack --dry-run
+.venv/bin/omniglyph ingest-domain-pack --source my-pack --replace-namespace
 ```
 
 启动 API：
@@ -228,8 +266,12 @@ Need aluminum profile and tempered glass, FOB Bangkok, MOQ 500 sets.
 - `explain_code_security`
 - `normalize_tokens`
 - `validate_output_terms`
+- `enforce_grounded_output`
 - `scan_code_symbols`
 - `scan_unicode_security`
+- `scan_language_input`
+- `scan_output_dlp`
+- `enforce_intent`
 - `audit_explain`
 
 Codex 接入说明见：`docs/integrations/codex-mcp.md`。Claude Desktop / Claude Code 接入见 `docs/integrations/claude-desktop-mcp.md` 和 `docs/integrations/claude-code-mcp.md`。MCP 安全说明见 `docs/security/mcp-safety.md`。
@@ -269,9 +311,47 @@ OmniGlyph 可以挂载在 Agent/RAG 工作流的两端：
 
 作为 **Output Guardrail（输出守门员）**，OmniGlyph 在模型生成内容发给客户或下游系统之前进行校验。如果模型编造了不存在的 HS code、材料名或型材型号，工作流可以标记、阻断或转人工复核。
 
-当前版本已经实现输入标准化侧的基础能力：`POST /api/v1/normalize` 和 MCP `normalize_tokens`，并新增最小输出 guardrail，用于已知/未知术语检查。完整的策略阻断、重写、ERP/邮件系统集成仍属于后续工作。
+当前版本已经实现输入标准化侧的基础能力：`POST /api/v1/normalize` 和 MCP `normalize_tokens`，并新增输出 guardrail，用于已知/未知术语检查和严格溯源的 `allow/block` 决策。重写、ERP/邮件系统集成、完整人工复核流仍属于后续工作。
 
 详见：`docs/architecture/sandwich-architecture.md`。
+
+## 确定性 MCP 护栏
+
+护栏能力是 OmniGlyph 的一个商业化部署模式。它不改变项目主线，而是把符号真值层、领域词库、OES 和审计事件用于一个更直接的问题：
+
+```text
+这个 Agent 的输出，哪些可以放行，哪些必须拦截？
+```
+
+当前严格溯源策略会返回：
+
+- 所有候选术语都存在于本地事实库时，`decision: "allow"`。
+- 任何候选术语未知时，`decision: "block"`。
+- 已知事实对应的 `source_ids`。
+- 传入 `actor_id` 时返回审计证据。
+
+## Language Security Gateway（语言安全网关）
+
+语言安全网关是 OmniGlyph 的安全分支能力，不替代原本的全球符号与语言基础设施。
+
+```text
+外部输入
+  → scan_language_input
+  → 拦截 prompt injection 或隐藏 Unicode 攻击
+  → 模型推理
+  → scan_output_dlp
+  → 脱敏密钥、邮箱、商业机密词
+  → enforce_intent
+  → 对 Agent 动作请求返回 allow / review / block
+```
+
+当前已实现：
+
+- `scan_language_input`：在输入进入模型前扫描 prompt-injection 指令和高风险隐藏 Unicode。
+- `scan_output_dlp`：在输出出境前扫描 API key、AWS key、邮箱和调用方传入的机密词，并返回 `[REDACTED]` 文本。
+- `enforce_intent`：根据 intent manifest 校验 Agent 动作请求，只返回决策，不执行 shell 命令。
+
+这不是“彻底消灭 prompt injection”的承诺，而是给 AgentCore / MCP 工作流增加确定性安全检查点，让模型即使被诱导也不能直接越过边界。
 
 ## 实测数据与预期效果
 
@@ -279,7 +359,7 @@ OmniGlyph 的目标是用本地、可追溯、结构化查询，替代 Agent 临
 
 ### 已验证数据
 
-当前 `v0.6.0-beta` 候选版本已在本地验证：
+当前 `v0.7.0-beta` 源码候选版本已在本地验证：
 
 | 指标 | 结果 |
 | --- | ---: |
@@ -287,7 +367,7 @@ OmniGlyph 的目标是用本地、可追溯、结构化查询，替代 Agent 临
 | Unihan_Readings 导入 | `291,227` 条 properties |
 | Unihan_DictionaryLikeData 导入 | `156,251` 条 properties |
 | 已验证 Unihan 属性总量 | `447,478` 条 properties |
-| 本地测试 | `85 passed` |
+| 本地测试 | `112 passed` |
 | N100 Linux 测试 | beta 分支曾验证通过 |
 | Docker build/run/healthcheck | N100 曾验证通过 |
 | `铝` 的 SQLite 查询 benchmark | 1000 次查询 P95 约 `0.17ms` |
@@ -339,7 +419,7 @@ OmniGlyph 当前通过以下规则降低字符、符号和术语级幻觉：
 
 ## 当前阶段
 
-当前版本适合作为 `v0.6.0-beta` 开源发布候选：
+当前源码版本适合作为 `v0.7.0-beta` 开源发布候选：
 
 - 可用于本地评估。
 - 可用于 Agent 工具集成实验。

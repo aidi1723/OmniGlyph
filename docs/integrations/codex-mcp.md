@@ -145,6 +145,36 @@ Compact output:
 }
 ```
 
+### `validate_output_terms`
+
+Input:
+
+```json
+{"terms": ["FOB", "tempered glass", "HS 7604.99X"]}
+```
+
+Use after draft generation when Codex needs to see which output terms are source-backed and which remain unknown.
+
+### `enforce_grounded_output`
+
+Input:
+
+```json
+{"terms": ["FOB", "HS 7604.99X"], "actor_id": "agent:codex"}
+```
+
+Use as the stricter Deterministic MCP Guardrail. A `block` decision means the generated output should not be delivered until unknown terms are reviewed, removed, or added to an approved source.
+
+### `scan_code_symbols`
+
+Input:
+
+```json
+{"text": "vаlue = 1\n", "source_name": "agent.py"}
+```
+
+Use before editing copied code or suspicious diffs when Codex only needs the raw Unicode-symbol finding report.
+
 ### `scan_unicode_security`
 
 Input:
@@ -167,4 +197,4 @@ Use when a workflow needs to show who checked a term, which source backed it, an
 
 ## 6. Recommended Agent Rule
 
-Before interpreting unknown symbols, trade terms, software-development terms, or suspicious Unicode source code, call OmniGlyph first. Use returned canonical IDs and treat `unknown` or `null` fields as missing facts, not as a reason to guess.
+Before interpreting unknown symbols, trade terms, software-development terms, generated output terms, or suspicious Unicode source code, call OmniGlyph first. Use returned canonical IDs and treat `unknown` or `null` fields as missing facts, not as a reason to guess. If `enforce_grounded_output` returns `block`, halt delivery and surface the unknown terms for review.
