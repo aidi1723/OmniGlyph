@@ -158,6 +158,15 @@ UV_CACHE_DIR=.uv-cache uv pip install -e '.[dev]'
 .venv/bin/omniglyph ingest-domain-pack --source examples/domain-packs/software_development.csv --namespace public_software_development --source-version 0.1.0
 ```
 
+创建和导入自己的企业/个人词库：
+
+```bash
+.venv/bin/omniglyph init-lexicon-pack my-pack --namespace private_acme --pack-id company.acme.trade_terms --name "ACME Trade Terms"
+.venv/bin/omniglyph validate-domain-pack my-pack
+.venv/bin/omniglyph ingest-domain-pack --source my-pack --dry-run
+.venv/bin/omniglyph ingest-domain-pack --source my-pack --replace-namespace
+```
+
 启动 API：
 
 ```bash

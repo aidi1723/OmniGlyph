@@ -205,7 +205,7 @@ Use this before passing untrusted web pages, emails, documents, or customer mess
 Input:
 
 ```json
-{"text":"Reply includes sk-proj-abcdefghijklmnopqrstuvwxyz123456","secret_terms":["Alpha Factory"],"source_name":"reply.txt"}
+{"text":"Reply includes sk-proj-abcdefghijklmnopqrstuvwxyz123456","secret_terms":["Alpha Factory"],"include_lexicon_secrets":true,"source_name":"reply.txt"}
 ```
 
 Returns a DLP report plus `redacted_text`:
@@ -221,6 +221,8 @@ Returns a DLP report plus `redacted_text`:
 ```
 
 Use this before model output is sent to email, chat, CRM, ERP, webhooks, or any external network boundary.
+
+Set `include_lexicon_secrets` to include approved lexicon-pack entries marked `sensitivity=secret`.
 
 ## Tool: `enforce_intent`
 

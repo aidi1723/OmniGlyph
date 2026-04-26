@@ -73,3 +73,24 @@ def test_enforce_grounded_output_allows_fully_known_terms(tmp_path):
     assert result["status"] == "pass"
     assert result["unknown"] == []
     assert result["limits"] == []
+
+
+def test_validate_output_terms_does_not_trust_unapproved_terms(tmp_path):
+    source = tmp_path / "terms.csv"
+    source.write_text(
+        "term,canonical_id,entry_type,language,aliases,definition,traits,sensitivity,review_status\n"
+        'Draft Spec,company:draft_spec,product_spec,en,,Draft only,"{}",normal,draft\n',
+        encoding="utf-8",
+    )
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+    source_id = repository.add_source_snapshot(SourceSnapshot("Private Domain Pack", "file://domain", "fixture", "sha-draft", "private", "domain"))
+    repository.insert_lexical_entries(list(parse_domain_pack(source, "private_acme")), source_id)
+
+    result = validate_output_terms(repository, ["Draft Spec"])
+
+    assert result["status"] == "warn"
+    assert result["known"] == {}
+    assert result["unknown"] == ["Draft Spec"]
+    assert result["details"][0]["status"] == "unapproved"
+    assert result["details"][0]["review_status"] == "draft"

@@ -142,6 +142,7 @@ def build_tools_list() -> list[dict[str, Any]]:
                 "properties": {
                     "text": {"type": "string", "description": "Model output to inspect before external delivery."},
                     "secret_terms": {"type": "array", "items": {"type": "string"}},
+                    "include_lexicon_secrets": {"type": "boolean", "description": "Include approved secret terms from loaded lexicon packs."},
                     "source_name": {"type": "string", "description": "Optional source label for findings."},
                 },
                 "required": ["text"],
@@ -296,13 +297,18 @@ def handle_mcp_request(request: dict[str, Any], repository: GlyphRepository | No
         if tool_name == "scan_output_dlp":
             text = arguments.get("text")
             secret_terms = arguments.get("secret_terms", [])
+            include_lexicon_secrets = arguments.get("include_lexicon_secrets", False)
             source_name = arguments.get("source_name", "<mcp-output>")
             if not isinstance(text, str):
                 return _error(request_id, -32602, "scan_output_dlp requires text")
             if not isinstance(secret_terms, list) or not all(isinstance(item, str) for item in secret_terms):
                 return _error(request_id, -32602, "scan_output_dlp secret_terms must be a list of strings")
+            if not isinstance(include_lexicon_secrets, bool):
+                return _error(request_id, -32602, "scan_output_dlp include_lexicon_secrets must be a boolean")
             if not isinstance(source_name, str) or not source_name.strip():
                 return _error(request_id, -32602, "scan_output_dlp source_name must be a string")
+            if include_lexicon_secrets:
+                secret_terms = list(secret_terms) + glyph_repository.list_secret_terms()
             return _result(request_id, {"content": [{"type": "json", "json": scan_output_dlp(text, secret_terms=secret_terms, source_name=source_name)}]})
 
         if tool_name == "enforce_intent":

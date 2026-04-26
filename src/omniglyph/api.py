@@ -38,6 +38,7 @@ class LanguageInputScanRequest(BaseModel):
 class OutputDlpScanRequest(BaseModel):
     text: str
     secret_terms: list[str] = Field(default_factory=list)
+    include_lexicon_secrets: bool = False
     source_name: str = "<api-output>"
 
 
@@ -110,7 +111,10 @@ def create_app(repository: GlyphRepository | None = None) -> FastAPI:
 
     @app.post("/api/v1/language-security/scan-output")
     def language_security_scan_output_endpoint(request: OutputDlpScanRequest) -> dict:
-        return scan_output_dlp(request.text, secret_terms=request.secret_terms, source_name=request.source_name)
+        secret_terms = list(request.secret_terms)
+        if request.include_lexicon_secrets:
+            secret_terms.extend(glyph_repository.list_secret_terms())
+        return scan_output_dlp(request.text, secret_terms=secret_terms, source_name=request.source_name)
 
     @app.post("/api/v1/language-security/enforce-intent")
     def language_security_enforce_intent_endpoint(request: IntentEnforceRequest) -> dict:

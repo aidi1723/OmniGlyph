@@ -500,6 +500,7 @@ Example output maps `aluminum profile`, `tempered glass`, `FOB`, and `MOQ` to ca
 - Quickstart: `docs/quickstart.md`
 - API reference: `docs/api.md`
 - MCP tools: `docs/mcp-tools.md`
+- Lexicon Pack Standard: `docs/specs/lexicon-pack-standard.md`
 - Deterministic MCP Guardrail architecture: `docs/architecture/deterministic-mcp-guardrail.md`
 - Language Security Gateway architecture: `docs/architecture/language-security-gateway.md`
 - Codex MCP integration: `docs/integrations/codex-mcp.md`
@@ -516,6 +517,25 @@ Example output maps `aluminum profile`, `tempered glass`, `FOB`, and `MOQ` to ca
 ## Domain Pack and Normalization
 
 OmniGlyph can mount private domain packs without polluting global Unicode/Unihan facts.
+
+Create a standard Lexicon Pack directory:
+
+```bash
+omniglyph init-lexicon-pack my-pack --namespace private_acme --pack-id company.acme.trade_terms --name "ACME Trade Terms"
+```
+
+Validate and preview import:
+
+```bash
+omniglyph validate-domain-pack my-pack
+omniglyph ingest-domain-pack --source my-pack --dry-run
+```
+
+Import or replace a company namespace:
+
+```bash
+omniglyph ingest-domain-pack --source my-pack --replace-namespace
+```
 
 Import a CSV domain pack:
 
