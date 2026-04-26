@@ -1,11 +1,12 @@
 import argparse
+import json
 import sys
 from pathlib import Path
 
 from omniglyph import __version__
 from omniglyph.code_linter import format_json_report, format_text_report, scan_path
 from omniglyph.config import settings
-from omniglyph.domain_pack import parse_domain_pack
+from omniglyph.lexicon_pack import entries_from_source, init_lexicon_pack, source_paths, validate_lexicon_pack
 from omniglyph.normalizer import parse_unicode_data
 from omniglyph.unihan import parse_unihan_data
 from omniglyph.repository import GlyphRepository, SourceSnapshot
@@ -76,20 +77,50 @@ def ingest_unihan(source_path: Path, source_version: str = "local", expected_sha
     return repository.insert_unihan_properties(properties, source_id=source_id)
 
 
-def ingest_domain_pack(source_path: Path, namespace: str, source_version: str = "local", expected_sha256: str | None = None) -> int:
+def ingest_domain_pack(
+    source_path: Path,
+    namespace: str | None = None,
+    source_version: str = "local",
+    expected_sha256: str | None = None,
+    dry_run: bool = False,
+    replace_namespace: bool = False,
+) -> int:
+    entries, metadata = entries_from_source(source_path, namespace=namespace)
+    terms_path, _ = source_paths(source_path)
+    source_namespace = metadata["namespace"] if metadata is not None else namespace
+    if source_namespace is None:
+        raise ValueError("namespace is required when importing a CSV file")
+    source_version = metadata["version"] if metadata is not None else source_version
+    source_name = metadata["name"] if metadata is not None else "Private Domain Pack"
+    if dry_run:
+        print(
+            json.dumps(
+                {
+                    "status": "dry_run",
+                    "namespace": source_namespace,
+                    "source_version": source_version,
+                    "entry_count": len(entries),
+                    "alias_count": sum(len(entry.aliases) for entry in entries),
+                    "secret_count": sum(1 for entry in entries if entry.sensitivity == "secret"),
+                },
+                ensure_ascii=False,
+            )
+        )
+        return len(entries)
     artifact = register_local_source(
-        source_path,
-        source_url=source_path.as_uri() if source_path.is_absolute() else f"file://{source_path}",
+        terms_path,
+        source_url=terms_path.as_uri() if terms_path.is_absolute() else f"file://{terms_path}",
         source_version=source_version,
         license="private",
         expected_sha256=expected_sha256,
     )
-    entries = list(parse_domain_pack(source_path, namespace=namespace))
     repository = GlyphRepository(settings.sqlite_path)
     repository.initialize()
+    if replace_namespace:
+        repository.delete_lexical_namespace(source_namespace)
     source_id = repository.add_source_snapshot(
         SourceSnapshot(
-            source_name="Private Domain Pack",
+            source_name=source_name,
             source_url=artifact.source_url,
             source_version=artifact.source_version,
             sha256=artifact.sha256,
@@ -120,9 +151,20 @@ def main() -> None:
 
     domain = subcommands.add_parser("ingest-domain-pack")
     domain.add_argument("--source", type=Path, required=True)
-    domain.add_argument("--namespace", required=True)
+    domain.add_argument("--namespace")
     domain.add_argument("--source-version", default="local")
     domain.add_argument("--expected-sha256")
+    domain.add_argument("--dry-run", action="store_true")
+    domain.add_argument("--replace-namespace", action="store_true")
+
+    init_pack = subcommands.add_parser("init-lexicon-pack")
+    init_pack.add_argument("path", type=Path)
+    init_pack.add_argument("--namespace", required=True)
+    init_pack.add_argument("--pack-id", required=True)
+    init_pack.add_argument("--name", required=True)
+
+    validate_pack = subcommands.add_parser("validate-domain-pack")
+    validate_pack.add_argument("path", type=Path)
 
     lookup = subcommands.add_parser("lookup")
     lookup.add_argument("text")
@@ -142,8 +184,24 @@ def main() -> None:
         count = ingest_unihan(args.source, args.source_version, args.expected_sha256)
         print(f"Ingested {count} Unihan properties")
     elif args.command == "ingest-domain-pack":
-        count = ingest_domain_pack(args.source, args.namespace, args.source_version, args.expected_sha256)
-        print(f"Ingested {count} domain entries")
+        count = ingest_domain_pack(
+            args.source,
+            namespace=args.namespace,
+            source_version=args.source_version,
+            expected_sha256=args.expected_sha256,
+            dry_run=args.dry_run,
+            replace_namespace=args.replace_namespace,
+        )
+        if not args.dry_run:
+            print(f"Ingested {count} domain entries")
+    elif args.command == "init-lexicon-pack":
+        init_lexicon_pack(args.path, namespace=args.namespace, pack_id=args.pack_id, name=args.name)
+        print(f"Created lexicon pack at {args.path}")
+    elif args.command == "validate-domain-pack":
+        report = validate_lexicon_pack(args.path)
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        if report["status"] != "pass":
+            raise SystemExit(1)
     elif args.command == "lookup":
         repository = GlyphRepository(settings.sqlite_path)
         repository.initialize()

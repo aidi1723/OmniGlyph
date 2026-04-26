@@ -1,0 +1,11 @@
+{
+  "schema": "omniglyph.lexicon_pack:0.1",
+  "pack_id": "company.example.trade_terms",
+  "namespace": "private_example",
+  "name": "Example Company Trade Terms",
+  "version": "2026.04.26",
+  "owner_type": "enterprise",
+  "license": "private",
+  "visibility": "private",
+  "description": "Example enterprise lexicon pack for trade terms, confidential supplier names, and quote guardrails."
+}

@@ -47,6 +47,8 @@ def _extract_source_ids(payload: dict, findings: list[dict]) -> list[str]:
 
 
 def _extract_unknowns(payload: dict) -> list[str]:
+    if isinstance(payload.get("unknowns"), list):
+        return list(payload["unknowns"])
     limits = list(payload.get("limits") or [])
     if payload.get("status") == "unknown" and not limits:
         limits.append("No source-backed result found.")

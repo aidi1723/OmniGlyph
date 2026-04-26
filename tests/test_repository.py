@@ -123,6 +123,26 @@ def test_repository_imports_and_finds_domain_entries(tmp_path):
     assert entry["traits"] == {"material": "aluminum", "domain": "construction"}
 
 
+def test_repository_lists_lexicon_namespaces(tmp_path):
+    from pathlib import Path
+
+    from omniglyph.domain_pack import parse_domain_pack
+
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+    first_source = repository.add_source_snapshot(SourceSnapshot("ACME Pack", "file://acme", "2026.04", "sha-acme", "private", "acme"))
+    second_source = repository.add_source_snapshot(SourceSnapshot("Beta Pack", "file://beta", "2026.05", "sha-beta", "private", "beta"))
+    repository.insert_lexical_entries(list(parse_domain_pack(Path("tests/fixtures/domain_pack.csv"), "private_acme")), first_source)
+    repository.insert_lexical_entries(list(parse_domain_pack(Path("examples/domain-packs/building_materials.csv"), "private_beta")), second_source)
+
+    result = repository.list_lexical_namespaces()
+
+    assert result == [
+        {"namespace": "private_acme", "entry_count": 4, "alias_count": 7, "pack_ids": [], "source_names": ["ACME Pack"]},
+        {"namespace": "private_beta", "entry_count": 9, "alias_count": 23, "pack_ids": [], "source_names": ["Beta Pack"]},
+    ]
+
+
 def test_repository_initialization_creates_lookup_indexes(tmp_path):
     repository = GlyphRepository(tmp_path / "test.sqlite3")
     repository.initialize()

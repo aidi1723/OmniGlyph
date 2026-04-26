@@ -34,6 +34,7 @@ class GlyphRepository:
     def initialize(self) -> None:
         with self.connect() as connection:
             connection.executescript(SCHEMA_SQL)
+            self._ensure_lexical_metadata_columns(connection)
             connection.executescript(INDEX_SQL)
 
     def add_source_snapshot(self, source: SourceSnapshot) -> str:
@@ -167,7 +168,8 @@ class GlyphRepository:
                     INSERT OR IGNORE INTO lexical_entry (
                         id, namespace, term, normalized_term, canonical_id, entry_type,
                         language, definition, traits, source_id, confidence, created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        , sensitivity, review_status, pack_id, pack_version
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         entry_id,
@@ -182,6 +184,10 @@ class GlyphRepository:
                         source_id,
                         confidence,
                         now,
+                        entry.sensitivity,
+                        entry.review_status,
+                        entry.pack_id,
+                        entry.pack_version,
                     ),
                 )
                 for alias in entry.aliases:
@@ -202,6 +208,16 @@ class GlyphRepository:
                     )
                 inserted += 1
         return inserted
+
+    def delete_lexical_namespace(self, namespace: str) -> int:
+        with self.connect() as connection:
+            rows = connection.execute("SELECT id FROM lexical_entry WHERE namespace = ?", (namespace,)).fetchall()
+            entry_ids = [row["id"] for row in rows]
+            if not entry_ids:
+                return 0
+            connection.executemany("DELETE FROM lexical_alias WHERE lexical_entry_id = ?", [(entry_id,) for entry_id in entry_ids])
+            connection.execute("DELETE FROM lexical_entry WHERE namespace = ?", (namespace,))
+            return len(entry_ids)
 
     def find_term(self, text: str) -> dict | None:
         normalized = self._normalize_text(text)
@@ -234,6 +250,67 @@ class GlyphRepository:
                 return None
             return self._lexical_row_to_dict(row)
 
+    def list_secret_terms(self) -> list[str]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT term AS value FROM lexical_entry
+                WHERE sensitivity = 'secret' AND review_status = 'approved'
+                UNION
+                SELECT la.alias AS value
+                FROM lexical_alias la
+                JOIN lexical_entry le ON le.id = la.lexical_entry_id
+                WHERE le.sensitivity = 'secret' AND le.review_status = 'approved'
+                ORDER BY value
+                """
+            ).fetchall()
+            return [row["value"] for row in rows]
+
+    def list_lexical_namespaces(self) -> list[dict]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT le.namespace,
+                       COUNT(DISTINCT le.id) AS entry_count,
+                       COUNT(DISTINCT la.id) AS alias_count
+                FROM lexical_entry le
+                LEFT JOIN lexical_alias la ON la.lexical_entry_id = le.id
+                GROUP BY le.namespace
+                ORDER BY le.namespace
+                """
+            ).fetchall()
+            result = []
+            for row in rows:
+                pack_rows = connection.execute(
+                    """
+                    SELECT DISTINCT pack_id
+                    FROM lexical_entry
+                    WHERE namespace = ? AND pack_id IS NOT NULL
+                    ORDER BY pack_id
+                    """,
+                    (row["namespace"],),
+                ).fetchall()
+                source_rows = connection.execute(
+                    """
+                    SELECT DISTINCT ss.source_name
+                    FROM lexical_entry le
+                    JOIN source_snapshot ss ON ss.id = le.source_id
+                    WHERE le.namespace = ?
+                    ORDER BY ss.source_name
+                    """,
+                    (row["namespace"],),
+                ).fetchall()
+                result.append(
+                    {
+                        "namespace": row["namespace"],
+                        "entry_count": row["entry_count"],
+                        "alias_count": row["alias_count"],
+                        "pack_ids": [pack["pack_id"] for pack in pack_rows],
+                        "source_names": [source["source_name"] for source in source_rows],
+                    }
+                )
+            return result
+
     def _lexical_row_to_dict(self, row: sqlite3.Row) -> dict:
         return {
             "id": row["id"],
@@ -249,6 +326,10 @@ class GlyphRepository:
             "source_id": row["source_id"],
             "source_name": row["source_name"],
             "source_version": row["source_version"],
+            "sensitivity": row["sensitivity"],
+            "review_status": row["review_status"],
+            "pack_id": row["pack_id"],
+            "pack_version": row["pack_version"],
         }
 
     def _normalize_text(self, text: str) -> str:
@@ -364,6 +445,18 @@ class GlyphRepository:
     def _glyph_uid(self, unicode_hex: str) -> str:
         return str(uuid.uuid5(uuid.NAMESPACE_URL, f"omniglyph:glyph:{unicode_hex}"))
 
+    def _ensure_lexical_metadata_columns(self, connection: sqlite3.Connection) -> None:
+        existing = {row["name"] for row in connection.execute("PRAGMA table_info(lexical_entry)").fetchall()}
+        columns = {
+            "sensitivity": "TEXT NOT NULL DEFAULT 'normal'",
+            "review_status": "TEXT NOT NULL DEFAULT 'approved'",
+            "pack_id": "TEXT",
+            "pack_version": "TEXT",
+        }
+        for name, definition in columns.items():
+            if name not in existing:
+                connection.execute(f"ALTER TABLE lexical_entry ADD COLUMN {name} {definition}")
+
 
 SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS source_snapshot (
@@ -417,6 +510,10 @@ CREATE TABLE IF NOT EXISTS lexical_entry (
     language TEXT NOT NULL,
     definition TEXT,
     traits TEXT NOT NULL,
+    sensitivity TEXT NOT NULL DEFAULT 'normal',
+    review_status TEXT NOT NULL DEFAULT 'approved',
+    pack_id TEXT,
+    pack_version TEXT,
     source_id TEXT NOT NULL,
     confidence REAL NOT NULL,
     created_at TEXT NOT NULL,

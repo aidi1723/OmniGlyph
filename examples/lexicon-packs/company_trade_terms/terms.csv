@@ -1,0 +1,5 @@
+term,canonical_id,entry_type,language,aliases,definition,traits,sensitivity,review_status
+FOB,trade:fob,trade_term,en,Free On Board;离岸价,Free On Board incoterm,"{""incoterm"":true}",normal,approved
+tempered glass,material:tempered_glass,material,en,钢化玻璃;heat-treated glass,Heat-treated safety glass,"{""material"":""glass"",""fragile"":true}",normal,approved
+Alpha Factory,company:alpha_factory,confidential_term,en,AF,Private supplier name for internal workflows,"{""dlp"":true}",secret,approved
+Draft Export Code,company:draft_export_code,product_spec,en,,Unreviewed internal draft term,"{}",internal,draft

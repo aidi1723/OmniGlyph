@@ -18,15 +18,42 @@ Its core philosophy is:
 
 In the AGI era, agents need a deterministic substrate beneath probabilistic language models. OmniGlyph turns Unicode characters, scripts, multilingual terms, technical symbols, industry abbreviations, and eventually domain concepts into structured facts that agents can query, verify, and compute against.
 
+## Product Thesis
+
+OmniGlyph is built around three layers that share the same deterministic foundation:
+
+### 1. Global Symbol Ground Truth Layer
+
+OmniGlyph gives agents a local, source-traceable physical truth layer for symbols and terms. It helps agents identify Unicode code points, suspicious homoglyphs, zero-width characters, Bidi controls, fullwidth/halfwidth forms, and private terminology before a probabilistic model starts reasoning.
+
+This does not claim to eliminate every model hallucination. It reduces a concrete class of symbol-, character-, and terminology-layer failures by making the low-level text substrate inspectable and source-backed.
+
+### 2. Strict Enterprise Guardrails
+
+On top of the symbol truth layer, OmniGlyph can run as a deterministic MCP guardrail for enterprise workflows. Users can mount private Lexicon Packs for business terms, SKUs, material names, supplier terms, confidential vocabulary, and approved aliases.
+
+Generated output can then be checked with `validate_output_terms` and `enforce_grounded_output`. Unknown, unapproved, or unsupported terms can be blocked or routed to review before they reach customers, ERP systems, quotes, or downstream tools.
+
+### 3. Language-as-Code Security Gateway
+
+OmniGlyph also treats natural language as a runtime attack surface. `scan_language_input` checks untrusted text for prompt-injection directives and hidden Unicode attacks, `scan_output_dlp` redacts sensitive outbound text, and `enforce_intent` validates action requests against deterministic intent manifests.
+
+This layer does not execute shell commands or promise complete prompt-injection immunity. It gives host systems machine-readable `allow`, `review`, and `block` evidence so execution and delivery decisions can happen outside the model.
+
+In one sentence:
+
+> OmniGlyph is a local Symbol Ground Truth Layer, deterministic enterprise guardrail, and language security gateway for AI agents.
+
 ## Available on PyPI + MCP Registry
 
-OmniGlyph is published as both a Python package and an MCP Registry server.
+OmniGlyph is prepared as both a Python package and an MCP Registry server.
 
-- PyPI package: `omniglyph==0.6.0b0`
+- Current source package version: `omniglyph==0.7.0b0`
+- Latest published PyPI package: `omniglyph==0.6.0b0`
 - MCP Registry server: `io.github.aidi1723/omniglyph`
 - Transport: local stdio MCP server
 
-Install from PyPI:
+Install the latest published PyPI package:
 
 ```bash
 pip install omniglyph==0.6.0b0
@@ -44,7 +71,9 @@ Quick MCP smoke test:
 printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | omniglyph-mcp
 ```
 
-Available MCP tools: `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `explain_code_security`, `normalize_tokens`, `validate_output_terms`, `scan_code_symbols`, `scan_unicode_security`, and `audit_explain`.
+The source branch is now versioned as `0.7.0b0` and exposes the v0.7 MCP tool set. PyPI publication for `0.7.0b0` is a separate release step.
+
+Current source MCP tools: `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `explain_code_security`, `normalize_tokens`, `list_namespaces`, `validate_lexicon_pack`, `validate_output_terms`, `enforce_grounded_output`, `scan_code_symbols`, `scan_unicode_security`, `scan_language_input`, `scan_output_dlp`, `enforce_intent`, and `audit_explain`.
 
 ## Why It Exists
 
@@ -287,13 +316,57 @@ Current implementation covers the input-normalization side with `POST /api/v1/no
 
 See `docs/architecture/sandwich-architecture.md`.
 
+## Deterministic MCP Guardrail
+
+The guardrail branch is one deployment mode of OmniGlyph. It uses the same source-backed glyph, term, OES, and audit layers to define what an agent is allowed to claim in a controlled workflow.
+
+```text
+User / system output
+  → extract candidate terms
+  → OmniGlyph enforce_grounded_output
+  → allow if all terms are source-backed
+  → block or review if unknown terms appear
+```
+
+The current strict-source-grounding policy returns:
+
+- `decision: "allow"` when every candidate term exists in the local fact base.
+- `decision: "block"` when any candidate term is unknown.
+- `source_ids` for the known facts used by the decision.
+- `audit` evidence when an `actor_id` is provided.
+
+This does not replace the language and symbol foundation. It is the enterprise boundary-control use case built on top of that foundation.
+
+## Language Security Gateway
+
+The Language Security Gateway branch applies the same deterministic philosophy to agent security:
+
+```text
+External text
+  → scan_language_input
+  → block prompt-injection directives or hidden Unicode attacks
+  → model reasoning
+  → scan_output_dlp
+  → redact credentials or business-confidential terms
+  → enforce_intent
+  → allow, review, or block tool execution requests
+```
+
+Implemented surfaces:
+
+- `scan_language_input`: detects prompt-injection directives plus high-risk hidden Unicode patterns before model ingestion.
+- `scan_output_dlp`: detects API keys, AWS access keys, email addresses, and caller-provided secret terms, returning `[REDACTED]` text.
+- `enforce_intent`: validates a requested intent against a manifest and returns `allow`, `review`, or `block` without executing shell commands.
+
+This is not a promise that prompt injection is globally solved. It is a deterministic safety checkpoint that limits what untrusted language can make an agent ingest, reveal, or execute.
+
 ## Measured Data and Expected Impact
 
 OmniGlyph is designed to reduce token waste and hallucination risk by replacing ad-hoc web reading or model guessing with local, source-backed lookups.
 
 ### Verified Data
 
-The current `v0.6.0-beta` candidate has been verified locally with:
+The current `v0.7.0-beta` source candidate has been verified locally with:
 
 | Metric | Result |
 | --- | ---: |
@@ -301,7 +374,7 @@ The current `v0.6.0-beta` candidate has been verified locally with:
 | Unihan_Readings import | `291,227` properties |
 | Unihan_DictionaryLikeData import | `156,251` properties |
 | Total verified Unihan properties | `447,478` properties |
-| Local test suite | `85 passed` |
+| Local test suite | `112 passed` |
 | N100 Linux test suite | Previously verified on beta branch |
 | Docker build/run/healthcheck | Previously verified on N100 |
 | SQLite lookup benchmark for `铝` | P95 about `0.17ms` over 1,000 lookups |
@@ -450,6 +523,9 @@ Example output maps `aluminum profile`, `tempered glass`, `FOB`, and `MOQ` to ca
 - Quickstart: `docs/quickstart.md`
 - API reference: `docs/api.md`
 - MCP tools: `docs/mcp-tools.md`
+- Lexicon Pack Standard: `docs/specs/lexicon-pack-standard.md`
+- Deterministic MCP Guardrail architecture: `docs/architecture/deterministic-mcp-guardrail.md`
+- Language Security Gateway architecture: `docs/architecture/language-security-gateway.md`
 - Codex MCP integration: `docs/integrations/codex-mcp.md`
 - Claude Desktop MCP integration: `docs/integrations/claude-desktop-mcp.md`
 - Claude Code MCP integration: `docs/integrations/claude-code-mcp.md`
@@ -464,6 +540,25 @@ Example output maps `aluminum profile`, `tempered glass`, `FOB`, and `MOQ` to ca
 ## Domain Pack and Normalization
 
 OmniGlyph can mount private domain packs without polluting global Unicode/Unihan facts.
+
+Create a standard Lexicon Pack directory:
+
+```bash
+omniglyph init-lexicon-pack my-pack --namespace private_acme --pack-id company.acme.trade_terms --name "ACME Trade Terms"
+```
+
+Validate and preview import:
+
+```bash
+omniglyph validate-domain-pack my-pack
+omniglyph ingest-domain-pack --source my-pack --dry-run
+```
+
+Import or replace a company namespace:
+
+```bash
+omniglyph ingest-domain-pack --source my-pack --replace-namespace
+```
 
 Import a CSV domain pack:
 
@@ -520,7 +615,7 @@ Example JSON-RPC request over stdio:
 {"jsonrpc":"2.0","id":1,"method":"tools/list"}
 ```
 
-The MCP server reads from the same local SQLite symbol fact base used by `/api/v1/glyph`. It exposes `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `explain_code_security`, `normalize_tokens`, `validate_output_terms`, `scan_code_symbols`, `scan_unicode_security`, and `audit_explain`.
+The MCP server reads from the same local SQLite symbol fact base used by `/api/v1/glyph`. In the current source branch, it exposes `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `explain_code_security`, `normalize_tokens`, `list_namespaces`, `validate_lexicon_pack`, `validate_output_terms`, `enforce_grounded_output`, `scan_code_symbols`, `scan_unicode_security`, `scan_language_input`, `scan_output_dlp`, `enforce_intent`, and `audit_explain`.
 
 ## Local MVP Commands
 

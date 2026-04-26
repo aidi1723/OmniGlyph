@@ -1,17 +1,17 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.aidi1723/omniglyph",
-  "description": "Local symbol ground truth MCP server for Unicode lookup, OES explanations, security scanning, and audit evidence.",
+  "description": "Local symbol ground truth MCP server for Unicode lookup, Lexicon Packs, source-grounded guardrails, language-security checks, and audit evidence.",
   "status": "active",
   "repository": {
     "url": "https://github.com/aidi1723/OmniGlyph",
     "source": "github"
   },
-  "version": "0.6.0-beta",
+  "version": "0.7.0-beta",
   "packages": [
     {
       "identifier": "omniglyph",
-      "version": "0.6.0b0",
+      "version": "0.7.0b0",
       "transport": {
         "type": "stdio"
       },
@@ -44,8 +44,20 @@
       "description": "Normalize glyphs and domain terms into canonical IDs."
     },
     {
+      "name": "list_namespaces",
+      "description": "List loaded lexical namespaces with entry, alias, pack, and source summaries."
+    },
+    {
+      "name": "validate_lexicon_pack",
+      "description": "Validate an OmniGlyph Lexicon Pack directory with pack.json and terms.csv."
+    },
+    {
       "name": "validate_output_terms",
       "description": "Validate generated output terms against the local fact base."
+    },
+    {
+      "name": "enforce_grounded_output",
+      "description": "Apply strict source-grounding policy to generated output terms and return allow/block decision evidence."
     },
     {
       "name": "scan_code_symbols",
@@ -54,6 +66,18 @@
     {
       "name": "scan_unicode_security",
       "description": "Scan source code text with developer-friendly Unicode Security Pack findings."
+    },
+    {
+      "name": "scan_language_input",
+      "description": "Scan natural-language input for prompt-injection directives and hidden Unicode attacks."
+    },
+    {
+      "name": "scan_output_dlp",
+      "description": "Scan model output for sensitive data and return redacted text."
+    },
+    {
+      "name": "enforce_intent",
+      "description": "Apply an intent sandbox manifest and return allow, review, or block without executing commands."
     },
     {
       "name": "audit_explain",

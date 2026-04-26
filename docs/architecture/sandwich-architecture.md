@@ -74,13 +74,31 @@ Implemented today:
 
 - minimal text guardrail API for exact known-term detection
 - unknown-token reporting for reviewed candidate outputs
+- strict-source-grounding enforcement through `POST /api/v1/guardrail/enforce-output`
+- MCP `enforce_grounded_output` for allow/block decisions
 
 Not implemented yet:
 
 - automatic natural-language term extraction
-- policy-based block/rewrite/review workflows
+- rewrite/review workflow orchestration beyond the returned allow/block decision
 - ERP/email/factory-system integration
 - severity scoring beyond known/unknown status
+
+## 3. Deterministic MCP Guardrail Mode
+
+The output guardrail can be deployed as a stricter MCP boundary for source-grounded agents.
+
+In this mode, the host workflow extracts candidate terms from a model response and calls OmniGlyph before delivery:
+
+```text
+Generated output
+  → candidate terms
+  → enforce_grounded_output
+  → allow if all terms are known
+  → block or review if unknown terms exist
+```
+
+This preserves the main OmniGlyph mission while making one commercial value very clear: the model may write, but the host system decides whether unsupported domain claims are allowed to leave the boundary.
 
 ## Why This Matters
 

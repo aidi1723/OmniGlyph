@@ -16,20 +16,30 @@ It is suitable for experimentation, local agent workflows, RAG preprocessing, co
 - UnicodeData ingestion and glyph lookup.
 - Unihan property ingestion for CJK-friendly lexical facts.
 - Private domain pack CSV ingestion.
+- Standard Lexicon Pack directories with `pack.json`, `terms.csv`, validation, dry-run import, and namespace replacement.
 - `GET /api/v1/glyph`, `GET /api/v1/term`, `POST /api/v1/normalize`, OES explanation, Unicode security scan, and audit APIs.
-- MCP stdio server with ten tools:
+- MCP stdio server with sixteen tools in the current source branch:
   - `lookup_glyph`
   - `lookup_term`
   - `explain_glyph`
   - `explain_term`
   - `explain_code_security`
   - `normalize_tokens`
+  - `list_namespaces`
+  - `validate_lexicon_pack`
   - `validate_output_terms`
+  - `enforce_grounded_output`
   - `scan_code_symbols`
   - `scan_unicode_security`
+  - `scan_language_input`
+  - `scan_output_dlp`
+  - `enforce_intent`
   - `audit_explain`
 - Code-symbol linting for zero-width characters, Bidi controls, unexpected controls, source-backed confusables, fullwidth/halfwidth forms, NFKC changes, and cross-script homoglyph risks.
 - Software-development domain pack example under `examples/domain-packs/software_development.csv`.
+- Strict source-grounding enforcement for checked output terms through deterministic `allow` / `block` decision evidence.
+- Language Security Gateway checks for prompt-injection input, outbound DLP redaction, and manifest-based intent sandbox decisions.
+- Approved `sensitivity=secret` lexicon entries can feed output DLP redaction when requested by the host.
 - Structured audit events that report actor, action, input, source IDs, findings, and unknown limits.
 - PyPI distribution and MCP Registry publication.
 
@@ -56,7 +66,8 @@ OmniGlyph is not yet ideal for:
 ## Known Limitations
 
 - Community adoption is still early.
-- Current output guardrail is known/unknown validation, not full policy orchestration.
+- Current output guardrail supports known/unknown validation and strict source-grounding decisions for checked terms, but not full policy orchestration.
+- Current Language Security Gateway is a deterministic checkpoint layer, not a complete prompt-injection, DLP, IAM, or OS sandboxing product.
 - Homoglyph detection is rule-based with a minimal confusables map; full Unicode confusables data ingestion is planned.
 - OmniGlyph Explanation Standard v0.1 has runtime wrappers for glyph, term, and code-security explanations; broader CLDR and concept graph integrations are still planned.
 - No automatic source-code mutation or rewrite is performed.
