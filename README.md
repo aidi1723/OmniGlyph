@@ -18,9 +18,31 @@ Its core philosophy is:
 
 In the AGI era, agents need a deterministic substrate beneath probabilistic language models. OmniGlyph turns Unicode characters, scripts, multilingual terms, technical symbols, industry abbreviations, and eventually domain concepts into structured facts that agents can query, verify, and compute against.
 
-OmniGlyph can also run as a **Deterministic MCP Guardrail**: a source-grounded boundary that lets enterprise agents speak only with facts, terms, and symbols approved by the local knowledge base. This is a branch capability of the same foundation, not a replacement for the global symbol and language infrastructure mission.
+## Product Thesis
 
-OmniGlyph now also includes an early **Language Security Gateway** track. It treats natural language as an executable attack surface: scan inputs for prompt-injection directives, scan outputs for data leakage, and force agent actions through deterministic intent manifests. This is a safety boundary layer; it does not execute commands or replace the symbol ground-truth mission.
+OmniGlyph is built around three layers that share the same deterministic foundation:
+
+### 1. Global Symbol Ground Truth Layer
+
+OmniGlyph gives agents a local, source-traceable physical truth layer for symbols and terms. It helps agents identify Unicode code points, suspicious homoglyphs, zero-width characters, Bidi controls, fullwidth/halfwidth forms, and private terminology before a probabilistic model starts reasoning.
+
+This does not claim to eliminate every model hallucination. It reduces a concrete class of symbol-, character-, and terminology-layer failures by making the low-level text substrate inspectable and source-backed.
+
+### 2. Strict Enterprise Guardrails
+
+On top of the symbol truth layer, OmniGlyph can run as a deterministic MCP guardrail for enterprise workflows. Users can mount private Lexicon Packs for business terms, SKUs, material names, supplier terms, confidential vocabulary, and approved aliases.
+
+Generated output can then be checked with `validate_output_terms` and `enforce_grounded_output`. Unknown, unapproved, or unsupported terms can be blocked or routed to review before they reach customers, ERP systems, quotes, or downstream tools.
+
+### 3. Language-as-Code Security Gateway
+
+OmniGlyph also treats natural language as a runtime attack surface. `scan_language_input` checks untrusted text for prompt-injection directives and hidden Unicode attacks, `scan_output_dlp` redacts sensitive outbound text, and `enforce_intent` validates action requests against deterministic intent manifests.
+
+This layer does not execute shell commands or promise complete prompt-injection immunity. It gives host systems machine-readable `allow`, `review`, and `block` evidence so execution and delivery decisions can happen outside the model.
+
+In one sentence:
+
+> OmniGlyph is a local Symbol Ground Truth Layer, deterministic enterprise guardrail, and language security gateway for AI agents.
 
 ## Available on PyPI + MCP Registry
 

@@ -2,6 +2,60 @@
 
 OmniGlyph is a local Symbol Ground Truth Layer for AI agents. It sits below language-model reasoning and above raw Unicode text, giving agents deterministic facts about characters, terms, suspicious symbol patterns, and source-grounded output boundaries.
 
+## Product Thesis
+
+OmniGlyph should be described as:
+
+```text
+A local Symbol Ground Truth Layer, deterministic enterprise guardrail, and language security gateway for AI agents.
+```
+
+This framing preserves the original language and symbol infrastructure mission while making the near-term commercial and security branches explicit.
+
+## Strategic Layers
+
+### 1. Global Symbol Ground Truth Layer
+
+This is the absolute foundation.
+
+OmniGlyph gives agents deterministic visibility into the physical text substrate: Unicode code points, source-backed glyph facts, Unihan properties, zero-width characters, Bidi controls, cross-script homoglyph risks, fullwidth/halfwidth forms, and private domain terms.
+
+Preferred claim:
+
+```text
+OmniGlyph reduces character-, symbol-, and terminology-layer hallucination by making the low-level text substrate inspectable and source-backed.
+```
+
+Avoid claiming that OmniGlyph eliminates every token or model hallucination.
+
+### 2. Strict Enterprise Guardrails
+
+This is the near-term commercial engine.
+
+Private Lexicon Packs let users mount approved company vocabulary, aliases, SKUs, confidential terms, supplier names, material terms, and industry abbreviations. Guardrail tools can then block unknown or unapproved output terms before customer delivery or downstream system actions.
+
+Preferred claim:
+
+```text
+OmniGlyph provides source-grounded allow/block evidence for checked business terms and approved vocabulary.
+```
+
+Avoid claiming that all enterprise AI output is globally hallucination-free.
+
+### 3. Language-as-Code Security Gateway
+
+This is the security branch.
+
+OmniGlyph treats natural language as a runtime attack surface: inputs can carry prompt-injection directives, outputs can leak secrets, and action requests can attempt to exceed policy. The gateway tools return `allow`, `review`, or `block` evidence without executing commands.
+
+Preferred claim:
+
+```text
+OmniGlyph creates deterministic checkpoints for untrusted language, outbound text, and requested agent intents.
+```
+
+Avoid claiming complete prompt-injection immunity or replacing OS sandboxing, IAM, approval workflows, or endpoint security.
+
 ## Complementary Positions
 
 OmniGlyph can be understood through five lenses:

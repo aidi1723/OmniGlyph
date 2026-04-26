@@ -9,9 +9,31 @@
 
 OmniGlyph 不是传统字典。传统字典主要给人类阅读；OmniGlyph 给 Agent 调用。它将 Unicode 字符、Unihan 属性、私有领域词典和来源快照组织成可追溯、可查询、可通过 API/MCP 调用的结构化事实层。
 
-同时，OmniGlyph 也可以作为 **确定性 MCP 护栏** 运行：基于同一套本地来源、术语库、OES 解释和审计事件，为企业 Agent 建立“只能声明已被本地真值库支持内容”的输出边界。这是一个分支能力，不会替代项目原本的全球符号与语言基础设施主线。
+## 产品主线
 
-OmniGlyph 也新增了早期 **Language Security Gateway（语言安全网关）** 分支能力：把自然语言当作可执行攻击面处理，在输入进入模型前扫描 prompt injection 和隐藏 Unicode 攻击，在输出离开系统前做 DLP 脱敏，并把 Agent 动作约束到确定性的 intent manifest。它只做安全边界判断，不执行命令，也不改变符号真值层主线。
+OmniGlyph 现在围绕三层能力建设，但三层都共享同一个确定性符号真值底座。
+
+### 1. 全球符号真知层
+
+OmniGlyph 为 Agent 提供本地、可追溯、确定性的符号与术语事实层。它帮助 Agent 在推理前识别 Unicode 码点、同形字符、零宽字符、Bidi 控制符、全角/半角异常和私有业务术语。
+
+这不是“消灭所有幻觉”的承诺，而是降低一类非常具体的字符、符号、术语层错误：让底层文本基座可检查、可追溯、可被机器稳定调用。
+
+### 2. 企业级确定性护栏
+
+基于符号真值层，OmniGlyph 可以作为企业工作流里的确定性 MCP 护栏。用户可以挂载私有 Lexicon Pack，把业务术语、SKU、材料名、供应商词汇、敏感词和 approved alias 接入本地真值库。
+
+Agent 输出前可通过 `validate_output_terms` 和 `enforce_grounded_output` 检查。未知、未审核或无来源支持的词条可以被阻断或转人工复核，避免进入客户回复、报价、ERP 或下游工具。
+
+### 3. Language-as-Code 安全网关
+
+OmniGlyph 也把自然语言当作运行时攻击面处理。`scan_language_input` 检查不可信输入中的 prompt-injection 指令和隐藏 Unicode 攻击；`scan_output_dlp` 对出境文本做脱敏；`enforce_intent` 用 intent manifest 校验 Agent 动作请求。
+
+这一层不执行 shell 命令，也不承诺彻底解决所有 prompt injection。它提供机器可读的 `allow`、`review`、`block` 证据，让执行和交付决策发生在模型外部。
+
+一句话：
+
+> OmniGlyph 是面向 AI Agent 的本地符号真值层、确定性企业护栏与语言安全网关。
 
 ## 已发布到 PyPI + MCP Registry
 
