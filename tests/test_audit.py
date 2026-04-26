@@ -54,6 +54,28 @@ def test_audit_event_records_unknown_limits():
     assert event["unknowns"] == ["No local source-backed term explanation found."]
 
 
+def test_audit_event_prefers_explicit_unknowns_over_limits():
+    payload = {
+        "input": {"text": "FOB, HS 7604.99X", "kind": "term_set", "normalized": None},
+        "status": "warn",
+        "canonical_id": None,
+        "sources": [],
+        "unknowns": ["HS 7604.99X"],
+        "limits": ["Unknown terms must be reviewed or removed before model output is trusted."],
+        "findings": [],
+    }
+
+    event = build_audit_event(
+        actor_id="agent:quote",
+        action="enforce_grounded_output",
+        payload=payload,
+        event_id="evt-guardrail",
+        created_at="2026-04-25T00:00:00+00:00",
+    )
+
+    assert event["unknowns"] == ["HS 7604.99X"]
+
+
 def test_audit_event_from_security_scan_records_findings_and_sources():
     report = scan_text("v\u0430lue = 1\n", source_name="agent.py")
 

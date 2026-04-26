@@ -9,6 +9,7 @@
 
 OmniGlyph 不是传统字典。传统字典主要给人类阅读；OmniGlyph 给 Agent 调用。它将 Unicode 字符、Unihan 属性、私有领域词典和来源快照组织成可追溯、可查询、可通过 API/MCP 调用的结构化事实层。
 
+同时，OmniGlyph 也可以作为 **确定性 MCP 护栏** 运行：基于同一套本地来源、术语库、OES 解释和审计事件，为企业 Agent 建立“只能声明已被本地真值库支持内容”的输出边界。这是一个分支能力，不会替代项目原本的全球符号与语言基础设施主线。
 
 ## 已发布到 PyPI + MCP Registry
 
@@ -36,7 +37,7 @@ omniglyph-mcp
 printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | omniglyph-mcp
 ```
 
-当前 MCP 工具：`lookup_glyph`、`lookup_term`、`explain_glyph`、`explain_term`、`explain_code_security`、`normalize_tokens`、`validate_output_terms`、`scan_code_symbols`、`scan_unicode_security`、`audit_explain`。
+当前 MCP 工具：`lookup_glyph`、`lookup_term`、`explain_glyph`、`explain_term`、`explain_code_security`、`normalize_tokens`、`validate_output_terms`、`enforce_grounded_output`、`scan_code_symbols`、`scan_unicode_security`、`audit_explain`。
 
 ## 为什么说它是 Agent 基础设施
 
@@ -132,7 +133,7 @@ OmniGlyph 把字符、别名、缩写和领域术语转换为 canonical ID、JSO
 - Unicode Security Pack：带 `source_id`、`why_it_matters`、`suggested_action` 的开发者友好扫描结果。
 - 软件开发领域词库 starter pack：`examples/domain-packs/software_development.csv`。
 - Audit Workflow：记录谁查询了什么、来源是什么、哪里未知。
-- MCP 工具：`lookup_glyph`、`lookup_term`、`explain_glyph`、`explain_term`、`explain_code_security`、`normalize_tokens`、`validate_output_terms`、`scan_code_symbols`、`scan_unicode_security`、`audit_explain`。
+- MCP 工具：`lookup_glyph`、`lookup_term`、`explain_glyph`、`explain_term`、`explain_code_security`、`normalize_tokens`、`validate_output_terms`、`enforce_grounded_output`、`scan_code_symbols`、`scan_unicode_security`、`audit_explain`。
 - 建材外贸 demo pack 与跨境询盘 demo。
 - Docker、CI、release check、N100 验证记录。
 
@@ -228,6 +229,7 @@ Need aluminum profile and tempered glass, FOB Bangkok, MOQ 500 sets.
 - `explain_code_security`
 - `normalize_tokens`
 - `validate_output_terms`
+- `enforce_grounded_output`
 - `scan_code_symbols`
 - `scan_unicode_security`
 - `audit_explain`
@@ -269,9 +271,24 @@ OmniGlyph 可以挂载在 Agent/RAG 工作流的两端：
 
 作为 **Output Guardrail（输出守门员）**，OmniGlyph 在模型生成内容发给客户或下游系统之前进行校验。如果模型编造了不存在的 HS code、材料名或型材型号，工作流可以标记、阻断或转人工复核。
 
-当前版本已经实现输入标准化侧的基础能力：`POST /api/v1/normalize` 和 MCP `normalize_tokens`，并新增最小输出 guardrail，用于已知/未知术语检查。完整的策略阻断、重写、ERP/邮件系统集成仍属于后续工作。
+当前版本已经实现输入标准化侧的基础能力：`POST /api/v1/normalize` 和 MCP `normalize_tokens`，并新增输出 guardrail，用于已知/未知术语检查和严格溯源的 `allow/block` 决策。重写、ERP/邮件系统集成、完整人工复核流仍属于后续工作。
 
 详见：`docs/architecture/sandwich-architecture.md`。
+
+## 确定性 MCP 护栏
+
+护栏能力是 OmniGlyph 的一个商业化部署模式。它不改变项目主线，而是把符号真值层、领域词库、OES 和审计事件用于一个更直接的问题：
+
+```text
+这个 Agent 的输出，哪些可以放行，哪些必须拦截？
+```
+
+当前严格溯源策略会返回：
+
+- 所有候选术语都存在于本地事实库时，`decision: "allow"`。
+- 任何候选术语未知时，`decision: "block"`。
+- 已知事实对应的 `source_ids`。
+- 传入 `actor_id` 时返回审计证据。
 
 ## 实测数据与预期效果
 

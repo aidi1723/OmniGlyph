@@ -17,6 +17,7 @@ The stdio MCP server exposes lookup and scanning tools only. It does not provide
 | `explain_code_security` | no | provided text | no | no | no |
 | `normalize_tokens` | yes | provided tokens | no | no | no |
 | `validate_output_terms` | yes | provided terms | no | no | no |
+| `enforce_grounded_output` | yes | provided terms | no | no | no |
 | `scan_code_symbols` | no | provided text | no | no | no |
 | `scan_unicode_security` | no | provided text | no | no | no |
 | `audit_explain` | yes for glyph/term | provided text | no | no | no |
@@ -29,6 +30,7 @@ The stdio MCP server exposes lookup and scanning tools only. It does not provide
 - Lookup results come from the local SQLite database and imported source snapshots.
 - Unknown values remain `unknown` or `null`; the server does not generate definitions.
 - Audit events are returned to the caller but are not persisted by the MCP server.
+- Guardrail decisions are deterministic allow/block evidence for checked terms; they do not rewrite output automatically.
 
 ## Recommended Deployment
 
@@ -43,7 +45,7 @@ The stdio MCP server exposes lookup and scanning tools only. It does not provide
 Recommended system instruction for MCP clients:
 
 ```text
-OmniGlyph is a deterministic lookup, explanation, and scanning tool. Use it to verify symbols, terms, and suspicious Unicode code characters. Do not ask it to execute code, modify files, browse the web, or invent missing definitions. Treat unknown results as missing facts.
+OmniGlyph is a deterministic lookup, explanation, scanning, and source-grounding tool. Use it to verify symbols, terms, generated output terms, and suspicious Unicode code characters. Do not ask it to execute code, modify files, browse the web, or invent missing definitions. Treat unknown results as missing facts and treat guardrail `block` decisions as a stop condition for delivery.
 ```
 
 ## Known Limitations

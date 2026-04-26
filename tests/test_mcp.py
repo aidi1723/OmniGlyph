@@ -106,7 +106,7 @@ def test_mcp_tools_list_includes_explain_tools():
 def test_mcp_tools_list_includes_security_and_audit_tools():
     names = {tool["name"] for tool in build_tools_list()}
 
-    assert {"scan_unicode_security", "explain_code_security", "audit_explain"}.issubset(names)
+    assert {"scan_unicode_security", "explain_code_security", "audit_explain", "enforce_grounded_output"}.issubset(names)
 
 
 def test_handle_mcp_lookup_term_tool_call(tmp_path):
@@ -293,3 +293,24 @@ def test_handle_mcp_audit_explain_rejects_invalid_glyph_text(tmp_path):
 
     assert response["error"]["code"] == -32602
     assert "exactly one Unicode character" in response["error"]["message"]
+
+
+def test_handle_mcp_enforce_grounded_output_tool_call(tmp_path):
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 14,
+            "method": "tools/call",
+            "params": {
+                "name": "enforce_grounded_output",
+                "arguments": {"terms": ["FOB", "HS 7604.99X"], "actor_id": "agent:quote"},
+            },
+        },
+        repository=seeded_domain_repository(tmp_path),
+    )
+
+    payload = response["result"]["content"][0]["json"]
+    assert payload["schema"] == "omniglyph.guardrail:0.1"
+    assert payload["decision"] == "block"
+    assert payload["unknown"] == ["HS 7604.99X"]
+    assert payload["audit"]["action"] == "enforce_grounded_output"

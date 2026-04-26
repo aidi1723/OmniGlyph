@@ -6,7 +6,7 @@ OmniGlyph
 
 ## Summary
 
-A local-first Symbol Ground Truth MCP server for AI agents. OmniGlyph provides deterministic Unicode glyph lookup, private/domain term normalization, OES explanations, output term validation, Unicode security scanning, and audit events for source-backed agent workflows.
+A local-first Symbol Ground Truth MCP server for AI agents. OmniGlyph provides deterministic Unicode glyph lookup, private/domain term normalization, OES explanations, output term validation, strict source-grounding decisions, Unicode security scanning, and audit events for source-backed agent workflows.
 
 ## Repository
 
@@ -130,6 +130,16 @@ Input:
 {"terms":["FOB","tempered glass","HS 7604.99X"]}
 ```
 
+### `enforce_grounded_output`
+
+Applies the stricter Deterministic MCP Guardrail mode. It returns an `allow` decision only when every checked term is source-backed; otherwise it returns `block`, unknown terms, source IDs, limits, and optional audit evidence.
+
+Input:
+
+```json
+{"terms":["FOB","HS 7604.99X"],"actor_id":"agent:quote"}
+```
+
 ### `scan_code_symbols`
 
 Scans source code text for invisible Unicode controls, Bidi controls, unexpected controls, and cross-script homoglyph risks.
@@ -166,7 +176,7 @@ Input:
 - code-symbol linting before agents edit copied or generated code
 - OES-shaped Unicode security explanations
 - RAG preprocessing for multilingual/domain terms
-- output guardrail checks for generated trade/material terms
+- output guardrail checks and strict source-grounding decisions for generated trade/material terms
 - audit evidence for enterprise agent workflows
 - local private domain glossary lookup
 
@@ -182,5 +192,5 @@ Input:
 ## Suggested Agent Instruction
 
 ```text
-Use OmniGlyph before interpreting unknown Unicode symbols, domain terms, suspicious copied code, or generated output terms. Treat unknown results as missing facts, not as permission to hallucinate.
+Use OmniGlyph before interpreting unknown Unicode symbols, domain terms, suspicious copied code, or generated output terms. Treat unknown results as missing facts. If `enforce_grounded_output` returns `block`, do not deliver the model output until the unknown terms are reviewed, removed, or added to an approved source.
 ```

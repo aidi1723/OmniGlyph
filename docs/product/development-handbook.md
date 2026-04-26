@@ -12,6 +12,8 @@ Can an agent safely use this value to make a downstream decision?
 
 If the answer is no, the value must be excluded from canonical storage, marked as candidate data, or assigned lower confidence with explicit provenance.
 
+The Deterministic MCP Guardrail is a branch capability of this mission. It must use the same source-backed data and provenance rules as the language foundation. Do not turn it into an isolated allowlist product that bypasses OmniGlyph's symbol, lexical, OES, and audit layers.
+
 ## Core Principles
 
 ### 1. Facts Before Fluency
@@ -92,6 +94,14 @@ Edges such as synonymy, variant relation, concept mapping, or risk implication m
 
 The default deployment target is private infrastructure. External services are optional accelerators, not runtime dependencies for core lookup.
 
+### 8. Guardrails Are Runtime Boundaries
+
+Prompt instructions are useful, but they are not enforcement.
+
+Guardrail code must return machine-readable decisions such as `allow`, `block`, or `review`, backed by known canonical IDs, unknown values, source IDs, and audit evidence. A workflow can then enforce the decision outside the model.
+
+Guardrail code must not claim global hallucination elimination. It controls the checked layer: symbols, terms, Unicode findings, source-backed facts, and approved domain vocabulary.
+
 ## System Architecture
 
 ### Ingestion Pipeline
@@ -162,6 +172,25 @@ Responsibilities:
 - OCR cleanup integration
 - inquiry parsing integration
 - trace display for agent decisions
+
+### Guardrail Policy Layer
+
+Purpose: turn source-backed lookup results into runtime allow/block/review decisions.
+
+Responsibilities:
+
+- enforce known/unknown term boundaries
+- expose source IDs used by the decision
+- return explicit limits for unsupported claims
+- attach audit events when an actor is provided
+- stay deterministic and side-effect free
+
+Non-responsibilities:
+
+- extracting every possible term from prose
+- rewriting model output
+- judging broad factual truth outside the checked fact base
+- replacing human review for unsupported or ambiguous outputs
 
 ## Data Model Guidelines
 

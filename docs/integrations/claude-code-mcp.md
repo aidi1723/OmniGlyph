@@ -59,6 +59,8 @@ Module-mode fallback:
 
 Ask Claude Code to call `scan_unicode_security` or `scan_code_symbols` before debugging copied code, invisible syntax errors, suspicious diffs, or homoglyph risks. Use `explain_code_security` when the finding should be passed downstream as an OES payload.
 
+For generated documentation, customer replies, release notes, or other audit-sensitive output, ask Claude Code to call `validate_output_terms` first and `enforce_grounded_output` when a deterministic allow/block decision is required. A `block` result means the output should not be delivered until unknown terms are reviewed, removed, or added to an approved source.
+
 Example suspicious text:
 
 ```json
@@ -79,4 +81,4 @@ Expected finding:
 
 ## Agent Rule
 
-Use OmniGlyph as a deterministic symbol-perception layer. Claude Code should still reason about fixes, but it should not guess what a suspicious physical character is.
+Use OmniGlyph as a deterministic symbol-perception and source-grounding layer. Claude Code should still reason about fixes, but it should not guess what a suspicious physical character or unchecked domain term is.

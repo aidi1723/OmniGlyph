@@ -19,6 +19,7 @@ expected = {
     "explain_code_security",
     "normalize_tokens",
     "validate_output_terms",
+    "enforce_grounded_output",
     "scan_code_symbols",
     "scan_unicode_security",
     "audit_explain",

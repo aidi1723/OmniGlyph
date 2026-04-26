@@ -179,3 +179,19 @@ def test_audit_security_scan_endpoint_records_findings(tmp_path):
     assert payload["result"]["status"] == "warn"
     assert payload["audit"]["action"] == "scan_unicode_security"
     assert payload["audit"]["source_ids"] == ["source:unicode-confusables:minimal"]
+
+
+def test_guardrail_enforce_output_endpoint_blocks_unknown_terms(tmp_path):
+    client = TestClient(create_app(seeded_domain_repository(tmp_path)))
+
+    response = client.post(
+        "/api/v1/guardrail/enforce-output",
+        json={"terms": ["FOB", "HS 7604.99X"], "actor_id": "agent:quote"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["schema"] == "omniglyph.guardrail:0.1"
+    assert payload["decision"] == "block"
+    assert payload["unknown"] == ["HS 7604.99X"]
+    assert payload["audit"]["actor"] == {"id": "agent:quote"}

@@ -7,7 +7,7 @@ from omniglyph.audit import build_audit_event
 from omniglyph.code_linter import scan_text
 from omniglyph.config import settings
 from omniglyph.explanation import explain_code_security, explain_glyph, explain_term
-from omniglyph.guardrail import validate_output_terms
+from omniglyph.guardrail import enforce_grounded_output, validate_output_terms
 from omniglyph.normalization import compact_normalize, normalize_tokens
 from omniglyph.repository import GlyphRepository
 
@@ -82,6 +82,18 @@ def build_tools_list() -> list[dict[str, Any]]:
             "inputSchema": {
                 "type": "object",
                 "properties": {"terms": {"type": "array", "items": {"type": "string"}}},
+                "required": ["terms"],
+            },
+        },
+        {
+            "name": "enforce_grounded_output",
+            "description": "Apply strict source-grounding policy to generated output terms and return allow/block decision evidence.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "terms": {"type": "array", "items": {"type": "string"}},
+                    "actor_id": {"type": "string", "description": "Optional user, service, or agent identifier for audit evidence."},
+                },
                 "required": ["terms"],
             },
         },
@@ -204,6 +216,15 @@ def handle_mcp_request(request: dict[str, Any], repository: GlyphRepository | No
             if not isinstance(terms, list) or not all(isinstance(item, str) for item in terms):
                 return _error(request_id, -32602, "validate_output_terms requires a list of string terms")
             return _result(request_id, {"content": [{"type": "json", "json": validate_output_terms(glyph_repository, terms)}]})
+
+        if tool_name == "enforce_grounded_output":
+            terms = arguments.get("terms")
+            actor_id = arguments.get("actor_id")
+            if not isinstance(terms, list) or not all(isinstance(item, str) for item in terms):
+                return _error(request_id, -32602, "enforce_grounded_output requires a list of string terms")
+            if actor_id is not None and (not isinstance(actor_id, str) or not actor_id.strip()):
+                return _error(request_id, -32602, "enforce_grounded_output actor_id must be a string")
+            return _result(request_id, {"content": [{"type": "json", "json": enforce_grounded_output(glyph_repository, terms, actor_id=actor_id)}]})
 
         if tool_name == "scan_code_symbols":
             text = arguments.get("text")

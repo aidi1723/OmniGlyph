@@ -7,7 +7,7 @@ from omniglyph.audit import build_audit_event
 from omniglyph.code_linter import scan_text
 from omniglyph.config import settings
 from omniglyph.explanation import explain_code_security, explain_glyph, explain_term
-from omniglyph.guardrail import validate_output_terms
+from omniglyph.guardrail import enforce_grounded_output, validate_output_terms
 from omniglyph.normalization import compact_normalize, normalize_tokens
 from omniglyph.repository import GlyphRepository
 
@@ -18,6 +18,10 @@ class NormalizeRequest(BaseModel):
 
 class GuardrailRequest(BaseModel):
     terms: list[str]
+
+
+class GuardrailEnforceRequest(GuardrailRequest):
+    actor_id: str | None = None
 
 
 class SecurityScanRequest(BaseModel):
@@ -102,6 +106,10 @@ def create_app(repository: GlyphRepository | None = None) -> FastAPI:
     @app.post("/api/v1/guardrail/validate-output")
     def validate_output(request: GuardrailRequest) -> dict:
         return validate_output_terms(glyph_repository, request.terms)
+
+    @app.post("/api/v1/guardrail/enforce-output")
+    def enforce_output(request: GuardrailEnforceRequest) -> dict:
+        return enforce_grounded_output(glyph_repository, request.terms, actor_id=request.actor_id)
 
     return app
 

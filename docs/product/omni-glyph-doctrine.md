@@ -18,6 +18,20 @@ Build a local-first global symbol infrastructure that allows AI agents to identi
 
 The final system should let private agents handle multilingual inquiries, OCR noise, technical abbreviations, scripts, materials, logistics terms, ancient or specialized symbols, and domain concepts through a stable local interface.
 
+## Branch Capability: Deterministic MCP Guardrail
+
+The guardrail branch is a practical deployment mode built on top of the same foundation.
+
+It does not replace the language and symbol infrastructure mission. It applies OmniGlyph's source-backed glyphs, terms, OES payloads, domain packs, and audit events to one enterprise problem:
+
+```text
+What is this agent allowed to claim?
+```
+
+In this mode, OmniGlyph acts as a deterministic MCP boundary. A host workflow can require an agent to check candidate terms and symbols before sending an answer. If a term is not present in the local truth base, the workflow can block, route to review, or ask for a rewrite using only verified terms.
+
+This turns "do not hallucinate" from a prompt request into a runtime decision backed by local sources.
+
 ## Why This Matters in the AGI Era
 
 ### 1. Deterministic Ground Truth for Probabilistic Models
@@ -145,6 +159,16 @@ weather_hazard + ocean_freight + fragile_material → high_breakage_risk
 
 **Acceptance:** Given a mixed-language inquiry or product title, OmniGlyph can normalize symbols and known terms into structured records with sources and confidence, while keeping private business lexicons isolated from the global Unicode ground truth.
 
+### Stage 2B: Deterministic Guardrail Workflows
+
+**Goal:** Use the symbol and lexical base to define strict output boundaries for agents.
+
+**Scope:** Tool forcing, known/unknown term enforcement, OES evidence, audit events, and allow/block/review decisions for controlled domains.
+
+**Acceptance:** Given a candidate agent output, OmniGlyph can return a deterministic `allow` or `block` decision for checked terms, with source IDs for known facts and explicit unknowns for unsupported claims.
+
+**Boundary:** This stage does not claim that every possible model hallucination disappears. It controls the checked symbol, term, and source-backed fact layer.
+
 ### Stage 3: Semantic Topology
 
 **Goal:** Connect symbols and lexical forms to real-world concepts.
@@ -173,6 +197,7 @@ The practical success criteria are:
 - Batch normalization improves real workflows.
 - Private domain lexicons compound over time.
 - Semantic computation outputs are explainable.
+- Enterprise workflows can block unsupported terms before a model answer reaches a customer or downstream system.
 
 ## Product Boundaries
 
@@ -189,5 +214,6 @@ OmniGlyph is:
 
 - a source-backed symbol fact layer
 - an agent-native lexical and concept normalization engine
+- a deterministic guardrail for source-grounded agent workflows
 - a local-first semantic infrastructure component
 - a foundation for private agent systems and domain-specific computation

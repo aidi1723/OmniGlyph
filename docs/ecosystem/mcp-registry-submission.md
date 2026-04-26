@@ -27,6 +27,8 @@ Use `docs/mcp-server-card.md` as the human-readable project card.
 
 Use `package-registry/server.json` as the machine-readable registry draft. The draft follows the current public MCP Registry package metadata shape using `registryType` and schema `2025-12-11`; verify again before final submission because the registry is still in preview.
 
+Note: the current source branch adds the unreleased `enforce_grounded_output` MCP tool for the v0.7 guardrail track. Do not update the machine-readable registry package metadata to advertise that tool until the matching PyPI package version is built, published, and smoke-tested.
+
 ## PyPI Release Status
 
 OmniGlyph `0.6.0b0` was published to PyPI on 2026-04-25:

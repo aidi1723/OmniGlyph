@@ -17,7 +17,7 @@ It is suitable for experimentation, local agent workflows, RAG preprocessing, co
 - Unihan property ingestion for CJK-friendly lexical facts.
 - Private domain pack CSV ingestion.
 - `GET /api/v1/glyph`, `GET /api/v1/term`, `POST /api/v1/normalize`, OES explanation, Unicode security scan, and audit APIs.
-- MCP stdio server with ten tools:
+- MCP stdio server with eleven tools:
   - `lookup_glyph`
   - `lookup_term`
   - `explain_glyph`
@@ -25,11 +25,13 @@ It is suitable for experimentation, local agent workflows, RAG preprocessing, co
   - `explain_code_security`
   - `normalize_tokens`
   - `validate_output_terms`
+  - `enforce_grounded_output`
   - `scan_code_symbols`
   - `scan_unicode_security`
   - `audit_explain`
 - Code-symbol linting for zero-width characters, Bidi controls, unexpected controls, source-backed confusables, fullwidth/halfwidth forms, NFKC changes, and cross-script homoglyph risks.
 - Software-development domain pack example under `examples/domain-packs/software_development.csv`.
+- Strict source-grounding enforcement for checked output terms through deterministic `allow` / `block` decision evidence.
 - Structured audit events that report actor, action, input, source IDs, findings, and unknown limits.
 - PyPI distribution and MCP Registry publication.
 
@@ -56,7 +58,7 @@ OmniGlyph is not yet ideal for:
 ## Known Limitations
 
 - Community adoption is still early.
-- Current output guardrail is known/unknown validation, not full policy orchestration.
+- Current output guardrail supports known/unknown validation and strict source-grounding decisions for checked terms, but not full policy orchestration.
 - Homoglyph detection is rule-based with a minimal confusables map; full Unicode confusables data ingestion is planned.
 - OmniGlyph Explanation Standard v0.1 has runtime wrappers for glyph, term, and code-security explanations; broader CLDR and concept graph integrations are still planned.
 - No automatic source-code mutation or rewrite is performed.
