@@ -22,6 +22,9 @@ expected = {
     "enforce_grounded_output",
     "scan_code_symbols",
     "scan_unicode_security",
+    "scan_language_input",
+    "scan_output_dlp",
+    "enforce_intent",
     "audit_explain",
 }
 missing = expected - tools

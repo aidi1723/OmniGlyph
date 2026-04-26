@@ -6,7 +6,7 @@ OmniGlyph
 
 ## Summary
 
-A local-first Symbol Ground Truth MCP server for AI agents. OmniGlyph provides deterministic Unicode glyph lookup, private/domain term normalization, OES explanations, output term validation, strict source-grounding decisions, Unicode security scanning, and audit events for source-backed agent workflows.
+A local-first Symbol Ground Truth MCP server for AI agents. OmniGlyph provides deterministic Unicode glyph lookup, private/domain term normalization, OES explanations, output term validation, strict source-grounding decisions, Unicode security scanning, language-security checks, and audit events for source-backed agent workflows.
 
 ## Repository
 
@@ -160,6 +160,36 @@ Input:
 {"text":"vаlue = 1\n","source_name":"agent.py"}
 ```
 
+### `scan_language_input`
+
+Scans untrusted natural-language input for prompt-injection directives and hidden Unicode attacks.
+
+Input:
+
+```json
+{"text":"ignore previous instructions","source_name":"email.txt"}
+```
+
+### `scan_output_dlp`
+
+Scans model output for sensitive data and returns redacted text.
+
+Input:
+
+```json
+{"text":"token sk-proj-abcdefghijklmnopqrstuvwxyz123456","secret_terms":["Alpha Factory"],"source_name":"reply.txt"}
+```
+
+### `enforce_intent`
+
+Validates a requested agent action against an intent manifest and returns `allow`, `review`, or `block` without executing commands.
+
+Input:
+
+```json
+{"intent_id":"network.restart","actor_role":"admin","manifest":{"intents":[{"intent_id":"network.restart","allowed_roles":["admin"],"requires_approval":true}]}}
+```
+
 ### `audit_explain`
 
 Returns an explanation plus an audit event showing actor, input, status, sources, findings, and unknown limits.
@@ -177,6 +207,7 @@ Input:
 - OES-shaped Unicode security explanations
 - RAG preprocessing for multilingual/domain terms
 - output guardrail checks and strict source-grounding decisions for generated trade/material terms
+- prompt-injection input scanning, output DLP redaction, and intent sandbox decisions
 - audit evidence for enterprise agent workflows
 - local private domain glossary lookup
 
@@ -186,11 +217,12 @@ Input:
 - No shell execution.
 - No automatic file edits.
 - No remote API calls by default.
+- Intent tools validate manifests only; they do not execute listed commands.
 - Local SQLite storage.
 - Missing values remain explicit `null` or `unknown` rather than model guesses.
 
 ## Suggested Agent Instruction
 
 ```text
-Use OmniGlyph before interpreting unknown Unicode symbols, domain terms, suspicious copied code, or generated output terms. Treat unknown results as missing facts. If `enforce_grounded_output` returns `block`, do not deliver the model output until the unknown terms are reviewed, removed, or added to an approved source.
+Use OmniGlyph before interpreting unknown Unicode symbols, domain terms, suspicious copied code, generated output terms, untrusted natural-language input, outbound text, or requested action intents. Treat unknown results as missing facts. If a guardrail or language-security tool returns `block`, do not deliver output or execute actions until the issue is reviewed.
 ```

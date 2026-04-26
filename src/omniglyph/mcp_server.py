@@ -8,6 +8,7 @@ from omniglyph.code_linter import scan_text
 from omniglyph.config import settings
 from omniglyph.explanation import explain_code_security, explain_glyph, explain_term
 from omniglyph.guardrail import enforce_grounded_output, validate_output_terms
+from omniglyph.language_security import enforce_intent_manifest, scan_language_input, scan_output_dlp
 from omniglyph.normalization import compact_normalize, normalize_tokens
 from omniglyph.repository import GlyphRepository
 
@@ -119,6 +120,45 @@ def build_tools_list() -> list[dict[str, Any]]:
                     "source_name": {"type": "string", "description": "Optional source label for findings."},
                 },
                 "required": ["text"],
+            },
+        },
+        {
+            "name": "scan_language_input",
+            "description": "Scan natural-language input for prompt-injection directives and hidden Unicode attacks.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "text": {"type": "string", "description": "Natural-language input to scan before model ingestion."},
+                    "source_name": {"type": "string", "description": "Optional source label for findings."},
+                },
+                "required": ["text"],
+            },
+        },
+        {
+            "name": "scan_output_dlp",
+            "description": "Scan model output for sensitive data and return redacted text.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "text": {"type": "string", "description": "Model output to inspect before external delivery."},
+                    "secret_terms": {"type": "array", "items": {"type": "string"}},
+                    "source_name": {"type": "string", "description": "Optional source label for findings."},
+                },
+                "required": ["text"],
+            },
+        },
+        {
+            "name": "enforce_intent",
+            "description": "Apply an intent sandbox manifest and return allow, review, or block without executing commands.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "intent_id": {"type": "string", "description": "Canonical intent requested by the agent."},
+                    "manifest": {"type": "object", "description": "Intent manifest with allowed roles and commands."},
+                    "actor_role": {"type": "string", "description": "Optional role requesting the intent."},
+                    "parameters": {"type": "object", "description": "Optional structured intent parameters."},
+                },
+                "required": ["intent_id", "manifest"],
             },
         },
         {
@@ -243,6 +283,52 @@ def handle_mcp_request(request: dict[str, Any], repository: GlyphRepository | No
             if not isinstance(source_name, str) or not source_name.strip():
                 return _error(request_id, -32602, "scan_unicode_security source_name must be a string")
             return _result(request_id, {"content": [{"type": "json", "json": scan_text(text, source_name=source_name)}]})
+
+        if tool_name == "scan_language_input":
+            text = arguments.get("text")
+            source_name = arguments.get("source_name", "<mcp-input>")
+            if not isinstance(text, str):
+                return _error(request_id, -32602, "scan_language_input requires text")
+            if not isinstance(source_name, str) or not source_name.strip():
+                return _error(request_id, -32602, "scan_language_input source_name must be a string")
+            return _result(request_id, {"content": [{"type": "json", "json": scan_language_input(text, source_name=source_name)}]})
+
+        if tool_name == "scan_output_dlp":
+            text = arguments.get("text")
+            secret_terms = arguments.get("secret_terms", [])
+            source_name = arguments.get("source_name", "<mcp-output>")
+            if not isinstance(text, str):
+                return _error(request_id, -32602, "scan_output_dlp requires text")
+            if not isinstance(secret_terms, list) or not all(isinstance(item, str) for item in secret_terms):
+                return _error(request_id, -32602, "scan_output_dlp secret_terms must be a list of strings")
+            if not isinstance(source_name, str) or not source_name.strip():
+                return _error(request_id, -32602, "scan_output_dlp source_name must be a string")
+            return _result(request_id, {"content": [{"type": "json", "json": scan_output_dlp(text, secret_terms=secret_terms, source_name=source_name)}]})
+
+        if tool_name == "enforce_intent":
+            intent_id = arguments.get("intent_id")
+            manifest = arguments.get("manifest")
+            actor_role = arguments.get("actor_role")
+            parameters = arguments.get("parameters")
+            if not isinstance(intent_id, str) or not intent_id.strip():
+                return _error(request_id, -32602, "enforce_intent requires intent_id")
+            if not isinstance(manifest, dict):
+                return _error(request_id, -32602, "enforce_intent requires manifest object")
+            if actor_role is not None and (not isinstance(actor_role, str) or not actor_role.strip()):
+                return _error(request_id, -32602, "enforce_intent actor_role must be a string")
+            if parameters is not None and not isinstance(parameters, dict):
+                return _error(request_id, -32602, "enforce_intent parameters must be an object")
+            return _result(
+                request_id,
+                {
+                    "content": [
+                        {
+                            "type": "json",
+                            "json": enforce_intent_manifest(intent_id, manifest, actor_role=actor_role, parameters=parameters),
+                        }
+                    ]
+                },
+            )
 
         if tool_name == "audit_explain":
             actor_id = arguments.get("actor_id")

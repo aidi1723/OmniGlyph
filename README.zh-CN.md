@@ -11,6 +11,8 @@ OmniGlyph 不是传统字典。传统字典主要给人类阅读；OmniGlyph 给
 
 同时，OmniGlyph 也可以作为 **确定性 MCP 护栏** 运行：基于同一套本地来源、术语库、OES 解释和审计事件，为企业 Agent 建立“只能声明已被本地真值库支持内容”的输出边界。这是一个分支能力，不会替代项目原本的全球符号与语言基础设施主线。
 
+OmniGlyph 也新增了早期 **Language Security Gateway（语言安全网关）** 分支能力：把自然语言当作可执行攻击面处理，在输入进入模型前扫描 prompt injection 和隐藏 Unicode 攻击，在输出离开系统前做 DLP 脱敏，并把 Agent 动作约束到确定性的 intent manifest。它只做安全边界判断，不执行命令，也不改变符号真值层主线。
+
 ## 已发布到 PyPI + MCP Registry
 
 OmniGlyph 已作为 Python 包和 MCP Registry server 发布。
@@ -37,7 +39,9 @@ omniglyph-mcp
 printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | omniglyph-mcp
 ```
 
-当前 MCP 工具：`lookup_glyph`、`lookup_term`、`explain_glyph`、`explain_term`、`explain_code_security`、`normalize_tokens`、`validate_output_terms`、`enforce_grounded_output`、`scan_code_symbols`、`scan_unicode_security`、`audit_explain`。
+已发布的 `0.6.0b0` 包提供 v0.6 MCP 工具集。当前源码分支额外增加了 v0.7 的严格溯源与语言安全工具。
+
+当前源码 MCP 工具：`lookup_glyph`、`lookup_term`、`explain_glyph`、`explain_term`、`explain_code_security`、`normalize_tokens`、`validate_output_terms`、`enforce_grounded_output`、`scan_code_symbols`、`scan_unicode_security`、`scan_language_input`、`scan_output_dlp`、`enforce_intent`、`audit_explain`。
 
 ## 为什么说它是 Agent 基础设施
 
@@ -133,7 +137,8 @@ OmniGlyph 把字符、别名、缩写和领域术语转换为 canonical ID、JSO
 - Unicode Security Pack：带 `source_id`、`why_it_matters`、`suggested_action` 的开发者友好扫描结果。
 - 软件开发领域词库 starter pack：`examples/domain-packs/software_development.csv`。
 - Audit Workflow：记录谁查询了什么、来源是什么、哪里未知。
-- MCP 工具：`lookup_glyph`、`lookup_term`、`explain_glyph`、`explain_term`、`explain_code_security`、`normalize_tokens`、`validate_output_terms`、`enforce_grounded_output`、`scan_code_symbols`、`scan_unicode_security`、`audit_explain`。
+- Language Security Gateway：输入 prompt-injection 扫描、输出 DLP 脱敏、intent manifest 沙盒决策。
+- MCP 工具：`lookup_glyph`、`lookup_term`、`explain_glyph`、`explain_term`、`explain_code_security`、`normalize_tokens`、`validate_output_terms`、`enforce_grounded_output`、`scan_code_symbols`、`scan_unicode_security`、`scan_language_input`、`scan_output_dlp`、`enforce_intent`、`audit_explain`。
 - 建材外贸 demo pack 与跨境询盘 demo。
 - Docker、CI、release check、N100 验证记录。
 
@@ -232,6 +237,9 @@ Need aluminum profile and tempered glass, FOB Bangkok, MOQ 500 sets.
 - `enforce_grounded_output`
 - `scan_code_symbols`
 - `scan_unicode_security`
+- `scan_language_input`
+- `scan_output_dlp`
+- `enforce_intent`
 - `audit_explain`
 
 Codex 接入说明见：`docs/integrations/codex-mcp.md`。Claude Desktop / Claude Code 接入见 `docs/integrations/claude-desktop-mcp.md` 和 `docs/integrations/claude-code-mcp.md`。MCP 安全说明见 `docs/security/mcp-safety.md`。
@@ -289,6 +297,29 @@ OmniGlyph 可以挂载在 Agent/RAG 工作流的两端：
 - 任何候选术语未知时，`decision: "block"`。
 - 已知事实对应的 `source_ids`。
 - 传入 `actor_id` 时返回审计证据。
+
+## Language Security Gateway（语言安全网关）
+
+语言安全网关是 OmniGlyph 的安全分支能力，不替代原本的全球符号与语言基础设施。
+
+```text
+外部输入
+  → scan_language_input
+  → 拦截 prompt injection 或隐藏 Unicode 攻击
+  → 模型推理
+  → scan_output_dlp
+  → 脱敏密钥、邮箱、商业机密词
+  → enforce_intent
+  → 对 Agent 动作请求返回 allow / review / block
+```
+
+当前已实现：
+
+- `scan_language_input`：在输入进入模型前扫描 prompt-injection 指令和高风险隐藏 Unicode。
+- `scan_output_dlp`：在输出出境前扫描 API key、AWS key、邮箱和调用方传入的机密词，并返回 `[REDACTED]` 文本。
+- `enforce_intent`：根据 intent manifest 校验 Agent 动作请求，只返回决策，不执行 shell 命令。
+
+这不是“彻底消灭 prompt injection”的承诺，而是给 AgentCore / MCP 工作流增加确定性安全检查点，让模型即使被诱导也不能直接越过边界。
 
 ## 实测数据与预期效果
 
