@@ -86,7 +86,7 @@ def test_api_metadata_uses_package_version(tmp_path):
     repository = GlyphRepository(tmp_path / "test.sqlite3")
     app = create_app(repository)
 
-    assert __version__ == "0.6.0b0"
+    assert __version__ == "0.7.0b0"
     assert app.version == __version__
 
 
@@ -195,3 +195,32 @@ def test_guardrail_enforce_output_endpoint_blocks_unknown_terms(tmp_path):
     assert payload["decision"] == "block"
     assert payload["unknown"] == ["HS 7604.99X"]
     assert payload["audit"]["actor"] == {"id": "agent:quote"}
+
+
+def test_lexicon_namespaces_endpoint_lists_loaded_packs(tmp_path):
+    client = TestClient(create_app(seeded_domain_repository(tmp_path)))
+
+    response = client.get("/api/v1/lexicon/namespaces")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["schema"] == "omniglyph.lexicon_namespaces:0.1"
+    assert payload["namespaces"] == [
+        {
+            "namespace": "private_building_materials",
+            "entry_count": 4,
+            "alias_count": 7,
+            "pack_ids": [],
+            "source_names": ["Private Domain Pack"],
+        }
+    ]
+
+
+def test_lexicon_validate_pack_endpoint_reports_valid_example_pack(tmp_path):
+    client = TestClient(create_app(GlyphRepository(tmp_path / "test.sqlite3")))
+
+    response = client.post("/api/v1/lexicon/validate-pack", json={"path": "examples/lexicon-packs/company_trade_terms"})
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "pass"
+    assert response.json()["summary"]["entry_count"] == 4

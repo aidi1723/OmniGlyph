@@ -18,6 +18,8 @@ expected = {
     "explain_term",
     "explain_code_security",
     "normalize_tokens",
+    "list_namespaces",
+    "validate_lexicon_pack",
     "validate_output_terms",
     "enforce_grounded_output",
     "scan_code_symbols",

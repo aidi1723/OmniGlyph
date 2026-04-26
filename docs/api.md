@@ -13,7 +13,7 @@ Returns service status.
 Response:
 
 ```json
-{"status":"ok","service":"omniglyph","version":"0.6.0b0"}
+{"status":"ok","service":"omniglyph","version":"0.7.0b0"}
 ```
 
 ## `GET /api/v1/glyph`
@@ -236,6 +236,48 @@ POST /api/v1/normalize?mode=compact
 
 ```json
 {"known":{"铝":"glyph:U+94DD","FOB":"trade:fob"},"unknown":["unknown"]}
+```
+
+## `GET /api/v1/lexicon/namespaces`
+
+List mounted lexical namespaces.
+
+Response:
+
+```json
+{
+  "schema": "omniglyph.lexicon_namespaces:0.1",
+  "namespaces": [
+    {
+      "namespace": "private_example",
+      "entry_count": 4,
+      "alias_count": 5,
+      "pack_ids": ["company.example.trade_terms"],
+      "source_names": ["Example Company Trade Terms"]
+    }
+  ]
+}
+```
+
+## `POST /api/v1/lexicon/validate-pack`
+
+Validate an OmniGlyph Lexicon Pack directory before import.
+
+Request:
+
+```json
+{"path":"examples/lexicon-packs/company_trade_terms"}
+```
+
+Response:
+
+```json
+{
+  "schema": "omniglyph.lexicon_pack:0.1",
+  "status": "pass",
+  "summary": {"entry_count": 4, "alias_count": 5, "secret_count": 1},
+  "errors": []
+}
 ```
 
 ## `POST /api/v1/guardrail/validate-output`

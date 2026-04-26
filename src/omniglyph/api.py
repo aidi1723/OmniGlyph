@@ -9,6 +9,7 @@ from omniglyph.config import settings
 from omniglyph.explanation import explain_code_security, explain_glyph, explain_term
 from omniglyph.guardrail import enforce_grounded_output, validate_output_terms
 from omniglyph.language_security import enforce_intent_manifest, scan_language_input, scan_output_dlp
+from omniglyph.lexicon_pack import validate_lexicon_pack
 from omniglyph.normalization import compact_normalize, normalize_tokens
 from omniglyph.repository import GlyphRepository
 
@@ -49,6 +50,10 @@ class IntentEnforceRequest(BaseModel):
     parameters: dict | None = None
 
 
+class LexiconValidatePackRequest(BaseModel):
+    path: str
+
+
 class AuditExplainRequest(BaseModel):
     actor_id: str
     kind: Literal["glyph", "term", "code"]
@@ -86,6 +91,14 @@ def create_app(repository: GlyphRepository | None = None) -> FastAPI:
         if record is None:
             raise HTTPException(status_code=404, detail="term not found")
         return record
+
+    @app.get("/api/v1/lexicon/namespaces")
+    def list_lexicon_namespaces_endpoint() -> dict:
+        return {"schema": "omniglyph.lexicon_namespaces:0.1", "namespaces": glyph_repository.list_lexical_namespaces()}
+
+    @app.post("/api/v1/lexicon/validate-pack")
+    def validate_lexicon_pack_endpoint(request: LexiconValidatePackRequest) -> dict:
+        return validate_lexicon_pack(request.path)
 
     @app.get("/api/v1/explain/glyph")
     def explain_glyph_endpoint(char: str = Query(...)) -> dict:

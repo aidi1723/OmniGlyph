@@ -79,6 +79,54 @@ Compact output:
 }
 ```
 
+## Tool: `list_namespaces`
+
+Input:
+
+```json
+{}
+```
+
+Returns loaded lexical namespace summaries:
+
+```json
+{
+  "schema": "omniglyph.lexicon_namespaces:0.1",
+  "namespaces": [
+    {
+      "namespace": "private_example",
+      "entry_count": 4,
+      "alias_count": 5,
+      "pack_ids": ["company.example.trade_terms"],
+      "source_names": ["Example Company Trade Terms"]
+    }
+  ]
+}
+```
+
+Use this when an MCP host needs to show which private or public lexicon layers are currently mounted.
+
+## Tool: `validate_lexicon_pack`
+
+Input:
+
+```json
+{"path":"examples/lexicon-packs/company_trade_terms"}
+```
+
+Returns the same validation report as `omniglyph validate-domain-pack`:
+
+```json
+{
+  "schema": "omniglyph.lexicon_pack:0.1",
+  "status": "pass",
+  "summary": {"entry_count": 4, "alias_count": 5, "secret_count": 1},
+  "errors": []
+}
+```
+
+Use this before importing a company or personal Lexicon Pack.
+
 ## Tool: `validate_output_terms`
 
 Input:

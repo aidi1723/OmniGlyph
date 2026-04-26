@@ -2,6 +2,8 @@
 
 Status: draft for the current source branch.
 
+Current source version: `0.7.0b0`.
+
 This release is not published to PyPI yet. The latest published PyPI version remains `0.6.0b0`.
 
 ## Product Positioning
@@ -23,7 +25,7 @@ v0.7 clarifies OmniGlyph around three layers:
 
 ## New MCP Tools in Source Branch
 
-The current v0.7 source branch exposes 14 MCP tools:
+The current v0.7 source branch exposes 16 MCP tools:
 
 - `lookup_glyph`
 - `lookup_term`
@@ -31,6 +33,8 @@ The current v0.7 source branch exposes 14 MCP tools:
 - `explain_term`
 - `explain_code_security`
 - `normalize_tokens`
+- `list_namespaces`
+- `validate_lexicon_pack`
 - `validate_output_terms`
 - `enforce_grounded_output`
 - `scan_code_symbols`
@@ -45,6 +49,14 @@ The current v0.7 source branch exposes 14 MCP tools:
 - Added `enforce_grounded_output` for strict source-grounding decisions.
 - Guardrail decisions return `allow` or `block` with known terms, unknown terms, source IDs, limits, and optional audit evidence.
 - Lexicon entries with `review_status` other than `approved` do not count as trusted guardrail facts.
+
+## Lexicon Product Tools
+
+- Added `list_namespaces` to show mounted lexical namespaces, entry counts, alias counts, pack IDs, and source names.
+- Added `validate_lexicon_pack` to validate a `pack.json` + `terms.csv` directory through MCP.
+- Added API endpoints:
+  - `GET /api/v1/lexicon/namespaces`
+  - `POST /api/v1/lexicon/validate-pack`
 
 ## Language Security Gateway
 
@@ -98,7 +110,10 @@ OmniGlyph gives AI agents deterministic checkpoints for symbols, terms, outputs,
 
 Current branch verification:
 
-- Python tests: `106 passed`
-- MCP smoke test: 14 tools available
+- Python tests: `112 passed`
+- MCP smoke test: 16 tools available
 - Example Lexicon Pack validation: `status: pass`
+- Build: `omniglyph-0.7.0b0.tar.gz` and `omniglyph-0.7.0b0-py3-none-any.whl`
+- Twine metadata check: pass
+- Local wheel install with MCP smoke: pass
 - `git diff --check`: pass

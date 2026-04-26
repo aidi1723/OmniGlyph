@@ -46,13 +46,14 @@ In one sentence:
 
 ## Available on PyPI + MCP Registry
 
-OmniGlyph is published as both a Python package and an MCP Registry server.
+OmniGlyph is prepared as both a Python package and an MCP Registry server.
 
-- PyPI package: `omniglyph==0.6.0b0`
+- Current source package version: `omniglyph==0.7.0b0`
+- Latest published PyPI package: `omniglyph==0.6.0b0`
 - MCP Registry server: `io.github.aidi1723/omniglyph`
 - Transport: local stdio MCP server
 
-Install from PyPI:
+Install the latest published PyPI package:
 
 ```bash
 pip install omniglyph==0.6.0b0
@@ -70,9 +71,9 @@ Quick MCP smoke test:
 printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | omniglyph-mcp
 ```
 
-The published `0.6.0b0` package exposes the v0.6 MCP tool set. The current source branch adds unreleased v0.7 tools for grounded output and language security.
+The source branch is now versioned as `0.7.0b0` and exposes the v0.7 MCP tool set. PyPI publication for `0.7.0b0` is a separate release step.
 
-Current source MCP tools: `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `explain_code_security`, `normalize_tokens`, `validate_output_terms`, `enforce_grounded_output`, `scan_code_symbols`, `scan_unicode_security`, `scan_language_input`, `scan_output_dlp`, `enforce_intent`, and `audit_explain`.
+Current source MCP tools: `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `explain_code_security`, `normalize_tokens`, `list_namespaces`, `validate_lexicon_pack`, `validate_output_terms`, `enforce_grounded_output`, `scan_code_symbols`, `scan_unicode_security`, `scan_language_input`, `scan_output_dlp`, `enforce_intent`, and `audit_explain`.
 
 ## Why It Exists
 
@@ -365,7 +366,7 @@ OmniGlyph is designed to reduce token waste and hallucination risk by replacing 
 
 ### Verified Data
 
-The current `v0.6.0-beta` candidate has been verified locally with:
+The current `v0.7.0-beta` source candidate has been verified locally with:
 
 | Metric | Result |
 | --- | ---: |
@@ -373,7 +374,7 @@ The current `v0.6.0-beta` candidate has been verified locally with:
 | Unihan_Readings import | `291,227` properties |
 | Unihan_DictionaryLikeData import | `156,251` properties |
 | Total verified Unihan properties | `447,478` properties |
-| Local test suite | `85 passed` |
+| Local test suite | `112 passed` |
 | N100 Linux test suite | Previously verified on beta branch |
 | Docker build/run/healthcheck | Previously verified on N100 |
 | SQLite lookup benchmark for `铝` | P95 about `0.17ms` over 1,000 lookups |
@@ -614,7 +615,7 @@ Example JSON-RPC request over stdio:
 {"jsonrpc":"2.0","id":1,"method":"tools/list"}
 ```
 
-The MCP server reads from the same local SQLite symbol fact base used by `/api/v1/glyph`. In the current source branch, it exposes `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `explain_code_security`, `normalize_tokens`, `validate_output_terms`, `enforce_grounded_output`, `scan_code_symbols`, `scan_unicode_security`, `scan_language_input`, `scan_output_dlp`, `enforce_intent`, and `audit_explain`.
+The MCP server reads from the same local SQLite symbol fact base used by `/api/v1/glyph`. In the current source branch, it exposes `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `explain_code_security`, `normalize_tokens`, `list_namespaces`, `validate_lexicon_pack`, `validate_output_terms`, `enforce_grounded_output`, `scan_code_symbols`, `scan_unicode_security`, `scan_language_input`, `scan_output_dlp`, `enforce_intent`, and `audit_explain`.
 
 ## Local MVP Commands
 
