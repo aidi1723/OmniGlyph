@@ -16,6 +16,7 @@ It is suitable for experimentation, local agent workflows, RAG preprocessing, co
 - UnicodeData ingestion and glyph lookup.
 - Unihan property ingestion for CJK-friendly lexical facts.
 - Private domain pack CSV ingestion.
+- Standard Lexicon Pack directories with `pack.json`, `terms.csv`, validation, dry-run import, and namespace replacement.
 - `GET /api/v1/glyph`, `GET /api/v1/term`, `POST /api/v1/normalize`, OES explanation, Unicode security scan, and audit APIs.
 - MCP stdio server with fourteen tools in the current source branch:
   - `lookup_glyph`
@@ -36,6 +37,7 @@ It is suitable for experimentation, local agent workflows, RAG preprocessing, co
 - Software-development domain pack example under `examples/domain-packs/software_development.csv`.
 - Strict source-grounding enforcement for checked output terms through deterministic `allow` / `block` decision evidence.
 - Language Security Gateway checks for prompt-injection input, outbound DLP redaction, and manifest-based intent sandbox decisions.
+- Approved `sensitivity=secret` lexicon entries can feed output DLP redaction when requested by the host.
 - Structured audit events that report actor, action, input, source IDs, findings, and unknown limits.
 - PyPI distribution and MCP Registry publication.
 

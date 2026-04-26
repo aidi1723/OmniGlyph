@@ -14,6 +14,20 @@ def validate_output_terms(repository: GlyphRepository, terms: list[str]) -> dict
             unknown.append(term)
             details.append({"term": term, "status": "unknown", "canonical_id": None})
             continue
+        if record.get("review_status") != "approved":
+            unknown.append(term)
+            details.append(
+                {
+                    "term": term,
+                    "status": "unapproved",
+                    "canonical_id": record["canonical_id"],
+                    "entry_type": record["entry_type"],
+                    "review_status": record.get("review_status"),
+                    "source_id": record["source_id"],
+                    "source_name": record["source_name"],
+                }
+            )
+            continue
         known[term] = record["canonical_id"]
         details.append(
             {
@@ -21,6 +35,7 @@ def validate_output_terms(repository: GlyphRepository, terms: list[str]) -> dict
                 "status": "known",
                 "canonical_id": record["canonical_id"],
                 "entry_type": record["entry_type"],
+                "review_status": record.get("review_status"),
                 "source_id": record["source_id"],
                 "source_name": record["source_name"],
             }

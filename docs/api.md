@@ -351,7 +351,7 @@ Scan model output before it crosses an external boundary.
 Request:
 
 ```json
-{"text":"token sk-proj-abcdefghijklmnopqrstuvwxyz123456","secret_terms":["Alpha Factory"],"source_name":"reply.txt"}
+{"text":"token sk-proj-abcdefghijklmnopqrstuvwxyz123456","secret_terms":["Alpha Factory"],"include_lexicon_secrets":true,"source_name":"reply.txt"}
 ```
 
 Response:
@@ -365,6 +365,8 @@ Response:
   "redacted_text": "token [REDACTED]"
 }
 ```
+
+When `include_lexicon_secrets` is true, OmniGlyph also redacts approved lexicon entries where `sensitivity` is `secret`, including their aliases.
 
 ## `POST /api/v1/language-security/enforce-intent`
 

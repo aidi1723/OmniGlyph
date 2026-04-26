@@ -16,6 +16,10 @@ class DomainEntry:
     definition: str | None
     traits: dict
     namespace: str
+    sensitivity: str = "normal"
+    review_status: str = "approved"
+    pack_id: str | None = None
+    pack_version: str | None = None
 
 
 def parse_domain_pack(path: Path, namespace: str) -> Iterator[DomainEntry]:
@@ -37,6 +41,10 @@ def parse_domain_pack(path: Path, namespace: str) -> Iterator[DomainEntry]:
                 traits = {}
             if not isinstance(traits, dict):
                 traits = {}
+            sensitivity = (row.get("sensitivity") or "normal").strip() or "normal"
+            review_status = (row.get("review_status") or "approved").strip() or "approved"
+            pack_id = (row.get("pack_id") or "").strip() or None
+            pack_version = (row.get("pack_version") or "").strip() or None
             yield DomainEntry(
                 term=term,
                 canonical_id=canonical_id,
@@ -46,6 +54,10 @@ def parse_domain_pack(path: Path, namespace: str) -> Iterator[DomainEntry]:
                 definition=definition,
                 traits=traits,
                 namespace=namespace,
+                sensitivity=sensitivity,
+                review_status=review_status,
+                pack_id=pack_id,
+                pack_version=pack_version,
             )
 
 

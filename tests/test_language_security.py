@@ -1,9 +1,10 @@
 from fastapi.testclient import TestClient
 
 from omniglyph.api import create_app
+from omniglyph.domain_pack import parse_domain_pack
 from omniglyph.language_security import enforce_intent_manifest, scan_language_input, scan_output_dlp
 from omniglyph.mcp_server import build_tools_list, handle_mcp_request
-from omniglyph.repository import GlyphRepository
+from omniglyph.repository import GlyphRepository, SourceSnapshot
 
 
 def test_scan_language_input_blocks_hidden_prompt_injection():
@@ -103,6 +104,29 @@ def test_language_security_api_exposes_input_output_and_intent_endpoints(tmp_pat
     assert output_response.json()["redacted_text"] == "token [REDACTED]"
     assert intent_response.status_code == 200
     assert intent_response.json()["decision"] == "block"
+
+
+def test_output_dlp_can_use_loaded_secret_lexicon_terms(tmp_path):
+    source = tmp_path / "terms.csv"
+    source.write_text(
+        "term,canonical_id,entry_type,language,aliases,definition,traits,sensitivity,review_status\n"
+        'Alpha Factory,company:alpha_factory,confidential_term,en,AF,Private supplier,"{}",secret,approved\n',
+        encoding="utf-8",
+    )
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+    source_id = repository.add_source_snapshot(SourceSnapshot("Private Domain Pack", "file://domain", "fixture", "sha-secret", "private", "domain"))
+    repository.insert_lexical_entries(list(parse_domain_pack(source, "private_acme")), source_id)
+    client = TestClient(create_app(repository))
+
+    response = client.post(
+        "/api/v1/language-security/scan-output",
+        json={"text": "Supplier Alpha Factory confirmed. Alias AF should stay internal.", "include_lexicon_secrets": True},
+    )
+
+    assert response.status_code == 200
+    assert "Alpha Factory" not in response.json()["redacted_text"]
+    assert "AF" not in response.json()["redacted_text"]
 
 
 def test_mcp_exposes_language_security_tools(tmp_path):

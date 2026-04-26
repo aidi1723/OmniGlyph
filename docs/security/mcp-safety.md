@@ -21,7 +21,7 @@ The stdio MCP server exposes lookup and scanning tools only. It does not provide
 | `scan_code_symbols` | no | provided text | no | no | no |
 | `scan_unicode_security` | no | provided text | no | no | no |
 | `scan_language_input` | no | provided text | no | no | no |
-| `scan_output_dlp` | no | provided text | no | no | no |
+| `scan_output_dlp` | optional for secret lexicon terms | provided text | no | no | no |
 | `enforce_intent` | no | provided manifest | no | no | no |
 | `audit_explain` | yes for glyph/term | provided text | no | no | no |
 
