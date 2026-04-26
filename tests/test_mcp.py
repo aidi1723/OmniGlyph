@@ -46,7 +46,7 @@ def test_handle_mcp_tools_list_request():
 def test_handle_mcp_initialize_uses_package_version():
     response = handle_mcp_request({"jsonrpc": "2.0", "id": 1, "method": "initialize"})
 
-    assert __version__ == "0.6.0b0"
+    assert __version__ == "0.7.0b0"
     assert response["result"]["serverInfo"]["version"] == __version__
 
 
@@ -107,6 +107,12 @@ def test_mcp_tools_list_includes_security_and_audit_tools():
     names = {tool["name"] for tool in build_tools_list()}
 
     assert {"scan_unicode_security", "explain_code_security", "audit_explain", "enforce_grounded_output"}.issubset(names)
+
+
+def test_mcp_tools_list_includes_lexicon_product_tools():
+    names = {tool["name"] for tool in build_tools_list()}
+
+    assert {"list_namespaces", "validate_lexicon_pack"}.issubset(names)
 
 
 def test_handle_mcp_lookup_term_tool_call(tmp_path):
@@ -314,3 +320,38 @@ def test_handle_mcp_enforce_grounded_output_tool_call(tmp_path):
     assert payload["decision"] == "block"
     assert payload["unknown"] == ["HS 7604.99X"]
     assert payload["audit"]["action"] == "enforce_grounded_output"
+
+
+def test_handle_mcp_list_namespaces_tool_call(tmp_path):
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 16,
+            "method": "tools/call",
+            "params": {"name": "list_namespaces", "arguments": {}},
+        },
+        repository=seeded_domain_repository(tmp_path),
+    )
+
+    payload = response["result"]["content"][0]["json"]
+    assert payload["schema"] == "omniglyph.lexicon_namespaces:0.1"
+    assert payload["namespaces"][0]["namespace"] == "private_building_materials"
+
+
+def test_handle_mcp_validate_lexicon_pack_tool_call(tmp_path):
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 17,
+            "method": "tools/call",
+            "params": {
+                "name": "validate_lexicon_pack",
+                "arguments": {"path": "examples/lexicon-packs/company_trade_terms"},
+            },
+        },
+        repository=seeded_domain_repository(tmp_path),
+    )
+
+    payload = response["result"]["content"][0]["json"]
+    assert payload["status"] == "pass"
+    assert payload["pack"]["pack_id"] == "company.example.trade_terms"

@@ -37,13 +37,14 @@ OmniGlyph 也把自然语言当作运行时攻击面处理。`scan_language_inpu
 
 ## 已发布到 PyPI + MCP Registry
 
-OmniGlyph 已作为 Python 包和 MCP Registry server 发布。
+OmniGlyph 已准备为 Python 包和 MCP Registry server。
 
-- PyPI 包：`omniglyph==0.6.0b0`
+- 当前源码包版本：`omniglyph==0.7.0b0`
+- 最新已发布 PyPI 包：`omniglyph==0.6.0b0`
 - MCP Registry server：`io.github.aidi1723/omniglyph`
 - 传输方式：本地 stdio MCP server
 
-从 PyPI 安装：
+安装最新已发布的 PyPI 包：
 
 ```bash
 pip install omniglyph==0.6.0b0
@@ -61,9 +62,9 @@ omniglyph-mcp
 printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | omniglyph-mcp
 ```
 
-已发布的 `0.6.0b0` 包提供 v0.6 MCP 工具集。当前源码分支额外增加了 v0.7 的严格溯源与语言安全工具。
+当前源码分支版本为 `0.7.0b0`，已经提供 v0.7 MCP 工具集。`0.7.0b0` 的 PyPI 发布属于单独 release 步骤。
 
-当前源码 MCP 工具：`lookup_glyph`、`lookup_term`、`explain_glyph`、`explain_term`、`explain_code_security`、`normalize_tokens`、`validate_output_terms`、`enforce_grounded_output`、`scan_code_symbols`、`scan_unicode_security`、`scan_language_input`、`scan_output_dlp`、`enforce_intent`、`audit_explain`。
+当前源码 MCP 工具：`lookup_glyph`、`lookup_term`、`explain_glyph`、`explain_term`、`explain_code_security`、`normalize_tokens`、`list_namespaces`、`validate_lexicon_pack`、`validate_output_terms`、`enforce_grounded_output`、`scan_code_symbols`、`scan_unicode_security`、`scan_language_input`、`scan_output_dlp`、`enforce_intent`、`audit_explain`。
 
 ## 为什么说它是 Agent 基础设施
 
@@ -358,7 +359,7 @@ OmniGlyph 的目标是用本地、可追溯、结构化查询，替代 Agent 临
 
 ### 已验证数据
 
-当前 `v0.6.0-beta` 候选版本已在本地验证：
+当前 `v0.7.0-beta` 源码候选版本已在本地验证：
 
 | 指标 | 结果 |
 | --- | ---: |
@@ -366,7 +367,7 @@ OmniGlyph 的目标是用本地、可追溯、结构化查询，替代 Agent 临
 | Unihan_Readings 导入 | `291,227` 条 properties |
 | Unihan_DictionaryLikeData 导入 | `156,251` 条 properties |
 | 已验证 Unihan 属性总量 | `447,478` 条 properties |
-| 本地测试 | `85 passed` |
+| 本地测试 | `112 passed` |
 | N100 Linux 测试 | beta 分支曾验证通过 |
 | Docker build/run/healthcheck | N100 曾验证通过 |
 | `铝` 的 SQLite 查询 benchmark | 1000 次查询 P95 约 `0.17ms` |
@@ -418,7 +419,7 @@ OmniGlyph 当前通过以下规则降低字符、符号和术语级幻觉：
 
 ## 当前阶段
 
-当前版本适合作为 `v0.6.0-beta` 开源发布候选：
+当前源码版本适合作为 `v0.7.0-beta` 开源发布候选：
 
 - 可用于本地评估。
 - 可用于 Agent 工具集成实验。

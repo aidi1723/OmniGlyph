@@ -9,6 +9,7 @@ from omniglyph.config import settings
 from omniglyph.explanation import explain_code_security, explain_glyph, explain_term
 from omniglyph.guardrail import enforce_grounded_output, validate_output_terms
 from omniglyph.language_security import enforce_intent_manifest, scan_language_input, scan_output_dlp
+from omniglyph.lexicon_pack import validate_lexicon_pack
 from omniglyph.normalization import compact_normalize, normalize_tokens
 from omniglyph.repository import GlyphRepository
 
@@ -75,6 +76,25 @@ def build_tools_list() -> list[dict[str, Any]]:
                     "mode": {"type": "string", "enum": ["full", "compact"]},
                 },
                 "required": ["tokens"],
+            },
+        },
+        {
+            "name": "list_namespaces",
+            "description": "List loaded lexical namespaces and their entry, alias, pack, and source summaries.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {},
+            },
+        },
+        {
+            "name": "validate_lexicon_pack",
+            "description": "Validate an OmniGlyph Lexicon Pack directory with pack.json and terms.csv.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Path to a Lexicon Pack directory."},
+                },
+                "required": ["path"],
             },
         },
         {
@@ -251,6 +271,28 @@ def handle_mcp_request(request: dict[str, Any], repository: GlyphRepository | No
             results = normalize_tokens(glyph_repository, tokens)
             payload = compact_normalize(results) if mode == "compact" else {"results": results}
             return _result(request_id, {"content": [{"type": "json", "json": payload}]})
+
+        if tool_name == "list_namespaces":
+            return _result(
+                request_id,
+                {
+                    "content": [
+                        {
+                            "type": "json",
+                            "json": {
+                                "schema": "omniglyph.lexicon_namespaces:0.1",
+                                "namespaces": glyph_repository.list_lexical_namespaces(),
+                            },
+                        }
+                    ]
+                },
+            )
+
+        if tool_name == "validate_lexicon_pack":
+            path = arguments.get("path")
+            if not isinstance(path, str) or not path.strip():
+                return _error(request_id, -32602, "validate_lexicon_pack requires path")
+            return _result(request_id, {"content": [{"type": "json", "json": validate_lexicon_pack(path)}]})
 
         if tool_name == "validate_output_terms":
             terms = arguments.get("terms")

@@ -120,6 +120,26 @@ Input:
 {"tokens":["铝","FOB","tempered glass","unknown"],"mode":"compact"}
 ```
 
+### `list_namespaces`
+
+Lists loaded lexical namespaces with entry, alias, pack, and source summaries.
+
+Input:
+
+```json
+{}
+```
+
+### `validate_lexicon_pack`
+
+Validates an OmniGlyph Lexicon Pack directory before import.
+
+Input:
+
+```json
+{"path":"examples/lexicon-packs/company_trade_terms"}
+```
+
 ### `validate_output_terms`
 
 Checks generated output terms against the local fact base before customer or downstream system delivery.
@@ -206,6 +226,7 @@ Input:
 - code-symbol linting before agents edit copied or generated code
 - OES-shaped Unicode security explanations
 - RAG preprocessing for multilingual/domain terms
+- company and personal Lexicon Pack validation
 - output guardrail checks and strict source-grounding decisions for generated trade/material terms
 - prompt-injection input scanning, output DLP redaction, and intent sandbox decisions
 - audit evidence for enterprise agent workflows

@@ -266,6 +266,51 @@ class GlyphRepository:
             ).fetchall()
             return [row["value"] for row in rows]
 
+    def list_lexical_namespaces(self) -> list[dict]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT le.namespace,
+                       COUNT(DISTINCT le.id) AS entry_count,
+                       COUNT(DISTINCT la.id) AS alias_count
+                FROM lexical_entry le
+                LEFT JOIN lexical_alias la ON la.lexical_entry_id = le.id
+                GROUP BY le.namespace
+                ORDER BY le.namespace
+                """
+            ).fetchall()
+            result = []
+            for row in rows:
+                pack_rows = connection.execute(
+                    """
+                    SELECT DISTINCT pack_id
+                    FROM lexical_entry
+                    WHERE namespace = ? AND pack_id IS NOT NULL
+                    ORDER BY pack_id
+                    """,
+                    (row["namespace"],),
+                ).fetchall()
+                source_rows = connection.execute(
+                    """
+                    SELECT DISTINCT ss.source_name
+                    FROM lexical_entry le
+                    JOIN source_snapshot ss ON ss.id = le.source_id
+                    WHERE le.namespace = ?
+                    ORDER BY ss.source_name
+                    """,
+                    (row["namespace"],),
+                ).fetchall()
+                result.append(
+                    {
+                        "namespace": row["namespace"],
+                        "entry_count": row["entry_count"],
+                        "alias_count": row["alias_count"],
+                        "pack_ids": [pack["pack_id"] for pack in pack_rows],
+                        "source_names": [source["source_name"] for source in source_rows],
+                    }
+                )
+            return result
+
     def _lexical_row_to_dict(self, row: sqlite3.Row) -> dict:
         return {
             "id": row["id"],
