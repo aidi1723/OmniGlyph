@@ -11,7 +11,7 @@ OmniGlyph 不是传统字典。传统字典主要给人类阅读；OmniGlyph 给
 
 ## 产品主线
 
-OmniGlyph 现在围绕三层能力建设，但三层都共享同一个确定性符号真值底座。
+OmniGlyph 现在围绕四层能力建设，但四层都共享同一个确定性符号真值底座。
 
 ### 1. 全球符号真知层
 
@@ -31,15 +31,21 @@ OmniGlyph 也把自然语言当作运行时攻击面处理。`scan_language_inpu
 
 这一层不执行 shell 命令，也不承诺彻底解决所有 prompt injection。它提供机器可读的 `allow`、`review`、`block` 证据，让执行和交付决策发生在模型外部。
 
+### 4. World Protocol Pack
+
+World Protocol Pack 是“世界大词典 / 文明根证书”方向的第一步工程化落地：用版本化协议规则包，让 Agent host 在允许目标、动作、intent 或输出继续之前，通过 API、MCP 或 CLI 做确定性检查。
+
+它不声称定义最终的全人类价值体系，而是检查已经配置好的规则，并返回匹配规则、来源、置信度、limits，以及 `allow`、`warn`、`block` 或 `unknown` 决策。
+
 一句话：
 
-> OmniGlyph 是面向 AI Agent 的本地符号真值层、确定性企业护栏与语言安全网关。
+> OmniGlyph 是面向 AI Agent 的本地符号真值层、确定性企业护栏、语言安全网关与协议检查层。
 
 ## 已发布到 PyPI + MCP Registry
 
 OmniGlyph 已准备为 Python 包和 MCP Registry server。
 
-- 当前源码包版本：`omniglyph==0.7.0b0`
+- 当前源码包版本：`omniglyph==0.8.0b0`
 - 最新已发布 PyPI 包：`omniglyph==0.6.0b0`
 - MCP Registry server：`io.github.aidi1723/omniglyph`
 - 传输方式：本地 stdio MCP server
@@ -62,9 +68,9 @@ omniglyph-mcp
 printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | omniglyph-mcp
 ```
 
-当前源码分支版本为 `0.7.0b0`，已经提供 v0.7 MCP 工具集。`0.7.0b0` 的 PyPI 发布属于单独 release 步骤。
+当前源码分支版本为 `0.8.0b0`，已经提供 World Protocol Pack 开发工具集。`0.8.0b0` 的 PyPI 发布属于单独 release 步骤。
 
-当前源码 MCP 工具：`lookup_glyph`、`lookup_term`、`explain_glyph`、`explain_term`、`explain_code_security`、`normalize_tokens`、`list_namespaces`、`validate_lexicon_pack`、`validate_output_terms`、`enforce_grounded_output`、`scan_code_symbols`、`scan_unicode_security`、`scan_language_input`、`scan_output_dlp`、`enforce_intent`、`audit_explain`。
+当前源码 MCP 工具：`lookup_glyph`、`lookup_term`、`explain_glyph`、`explain_term`、`explain_code_security`、`normalize_tokens`、`list_namespaces`、`validate_lexicon_pack`、`validate_protocol_pack`、`check_protocol`、`validate_output_terms`、`enforce_grounded_output`、`scan_code_symbols`、`scan_unicode_security`、`scan_language_input`、`scan_output_dlp`、`enforce_intent`、`audit_explain`。
 
 ## 为什么说它是 Agent 基础设施
 
@@ -161,7 +167,8 @@ OmniGlyph 把字符、别名、缩写和领域术语转换为 canonical ID、JSO
 - 软件开发领域词库 starter pack：`examples/domain-packs/software_development.csv`。
 - Audit Workflow：记录谁查询了什么、来源是什么、哪里未知。
 - Language Security Gateway：输入 prompt-injection 扫描、输出 DLP 脱敏、intent manifest 沙盒决策。
-- MCP 工具：`lookup_glyph`、`lookup_term`、`explain_glyph`、`explain_term`、`explain_code_security`、`normalize_tokens`、`validate_output_terms`、`enforce_grounded_output`、`scan_code_symbols`、`scan_unicode_security`、`scan_language_input`、`scan_output_dlp`、`enforce_intent`、`audit_explain`。
+- World Protocol Pack：验证协议包，并对 Agent 目标、动作、intent 和输出做确定性协议检查。
+- MCP 工具：`lookup_glyph`、`lookup_term`、`explain_glyph`、`explain_term`、`explain_code_security`、`normalize_tokens`、`list_namespaces`、`validate_lexicon_pack`、`validate_protocol_pack`、`check_protocol`、`validate_output_terms`、`enforce_grounded_output`、`scan_code_symbols`、`scan_unicode_security`、`scan_language_input`、`scan_output_dlp`、`enforce_intent`、`audit_explain`。
 - 建材外贸 demo pack 与跨境询盘 demo。
 - Docker、CI、release check、N100 验证记录。
 
@@ -188,6 +195,13 @@ UV_CACHE_DIR=.uv-cache uv pip install -e '.[dev]'
 .venv/bin/omniglyph validate-domain-pack my-pack
 .venv/bin/omniglyph ingest-domain-pack --source my-pack --dry-run
 .venv/bin/omniglyph ingest-domain-pack --source my-pack --replace-namespace
+```
+
+验证和检查 World Protocol Pack：
+
+```bash
+.venv/bin/omniglyph validate-protocol-pack examples/protocol-packs/root_starter
+.venv/bin/omniglyph check-protocol --protocol examples/protocol-packs/root_starter --kind output --text "unsupported reference"
 ```
 
 启动 API：
@@ -359,7 +373,7 @@ OmniGlyph 的目标是用本地、可追溯、结构化查询，替代 Agent 临
 
 ### 已验证数据
 
-当前 `v0.7.0-beta` 源码候选版本已在本地验证：
+当前 `v0.8.0b0` 开发源码已在本地验证：
 
 | 指标 | 结果 |
 | --- | ---: |
@@ -367,7 +381,7 @@ OmniGlyph 的目标是用本地、可追溯、结构化查询，替代 Agent 临
 | Unihan_Readings 导入 | `291,227` 条 properties |
 | Unihan_DictionaryLikeData 导入 | `156,251` 条 properties |
 | 已验证 Unihan 属性总量 | `447,478` 条 properties |
-| 本地测试 | `112 passed` |
+| 本地测试 | 已通过仓库测试套件验证 |
 | N100 Linux 测试 | beta 分支曾验证通过 |
 | Docker build/run/healthcheck | N100 曾验证通过 |
 | `铝` 的 SQLite 查询 benchmark | 1000 次查询 P95 约 `0.17ms` |
@@ -419,7 +433,7 @@ OmniGlyph 当前通过以下规则降低字符、符号和术语级幻觉：
 
 ## 当前阶段
 
-当前源码版本适合作为 `v0.7.0-beta` 开源发布候选：
+当前源码版本适合作为 `v0.8.0b0` 开发候选：
 
 - 可用于本地评估。
 - 可用于 Agent 工具集成实验。

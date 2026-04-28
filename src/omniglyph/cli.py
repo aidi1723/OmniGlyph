@@ -8,6 +8,7 @@ from omniglyph.code_linter import format_json_report, format_text_report, scan_p
 from omniglyph.config import settings
 from omniglyph.lexicon_pack import entries_from_source, init_lexicon_pack, source_paths, validate_lexicon_pack
 from omniglyph.normalizer import parse_unicode_data
+from omniglyph.protocol_pack import check_protocol, init_protocol_pack, validate_protocol_pack
 from omniglyph.unihan import parse_unihan_data
 from omniglyph.repository import GlyphRepository, SourceSnapshot
 from omniglyph.sources import download_source, register_local_source
@@ -166,6 +167,20 @@ def main() -> None:
     validate_pack = subcommands.add_parser("validate-domain-pack")
     validate_pack.add_argument("path", type=Path)
 
+    init_protocol = subcommands.add_parser("init-protocol-pack")
+    init_protocol.add_argument("path", type=Path)
+    init_protocol.add_argument("--protocol-id", required=True)
+    init_protocol.add_argument("--name", required=True)
+
+    validate_protocol = subcommands.add_parser("validate-protocol-pack")
+    validate_protocol.add_argument("path", type=Path)
+
+    check_protocol_parser = subcommands.add_parser("check-protocol")
+    check_protocol_parser.add_argument("--protocol", type=Path, required=True)
+    check_protocol_parser.add_argument("--kind", choices=["goal", "action", "output", "intent"], required=True)
+    check_protocol_parser.add_argument("--text", required=True)
+    check_protocol_parser.add_argument("--actor-id")
+
     lookup = subcommands.add_parser("lookup")
     lookup.add_argument("text")
 
@@ -201,6 +216,19 @@ def main() -> None:
         report = validate_lexicon_pack(args.path)
         print(json.dumps(report, ensure_ascii=False, indent=2))
         if report["status"] != "pass":
+            raise SystemExit(1)
+    elif args.command == "init-protocol-pack":
+        init_protocol_pack(args.path, protocol_id=args.protocol_id, name=args.name)
+        print(f"Created protocol pack at {args.path}")
+    elif args.command == "validate-protocol-pack":
+        report = validate_protocol_pack(args.path)
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        if report["status"] != "pass":
+            raise SystemExit(1)
+    elif args.command == "check-protocol":
+        report = check_protocol(args.protocol, text=args.text, kind=args.kind, actor_id=args.actor_id)
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        if report["decision"] == "block":
             raise SystemExit(1)
     elif args.command == "lookup":
         repository = GlyphRepository(settings.sqlite_path)

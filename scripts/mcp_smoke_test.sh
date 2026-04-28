@@ -20,6 +20,8 @@ expected = {
     "normalize_tokens",
     "list_namespaces",
     "validate_lexicon_pack",
+    "validate_protocol_pack",
+    "check_protocol",
     "validate_output_terms",
     "enforce_grounded_output",
     "scan_code_symbols",

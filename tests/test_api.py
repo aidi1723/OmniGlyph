@@ -86,7 +86,7 @@ def test_api_metadata_uses_package_version(tmp_path):
     repository = GlyphRepository(tmp_path / "test.sqlite3")
     app = create_app(repository)
 
-    assert __version__ == "0.7.0b0"
+    assert __version__ == "0.8.0b0"
     assert app.version == __version__
 
 
@@ -224,3 +224,34 @@ def test_lexicon_validate_pack_endpoint_reports_valid_example_pack(tmp_path):
     assert response.status_code == 200
     assert response.json()["status"] == "pass"
     assert response.json()["summary"]["entry_count"] == 4
+
+
+def test_protocol_validate_pack_endpoint_reports_valid_example_pack(tmp_path):
+    client = TestClient(create_app(GlyphRepository(tmp_path / "test.sqlite3")))
+
+    response = client.post("/api/v1/protocol/validate-pack", json={"path": "examples/protocol-packs/root_starter"})
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "pass"
+    assert response.json()["summary"]["rule_count"] == 3
+
+
+def test_protocol_check_endpoint_blocks_matching_rule(tmp_path):
+    client = TestClient(create_app(GlyphRepository(tmp_path / "test.sqlite3")))
+
+    response = client.post(
+        "/api/v1/protocol/check",
+        json={
+            "path": "examples/protocol-packs/root_starter",
+            "text": "This output includes a fake source.",
+            "kind": "output",
+            "actor_id": "agent:writer",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["schema"] == "omniglyph.protocol_check:0.1"
+    assert payload["decision"] == "block"
+    assert payload["matched_rules"][0]["rule_id"] == "symbolic.truth.no_fabricated_sources"
+    assert payload["audit"]["actor"] == {"id": "agent:writer"}

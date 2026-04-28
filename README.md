@@ -20,7 +20,7 @@ In the AGI era, agents need a deterministic substrate beneath probabilistic lang
 
 ## Product Thesis
 
-OmniGlyph is built around three layers that share the same deterministic foundation:
+OmniGlyph is built around four layers that share the same deterministic foundation:
 
 ### 1. Global Symbol Ground Truth Layer
 
@@ -40,15 +40,21 @@ OmniGlyph also treats natural language as a runtime attack surface. `scan_langua
 
 This layer does not execute shell commands or promise complete prompt-injection immunity. It gives host systems machine-readable `allow`, `review`, and `block` evidence so execution and delivery decisions can happen outside the model.
 
+### 4. World Protocol Pack
+
+World Protocol Pack is the first practical slice of the "world dictionary" idea: versioned protocol rules that an Agent host can validate and call through API, MCP, or CLI before allowing a goal, action, intent, or output to continue.
+
+It does not claim to define final universal human values. It provides deterministic checks for configured rules, returning matched rule IDs, sources, confidence, limits, and an `allow`, `warn`, `block`, or `unknown` decision.
+
 In one sentence:
 
-> OmniGlyph is a local Symbol Ground Truth Layer, deterministic enterprise guardrail, and language security gateway for AI agents.
+> OmniGlyph is a local Symbol Ground Truth Layer, deterministic enterprise guardrail, language security gateway, and protocol-check layer for AI agents.
 
 ## Available on PyPI + MCP Registry
 
 OmniGlyph is prepared as both a Python package and an MCP Registry server.
 
-- Current source package version: `omniglyph==0.7.0b0`
+- Current source package version: `omniglyph==0.8.0b0`
 - Latest published PyPI package: `omniglyph==0.6.0b0`
 - MCP Registry server: `io.github.aidi1723/omniglyph`
 - Transport: local stdio MCP server
@@ -71,9 +77,9 @@ Quick MCP smoke test:
 printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | omniglyph-mcp
 ```
 
-The source branch is now versioned as `0.7.0b0` and exposes the v0.7 MCP tool set. PyPI publication for `0.7.0b0` is a separate release step.
+The source branch is now versioned as `0.8.0b0` and exposes the World Protocol Pack development tool set. PyPI publication for `0.8.0b0` is a separate release step.
 
-Current source MCP tools: `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `explain_code_security`, `normalize_tokens`, `list_namespaces`, `validate_lexicon_pack`, `validate_output_terms`, `enforce_grounded_output`, `scan_code_symbols`, `scan_unicode_security`, `scan_language_input`, `scan_output_dlp`, `enforce_intent`, and `audit_explain`.
+Current source MCP tools: `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `explain_code_security`, `normalize_tokens`, `list_namespaces`, `validate_lexicon_pack`, `validate_protocol_pack`, `check_protocol`, `validate_output_terms`, `enforce_grounded_output`, `scan_code_symbols`, `scan_unicode_security`, `scan_language_input`, `scan_output_dlp`, `enforce_intent`, and `audit_explain`.
 
 ## Why It Exists
 
@@ -366,7 +372,7 @@ OmniGlyph is designed to reduce token waste and hallucination risk by replacing 
 
 ### Verified Data
 
-The current `v0.7.0-beta` source candidate has been verified locally with:
+The current `v0.8.0b0` development source has been verified locally with:
 
 | Metric | Result |
 | --- | ---: |
@@ -374,7 +380,7 @@ The current `v0.7.0-beta` source candidate has been verified locally with:
 | Unihan_Readings import | `291,227` properties |
 | Unihan_DictionaryLikeData import | `156,251` properties |
 | Total verified Unihan properties | `447,478` properties |
-| Local test suite | `112 passed` |
+| Local test suite | Verified by the repository test suite |
 | N100 Linux test suite | Previously verified on beta branch |
 | Docker build/run/healthcheck | Previously verified on N100 |
 | SQLite lookup benchmark for `铝` | P95 about `0.17ms` over 1,000 lookups |
@@ -524,8 +530,10 @@ Example output maps `aluminum profile`, `tempered glass`, `FOB`, and `MOQ` to ca
 - API reference: `docs/api.md`
 - MCP tools: `docs/mcp-tools.md`
 - Lexicon Pack Standard: `docs/specs/lexicon-pack-standard.md`
+- World Protocol Pack Standard: `docs/specs/world-protocol-pack-standard.md`
 - Deterministic MCP Guardrail architecture: `docs/architecture/deterministic-mcp-guardrail.md`
 - Language Security Gateway architecture: `docs/architecture/language-security-gateway.md`
+- World Protocol Layer architecture: `docs/architecture/world-protocol-layer.md`
 - Codex MCP integration: `docs/integrations/codex-mcp.md`
 - Claude Desktop MCP integration: `docs/integrations/claude-desktop-mcp.md`
 - Claude Code MCP integration: `docs/integrations/claude-code-mcp.md`
@@ -570,6 +578,13 @@ The software-development starter pack is available at:
 
 ```bash
 omniglyph ingest-domain-pack --source examples/domain-packs/software_development.csv --namespace public_software_development --source-version 0.1.0
+```
+
+Validate and check a World Protocol Pack:
+
+```bash
+omniglyph validate-protocol-pack examples/protocol-packs/root_starter
+omniglyph check-protocol --protocol examples/protocol-packs/root_starter --kind output --text "unsupported reference"
 ```
 
 Look up a term:

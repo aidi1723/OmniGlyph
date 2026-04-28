@@ -6,7 +6,7 @@ OmniGlyph
 
 ## Summary
 
-A local-first Symbol Ground Truth MCP server for AI agents. OmniGlyph provides deterministic Unicode glyph lookup, private/domain term normalization, OES explanations, output term validation, strict source-grounding decisions, Unicode security scanning, language-security checks, and audit events for source-backed agent workflows.
+A local-first Symbol Ground Truth MCP server for AI agents. OmniGlyph provides deterministic Unicode glyph lookup, private/domain term normalization, OES explanations, World Protocol Pack checks, output term validation, strict source-grounding decisions, Unicode security scanning, language-security checks, and audit events for source-backed agent workflows.
 
 ## Repository
 
@@ -140,6 +140,26 @@ Input:
 {"path":"examples/lexicon-packs/company_trade_terms"}
 ```
 
+### `validate_protocol_pack`
+
+Validates an OmniGlyph World Protocol Pack directory before use.
+
+Input:
+
+```json
+{"path":"examples/protocol-packs/root_starter"}
+```
+
+### `check_protocol`
+
+Checks an Agent goal, action, output, or intent against a World Protocol Pack and returns `allow`, `warn`, `block`, or `unknown` evidence.
+
+Input:
+
+```json
+{"path":"examples/protocol-packs/root_starter","kind":"output","text":"This output includes a fake source.","actor_id":"agent:writer"}
+```
+
 ### `validate_output_terms`
 
 Checks generated output terms against the local fact base before customer or downstream system delivery.
@@ -227,6 +247,7 @@ Input:
 - OES-shaped Unicode security explanations
 - RAG preprocessing for multilingual/domain terms
 - company and personal Lexicon Pack validation
+- World Protocol Pack validation and checked protocol decisions
 - output guardrail checks and strict source-grounding decisions for generated trade/material terms
 - prompt-injection input scanning, output DLP redaction, and intent sandbox decisions
 - audit evidence for enterprise agent workflows

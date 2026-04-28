@@ -18,7 +18,7 @@ It is suitable for experimentation, local agent workflows, RAG preprocessing, co
 - Private domain pack CSV ingestion.
 - Standard Lexicon Pack directories with `pack.json`, `terms.csv`, validation, dry-run import, and namespace replacement.
 - `GET /api/v1/glyph`, `GET /api/v1/term`, `POST /api/v1/normalize`, OES explanation, Unicode security scan, and audit APIs.
-- MCP stdio server with sixteen tools in the current source branch:
+- MCP stdio server with eighteen tools in the current source branch:
   - `lookup_glyph`
   - `lookup_term`
   - `explain_glyph`
@@ -27,6 +27,8 @@ It is suitable for experimentation, local agent workflows, RAG preprocessing, co
   - `normalize_tokens`
   - `list_namespaces`
   - `validate_lexicon_pack`
+  - `validate_protocol_pack`
+  - `check_protocol`
   - `validate_output_terms`
   - `enforce_grounded_output`
   - `scan_code_symbols`
@@ -39,6 +41,7 @@ It is suitable for experimentation, local agent workflows, RAG preprocessing, co
 - Software-development domain pack example under `examples/domain-packs/software_development.csv`.
 - Strict source-grounding enforcement for checked output terms through deterministic `allow` / `block` decision evidence.
 - Language Security Gateway checks for prompt-injection input, outbound DLP redaction, and manifest-based intent sandbox decisions.
+- World Protocol Pack v0.1 validates protocol packs and checks configured rules against Agent goals, actions, intents, and outputs.
 - Approved `sensitivity=secret` lexicon entries can feed output DLP redaction when requested by the host.
 - Structured audit events that report actor, action, input, source IDs, findings, and unknown limits.
 - PyPI distribution and MCP Registry publication.
@@ -68,6 +71,7 @@ OmniGlyph is not yet ideal for:
 - Community adoption is still early.
 - Current output guardrail supports known/unknown validation and strict source-grounding decisions for checked terms, but not full policy orchestration.
 - Current Language Security Gateway is a deterministic checkpoint layer, not a complete prompt-injection, DLP, IAM, or OS sandboxing product.
+- Current World Protocol Pack checks configured deterministic rules only; it is not a global ethics authority or proof of complete Agent alignment.
 - Homoglyph detection is rule-based with a minimal confusables map; full Unicode confusables data ingestion is planned.
 - OmniGlyph Explanation Standard v0.1 has runtime wrappers for glyph, term, and code-security explanations; broader CLDR and concept graph integrations are still planned.
 - No automatic source-code mutation or rewrite is performed.

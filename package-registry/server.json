@@ -1,17 +1,17 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.aidi1723/omniglyph",
-  "description": "Local symbol ground truth MCP server for Unicode lookup, Lexicon Packs, source-grounded guardrails, language-security checks, and audit evidence.",
+  "description": "Local symbol ground truth MCP server for Unicode lookup, Lexicon Packs, World Protocol Packs, source-grounded guardrails, language-security checks, and audit evidence.",
   "status": "active",
   "repository": {
     "url": "https://github.com/aidi1723/OmniGlyph",
     "source": "github"
   },
-  "version": "0.7.0-beta",
+  "version": "0.8.0-beta",
   "packages": [
     {
       "identifier": "omniglyph",
-      "version": "0.7.0b0",
+      "version": "0.8.0b0",
       "transport": {
         "type": "stdio"
       },
@@ -50,6 +50,14 @@
     {
       "name": "validate_lexicon_pack",
       "description": "Validate an OmniGlyph Lexicon Pack directory with pack.json and terms.csv."
+    },
+    {
+      "name": "validate_protocol_pack",
+      "description": "Validate an OmniGlyph World Protocol Pack directory with protocol.json."
+    },
+    {
+      "name": "check_protocol",
+      "description": "Check Agent goal, action, output, or intent text against a World Protocol Pack."
     },
     {
       "name": "validate_output_terms",

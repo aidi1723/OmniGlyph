@@ -11,6 +11,7 @@ from omniglyph.guardrail import enforce_grounded_output, validate_output_terms
 from omniglyph.language_security import enforce_intent_manifest, scan_language_input, scan_output_dlp
 from omniglyph.lexicon_pack import validate_lexicon_pack
 from omniglyph.normalization import compact_normalize, normalize_tokens
+from omniglyph.protocol_pack import check_protocol, validate_protocol_pack
 from omniglyph.repository import GlyphRepository
 
 
@@ -52,6 +53,17 @@ class IntentEnforceRequest(BaseModel):
 
 class LexiconValidatePackRequest(BaseModel):
     path: str
+
+
+class ProtocolValidatePackRequest(BaseModel):
+    path: str
+
+
+class ProtocolCheckRequest(BaseModel):
+    path: str
+    text: str
+    kind: Literal["goal", "action", "output", "intent"]
+    actor_id: str | None = None
 
 
 class AuditExplainRequest(BaseModel):
@@ -99,6 +111,14 @@ def create_app(repository: GlyphRepository | None = None) -> FastAPI:
     @app.post("/api/v1/lexicon/validate-pack")
     def validate_lexicon_pack_endpoint(request: LexiconValidatePackRequest) -> dict:
         return validate_lexicon_pack(request.path)
+
+    @app.post("/api/v1/protocol/validate-pack")
+    def validate_protocol_pack_endpoint(request: ProtocolValidatePackRequest) -> dict:
+        return validate_protocol_pack(request.path)
+
+    @app.post("/api/v1/protocol/check")
+    def check_protocol_endpoint(request: ProtocolCheckRequest) -> dict:
+        return check_protocol(request.path, text=request.text, kind=request.kind, actor_id=request.actor_id)
 
     @app.get("/api/v1/explain/glyph")
     def explain_glyph_endpoint(char: str = Query(...)) -> dict:

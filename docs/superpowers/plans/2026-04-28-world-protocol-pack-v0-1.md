@@ -168,7 +168,7 @@ Expected: all expected MCP tools are present.
 
 Run: `.venv/bin/python -m build`
 
-Run: `.venv/bin/python -m twine check dist/omniglyph-0.7.0b0.tar.gz dist/omniglyph-0.7.0b0-py3-none-any.whl`
+Run: `.venv/bin/python -m twine check dist/omniglyph-0.8.0b0.tar.gz dist/omniglyph-0.8.0b0-py3-none-any.whl`
 
 Expected: build succeeds and twine check passes.
 

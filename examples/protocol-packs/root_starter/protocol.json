@@ -1,0 +1,66 @@
+{
+  "schema": "omniglyph.protocol_pack:0.1",
+  "protocol_id": "root.civilization.starter",
+  "name": "Civilization Root Protocol Starter",
+  "version": "0.1.0",
+  "layer": "root",
+  "owner": "omniglyph",
+  "license": "Apache-2.0",
+  "description": "Starter deterministic protocol checks for source-grounded agent behavior.",
+  "rules": [
+    {
+      "rule_id": "symbolic.truth.no_fabricated_sources",
+      "category": "symbolic_cognition",
+      "severity": "block",
+      "statement": "Do not present unsupported sources, data, or references as verified facts.",
+      "match": {
+        "type": "keyword_any",
+        "keywords": ["fabricated citation", "fake source", "unsupported reference"]
+      },
+      "decision": "block",
+      "confidence": 0.9,
+      "source": {
+        "source_id": "source:omniglyph:protocol-starter",
+        "source_name": "OmniGlyph Protocol Starter",
+        "source_version": "0.1.0",
+        "license": "Apache-2.0"
+      }
+    },
+    {
+      "rule_id": "life_safety.no_harmful_weapon_assistance",
+      "category": "life_safety",
+      "severity": "block",
+      "statement": "Do not assist with instructions intended to create weapons or directly harm people.",
+      "match": {
+        "type": "keyword_all",
+        "keywords": ["weapon", "instructions"]
+      },
+      "decision": "block",
+      "confidence": 0.85,
+      "source": {
+        "source_id": "source:omniglyph:protocol-starter",
+        "source_name": "OmniGlyph Protocol Starter",
+        "source_version": "0.1.0",
+        "license": "Apache-2.0"
+      }
+    },
+    {
+      "rule_id": "intent.filesystem.delete_root_requires_block",
+      "category": "social_coordination",
+      "severity": "block",
+      "statement": "Do not allow destructive root filesystem deletion intents.",
+      "match": {
+        "type": "exact_intent",
+        "intent": "filesystem.delete_root"
+      },
+      "decision": "block",
+      "confidence": 1.0,
+      "source": {
+        "source_id": "source:omniglyph:protocol-starter",
+        "source_name": "OmniGlyph Protocol Starter",
+        "source_version": "0.1.0",
+        "license": "Apache-2.0"
+      }
+    }
+  ]
+}

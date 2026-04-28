@@ -11,6 +11,7 @@ from omniglyph.guardrail import enforce_grounded_output, validate_output_terms
 from omniglyph.language_security import enforce_intent_manifest, scan_language_input, scan_output_dlp
 from omniglyph.lexicon_pack import validate_lexicon_pack
 from omniglyph.normalization import compact_normalize, normalize_tokens
+from omniglyph.protocol_pack import check_protocol, validate_protocol_pack
 from omniglyph.repository import GlyphRepository
 
 JSONRPC_VERSION = "2.0"
@@ -95,6 +96,31 @@ def build_tools_list() -> list[dict[str, Any]]:
                     "path": {"type": "string", "description": "Path to a Lexicon Pack directory."},
                 },
                 "required": ["path"],
+            },
+        },
+        {
+            "name": "validate_protocol_pack",
+            "description": "Validate an OmniGlyph World Protocol Pack directory with protocol.json.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Path to a World Protocol Pack directory."},
+                },
+                "required": ["path"],
+            },
+        },
+        {
+            "name": "check_protocol",
+            "description": "Check agent goal, action, output, or intent text against a World Protocol Pack.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Path to a World Protocol Pack directory."},
+                    "text": {"type": "string", "description": "Candidate goal, action, output, or intent to check."},
+                    "kind": {"type": "string", "enum": ["goal", "action", "output", "intent"]},
+                    "actor_id": {"type": "string", "description": "Optional user, service, or agent identifier for audit evidence."},
+                },
+                "required": ["path", "text", "kind"],
             },
         },
         {
@@ -293,6 +319,27 @@ def handle_mcp_request(request: dict[str, Any], repository: GlyphRepository | No
             if not isinstance(path, str) or not path.strip():
                 return _error(request_id, -32602, "validate_lexicon_pack requires path")
             return _result(request_id, {"content": [{"type": "json", "json": validate_lexicon_pack(path)}]})
+
+        if tool_name == "validate_protocol_pack":
+            path = arguments.get("path")
+            if not isinstance(path, str) or not path.strip():
+                return _error(request_id, -32602, "validate_protocol_pack requires path")
+            return _result(request_id, {"content": [{"type": "json", "json": validate_protocol_pack(path)}]})
+
+        if tool_name == "check_protocol":
+            path = arguments.get("path")
+            text = arguments.get("text")
+            kind = arguments.get("kind")
+            actor_id = arguments.get("actor_id")
+            if not isinstance(path, str) or not path.strip():
+                return _error(request_id, -32602, "check_protocol requires path")
+            if not isinstance(text, str) or not text.strip():
+                return _error(request_id, -32602, "check_protocol requires text")
+            if not isinstance(kind, str) or kind not in {"goal", "action", "output", "intent"}:
+                return _error(request_id, -32602, "check_protocol kind must be goal, action, output, or intent")
+            if actor_id is not None and (not isinstance(actor_id, str) or not actor_id.strip()):
+                return _error(request_id, -32602, "check_protocol actor_id must be a string")
+            return _result(request_id, {"content": [{"type": "json", "json": check_protocol(path, text=text, kind=kind, actor_id=actor_id)}]})
 
         if tool_name == "validate_output_terms":
             terms = arguments.get("terms")

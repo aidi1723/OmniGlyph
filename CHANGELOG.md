@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.0-beta - Unreleased
+
+- Add World Protocol Pack v0.1 validation and runtime checking.
+- Add `validate_protocol_pack` and `check_protocol` MCP tools.
+- Add `/api/v1/protocol/validate-pack` and `/api/v1/protocol/check` API endpoints.
+- Add CLI commands for protocol pack initialization, validation, and checks.
+- Add root starter protocol example and protocol-layer documentation.
+
 ## 0.6.0-beta - 2026-04-25
 
 - Add `omniglyph.oes` runtime helpers so OES is a project protocol, not only a document.

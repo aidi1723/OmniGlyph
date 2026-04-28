@@ -5,7 +5,7 @@ This checklist records the OmniGlyph PyPI publication flow so it can be repeated
 ## Package Identity
 
 - PyPI name: `omniglyph`
-- Current package version: `0.7.0b0`
+- Current package version: `0.8.0b0`
 - MCP server name: `io.github.aidi1723/omniglyph`
 - Console scripts:
   - `omniglyph`
@@ -54,7 +54,7 @@ Use a clean temporary virtual environment:
 
 ```bash
 python3 -m venv /tmp/omniglyph-wheel-test
-/tmp/omniglyph-wheel-test/bin/pip install dist/omniglyph-0.7.0b0-py3-none-any.whl
+/tmp/omniglyph-wheel-test/bin/pip install dist/omniglyph-0.8.0b0-py3-none-any.whl
 printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | /tmp/omniglyph-wheel-test/bin/omniglyph-mcp
 ```
 
@@ -68,6 +68,8 @@ Expected tools:
 - `normalize_tokens`
 - `list_namespaces`
 - `validate_lexicon_pack`
+- `validate_protocol_pack`
+- `check_protocol`
 - `validate_output_terms`
 - `enforce_grounded_output`
 - `scan_code_symbols`
@@ -92,7 +94,7 @@ Only after TestPyPI succeeds:
 Use exact filenames so old artifacts in `dist/` are not uploaded accidentally:
 
 ```bash
-TWINE_NON_INTERACTIVE=1 TWINE_USERNAME=__token__ TWINE_PASSWORD="$PYPI_TOKEN" .venv/bin/python -m twine upload dist/omniglyph-0.7.0b0.tar.gz dist/omniglyph-0.7.0b0-py3-none-any.whl
+TWINE_NON_INTERACTIVE=1 TWINE_USERNAME=__token__ TWINE_PASSWORD="$PYPI_TOKEN" .venv/bin/python -m twine upload dist/omniglyph-0.8.0b0.tar.gz dist/omniglyph-0.8.0b0-py3-none-any.whl
 ```
 
 ## MCP Registry Follow-Up
@@ -103,13 +105,16 @@ After PyPI publication:
 2. Confirm `package-registry/server.json` references the exact published version.
 3. Submit the MCP registry PR using `docs/ecosystem/mcp-registry-submission.md`.
 
-## v0.7.0b0 Release Status
+## v0.8.0b0 Release Status
 
 Prepared in source, not uploaded yet.
 
-- Package metadata version is `0.7.0b0`.
-- Local tests, MCP smoke, build, twine check, and local wheel smoke pass in the release-prep branch.
-- Use exact filenames when uploading `0.7.0b0` artifacts.
+- Package metadata version is `0.8.0b0`.
+- Use exact filenames when uploading `0.8.0b0` artifacts.
+
+## Previous v0.7.0b0 Release Status
+
+Prepared and released on GitHub as `v0.7.0-beta`, but PyPI upload was blocked by token permissions.
 
 ## Previous v0.6.0b0 Release Status
 

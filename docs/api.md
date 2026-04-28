@@ -13,7 +13,7 @@ Returns service status.
 Response:
 
 ```json
-{"status":"ok","service":"omniglyph","version":"0.7.0b0"}
+{"status":"ok","service":"omniglyph","version":"0.8.0b0"}
 ```
 
 ## `GET /api/v1/glyph`
@@ -279,6 +279,73 @@ Response:
   "errors": []
 }
 ```
+
+## `POST /api/v1/protocol/validate-pack`
+
+Validate an OmniGlyph World Protocol Pack directory before using it as an Agent runtime checkpoint.
+
+Request:
+
+```json
+{"path":"examples/protocol-packs/root_starter"}
+```
+
+Response:
+
+```json
+{
+  "schema": "omniglyph.protocol_pack:0.1",
+  "status": "pass",
+  "protocol": {
+    "protocol_id": "root.civilization.starter",
+    "name": "Civilization Root Protocol Starter",
+    "version": "0.1.0",
+    "layer": "root"
+  },
+  "summary": {"rule_count": 3, "block_count": 3, "warn_count": 0},
+  "errors": []
+}
+```
+
+## `POST /api/v1/protocol/check`
+
+Check an Agent goal, action, output, or intent against a World Protocol Pack.
+
+Request:
+
+```json
+{
+  "path": "examples/protocol-packs/root_starter",
+  "kind": "output",
+  "text": "This output includes a fake source.",
+  "actor_id": "agent:writer"
+}
+```
+
+Response:
+
+```json
+{
+  "schema": "omniglyph.protocol_check:0.1",
+  "decision": "block",
+  "status": "warn",
+  "kind": "output",
+  "matched_rules": [
+    {
+      "rule_id": "symbolic.truth.no_fabricated_sources",
+      "category": "symbolic_cognition",
+      "severity": "block",
+      "decision": "block",
+      "source_id": "source:omniglyph:protocol-starter"
+    }
+  ],
+  "limits": [
+    "World Protocol Pack v0.1 checks only configured deterministic rules."
+  ]
+}
+```
+
+`unknown` means no configured rule matched. It is not a permission grant; the host runtime must decide whether to review, block, or fallback.
 
 ## `POST /api/v1/guardrail/validate-output`
 

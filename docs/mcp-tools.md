@@ -127,6 +127,60 @@ Returns the same validation report as `omniglyph validate-domain-pack`:
 
 Use this before importing a company or personal Lexicon Pack.
 
+## Tool: `validate_protocol_pack`
+
+Input:
+
+```json
+{"path":"examples/protocol-packs/root_starter"}
+```
+
+Returns a World Protocol Pack validation report:
+
+```json
+{
+  "schema": "omniglyph.protocol_pack:0.1",
+  "status": "pass",
+  "summary": {"rule_count": 3, "block_count": 3, "warn_count": 0},
+  "errors": []
+}
+```
+
+Use this before mounting a protocol pack into an Agent runtime.
+
+## Tool: `check_protocol`
+
+Input:
+
+```json
+{
+  "path": "examples/protocol-packs/root_starter",
+  "kind": "output",
+  "text": "This output includes a fake source.",
+  "actor_id": "agent:writer"
+}
+```
+
+Returns deterministic protocol decision evidence:
+
+```json
+{
+  "schema": "omniglyph.protocol_check:0.1",
+  "decision": "block",
+  "status": "warn",
+  "matched_rules": [
+    {
+      "rule_id": "symbolic.truth.no_fabricated_sources",
+      "category": "symbolic_cognition",
+      "decision": "block",
+      "source_id": "source:omniglyph:protocol-starter"
+    }
+  ]
+}
+```
+
+Use this as a World Protocol Pack checkpoint before a host allows an Agent goal, action, intent, or output to proceed. `unknown` means no configured rule matched; it is not a permission grant.
+
 ## Tool: `validate_output_terms`
 
 Input:

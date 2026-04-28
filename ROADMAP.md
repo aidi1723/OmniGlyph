@@ -67,6 +67,25 @@ Planned:
 - allowlist/blocklist packs
 - domain-specific review workflows
 
+## v0.8.x — World Protocol Pack
+
+In development. This track turns the "world dictionary" direction into a constrained protocol-check layer instead of a broad claim about global alignment.
+
+Current:
+
+- protocol pack validation
+- root starter protocol example
+- deterministic protocol checks for Agent goals, actions, outputs, and intents
+- API, MCP, and CLI surfaces for protocol checks
+
+Planned:
+
+- signed protocol manifests
+- pack registry metadata
+- richer non-keyword matchers
+- layered root / jurisdiction / industry / enterprise protocol composition
+- audit export for protocol decisions
+
 ## Stage 3 — Semantic Topology
 
 Long-term research track.
