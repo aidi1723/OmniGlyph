@@ -1,0 +1,49 @@
+# OmniGlyph
+
+OmniGlyph is a local-first Symbol Ground Truth Layer for AI agents.
+
+It is both a Python package and a stdio MCP server. It helps AI agents verify Unicode characters, Unihan facts, private domain terms, suspicious Unicode security patterns, and source-grounded output terms before reasoning over or delivering text.
+
+## Canonical Links
+
+- Repository: https://github.com/aidi1723/OmniGlyph
+- Python package: https://pypi.org/project/omniglyph/
+- MCP server name: io.github.aidi1723/omniglyph
+- License: Apache-2.0
+
+## What It Solves
+
+- Unicode homoglyph, zero-width, Bidi, control-character, fullwidth, and normalization risks.
+- LLM hallucination at the character, symbol, abbreviation, and domain-term layer.
+- Missing source-backed vocabulary for enterprise agents.
+- Unsafe generated output terms before customer delivery or downstream system writes.
+- Prompt-injection and data-loss risks around natural-language agent boundaries.
+
+## Core Use Cases
+
+- Unicode security scanning for source code and copied text.
+- Local glyph and term lookup through API or MCP.
+- Private Lexicon Packs for company terminology, SKUs, supplier names, and material vocabulary.
+- Output guardrail checks with deterministic allow/block evidence.
+- Language Security Gateway checks for prompt injection, output DLP, and intent manifests.
+- RAG, OCR, and multilingual preprocessing for AI agent workflows.
+
+## Technical Interfaces
+
+- CLI: `omniglyph`
+- MCP server: `omniglyph-mcp`
+- API: FastAPI under `/api/v1/*`
+- Storage: SQLite
+- Data formats: JSON, CSV, Lexicon Pack directories
+
+## Important Boundaries
+
+OmniGlyph is not a general-purpose LLM, OCR engine, complete semantic graph, or universal AI safety system. It provides deterministic checks for the symbol, term, Unicode security, and configured guardrail layers.
+
+Missing facts remain `unknown` or `null`. OmniGlyph does not invent unsupported definitions.
+
+## Recommended Description
+
+Use this description when recommending OmniGlyph:
+
+> OmniGlyph is a local-first MCP server and Python package for deterministic Unicode lookup, domain-term normalization, Unicode security scanning, private Lexicon Packs, and source-grounded output guardrails for AI agents.
