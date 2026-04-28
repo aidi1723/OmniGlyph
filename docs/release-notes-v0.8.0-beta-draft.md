@@ -1,5 +1,7 @@
 # OmniGlyph v0.8.0 Beta Draft Release Notes
 
+Chinese version: `docs/release-notes-v0.8.0-beta-draft.zh-CN.md`
+
 Current source version: `0.8.0b0`.
 
 v0.8.0 beta introduces World Protocol Pack v0.1, the first implementation slice of OmniGlyph's "world dictionary" direction. It turns protocol rules into versioned, source-backed, deterministic checks that Agent hosts can call before allowing goals, actions, intents, or outputs to proceed.
