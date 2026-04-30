@@ -1,0 +1,36 @@
+{
+  "policy_id": "code_safety.execution.v1",
+  "concept": "safe_execution",
+  "namespace": "code.execution",
+  "definition": "Code agents must not execute destructive or credential-exfiltrating actions without explicit human approval.",
+  "version": "0.1.0",
+  "rules": [
+    {
+      "rule_id": "code_safety.no_recursive_root_delete",
+      "description": "Block recursive deletion of root or home paths.",
+      "severity": "block",
+      "match_type": "regex",
+      "patterns": ["rm\\s+-rf\\s+/", "rm\\s+-rf\\s+~"],
+      "allow_context": ["do not run rm -rf /", "never run rm -rf /"],
+      "source": {"type": "project_policy", "name": "LogosGate Genesis Policy Pack", "version": "0.1.0"}
+    },
+    {
+      "rule_id": "code_safety.no_secret_exfiltration",
+      "description": "Block attempts to print or transmit common secret environment variables.",
+      "severity": "block",
+      "match_type": "regex",
+      "patterns": ["printenv\\s+.*(API_KEY|TOKEN|SECRET)", "curl\\s+.*(API_KEY|TOKEN|SECRET)"],
+      "allow_context": ["redact API_KEY", "mask TOKEN", "do not printenv"],
+      "source": {"type": "project_policy", "name": "LogosGate Genesis Policy Pack", "version": "0.1.0"}
+    },
+    {
+      "rule_id": "code_safety.review_destructive_git",
+      "description": "Require review before destructive git reset commands.",
+      "severity": "review",
+      "match_type": "literal",
+      "patterns": ["git reset --hard", "git clean -fd"],
+      "allow_context": ["avoid git reset --hard", "explain git reset --hard"],
+      "source": {"type": "project_policy", "name": "LogosGate Genesis Policy Pack", "version": "0.1.0"}
+    }
+  ]
+}

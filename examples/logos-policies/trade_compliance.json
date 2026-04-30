@@ -1,0 +1,27 @@
+{
+  "policy_id": "trade_compliance.commitment.v1",
+  "concept": "commitment",
+  "namespace": "trade.compliance",
+  "definition": "Trade agents must distinguish drafts from binding commitments and require review for regulated classification, contract promises, or final quotation commitments.",
+  "version": "0.1.0",
+  "rules": [
+    {
+      "rule_id": "trade_compliance.review_contract_commitment",
+      "description": "Require review before contract, final price, or HS-code commitments.",
+      "severity": "review",
+      "match_type": "regex",
+      "patterns": ["承诺.{0,12}(合同|价格|HS code|海关编码)", "guarantee.{0,24}(contract|final price|HS code)"],
+      "allow_context": ["不能承诺", "do not guarantee"],
+      "source": {"type": "project_policy", "name": "LogosGate Genesis Policy Pack", "version": "0.1.0"}
+    },
+    {
+      "rule_id": "trade_compliance.warn_draft_quote",
+      "description": "Warn when quote language may be mistaken as final.",
+      "severity": "warn",
+      "match_type": "literal",
+      "patterns": ["final quotation", "最终报价"],
+      "allow_context": ["not final quotation", "非最终报价"],
+      "source": {"type": "project_policy", "name": "LogosGate Genesis Policy Pack", "version": "0.1.0"}
+    }
+  ]
+}
