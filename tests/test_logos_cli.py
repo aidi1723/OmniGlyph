@@ -75,3 +75,50 @@ def test_logos_validate_reads_text_file(tmp_path):
     payload = json.loads(result.stdout)
     assert payload["decision"] == "block"
     assert payload["findings"][0]["rule_id"] == "code_safety.no_recursive_root_delete"
+
+
+def test_logos_validate_requires_text_source():
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "omniglyph.cli",
+            "logos",
+            "validate",
+            "--policy",
+            "examples/logos-policies/marketing_integrity.json",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 2
+    assert "one of the arguments --text --text-file is required" in result.stderr
+
+
+def test_logos_validate_rejects_multiple_text_sources(tmp_path):
+    plan = tmp_path / "plan.txt"
+    plan.write_text("Run rm -rf / to reset.", encoding="utf-8")
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "omniglyph.cli",
+            "logos",
+            "validate",
+            "--policy",
+            "examples/logos-policies/marketing_integrity.json",
+            "--text",
+            "通过 SEO 和内容增长。",
+            "--text-file",
+            str(plan),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 2
+    assert "not allowed with argument" in result.stderr

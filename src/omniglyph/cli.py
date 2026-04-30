@@ -181,8 +181,9 @@ def main() -> None:
 
     logos_validate = logos_subcommands.add_parser("validate")
     logos_validate.add_argument("--policy", type=Path, required=True)
-    logos_validate.add_argument("--text")
-    logos_validate.add_argument("--text-file", type=Path)
+    text_source = logos_validate.add_mutually_exclusive_group(required=True)
+    text_source.add_argument("--text")
+    text_source.add_argument("--text-file", type=Path)
     logos_validate.add_argument("--format", choices=["json"], default="json")
 
     args = parser.parse_args()
@@ -230,8 +231,6 @@ def main() -> None:
             raise SystemExit(1)
     elif args.command == "logos":
         if args.logos_command == "validate":
-            if (args.text is None) == (args.text_file is None):
-                raise SystemExit("Provide exactly one of --text or --text-file")
             text = args.text if args.text is not None else args.text_file.read_text(encoding="utf-8")
             policy = load_policy_file(args.policy)
             result = validate_action(text, policy)
