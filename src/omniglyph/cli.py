@@ -236,6 +236,9 @@ def main() -> None:
             result = validate_action(text, policy)
             print(json.dumps(result, ensure_ascii=False, indent=2))
             if result["decision"] == "block":
+                print(f"LogosGate blocked action: {result['message']}", file=sys.stderr)
+                for finding in result["findings"]:
+                    print(f"- {finding['rule_id']}: matched {finding['matched']!r}", file=sys.stderr)
                 raise SystemExit(1)
 
 

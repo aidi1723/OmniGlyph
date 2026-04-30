@@ -10,7 +10,7 @@
       "description": "Block recursive deletion of root or home paths.",
       "severity": "block",
       "match_type": "regex",
-      "patterns": ["rm\\s+-rf\\s+/", "rm\\s+-rf\\s+~"],
+      "patterns": ["\\brm\\s+-rf\\s+/(?:\\s|$)", "\\brm\\s+-rf\\s+~(?:\\s|$)"],
       "allow_context": ["do not run rm -rf /", "never run rm -rf /"],
       "source": {"type": "project_policy", "name": "LogosGate Genesis Policy Pack", "version": "0.1.0"}
     },
@@ -19,7 +19,7 @@
       "description": "Block attempts to print or transmit common secret environment variables.",
       "severity": "block",
       "match_type": "regex",
-      "patterns": ["printenv\\s+.*(API_KEY|TOKEN|SECRET)", "curl\\s+.*(API_KEY|TOKEN|SECRET)"],
+      "patterns": ["\\bprintenv\\b\\s+.*\\b(API_KEY|TOKEN|SECRET)\\b", "\\bcurl\\b\\s+.*\\b(API_KEY|TOKEN|SECRET)\\b"],
       "allow_context": ["redact API_KEY", "mask TOKEN", "do not printenv"],
       "source": {"type": "project_policy", "name": "LogosGate Genesis Policy Pack", "version": "0.1.0"}
     },

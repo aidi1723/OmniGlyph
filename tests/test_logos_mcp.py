@@ -59,7 +59,7 @@ def test_handle_mcp_validate_action_policy_rejects_nonexistent_policy_path():
     )
 
     assert response["error"]["code"] == -32602
-    assert "invalid policy_path" in response["error"]["message"]
+    assert "policy_path not found" in response["error"]["message"]
 
 
 def test_handle_mcp_validate_action_policy_rejects_malformed_policy_file(tmp_path):
@@ -79,4 +79,24 @@ def test_handle_mcp_validate_action_policy_rejects_malformed_policy_file(tmp_pat
     )
 
     assert response["error"]["code"] == -32602
-    assert "invalid policy_path" in response["error"]["message"]
+    assert "not valid JSON" in response["error"]["message"]
+
+
+def test_handle_mcp_validate_action_policy_rejects_invalid_policy_schema(tmp_path):
+    policy_path = tmp_path / "invalid-policy.json"
+    policy_path.write_text('{"policy_id": "broken"}', encoding="utf-8")
+
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 5,
+            "method": "tools/call",
+            "params": {
+                "name": "validate_action_policy",
+                "arguments": {"policy_path": str(policy_path), "text": "计划雇佣水军刷单。"},
+            },
+        }
+    )
+
+    assert response["error"]["code"] == -32602
+    assert "invalid policy file" in response["error"]["message"]

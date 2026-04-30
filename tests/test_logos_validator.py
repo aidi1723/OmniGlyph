@@ -68,6 +68,14 @@ def test_allow_context_suppresses_literal_block():
     assert result["limits"] == []
 
 
+def test_allow_context_only_suppresses_the_covered_match():
+    result = validate_action("不要刷单是规则，但这个计划仍然安排刷单。", sample_policy())
+
+    assert result["decision"] == "block"
+    assert len(result["findings"]) == 1
+    assert result["findings"][0]["matched"] == "刷单"
+
+
 def test_regex_review_match_returns_needs_review_decision():
     result = validate_action("Analyze customer private data for segmentation.", sample_policy())
 
@@ -75,6 +83,34 @@ def test_regex_review_match_returns_needs_review_decision():
     assert result["status"] == "needs_review"
     assert result["findings"][0]["rule_id"] == "marketing_integrity.review_private_data"
     assert result["limits"] == ["Human review is required before execution."]
+
+
+def test_regex_matching_checks_beyond_allowed_first_match():
+    policy = LogosPolicy.from_mapping(
+        {
+            "policy_id": "marketing_integrity.privacy.v1",
+            "concept": "privacy",
+            "namespace": "business.marketing",
+            "definition": "Private data collection requires review.",
+            "version": "0.1.0",
+            "rules": [
+                {
+                    "rule_id": "marketing_integrity.review_private_data",
+                    "description": "Review plans involving private data.",
+                    "severity": "review",
+                    "match_type": "regex",
+                    "patterns": [r"private\s+data"],
+                    "allow_context": ["avoid private data"],
+                }
+            ],
+        }
+    )
+
+    result = validate_action("We avoid private data, but later collect private data for ads.", policy)
+
+    assert result["decision"] == "review"
+    assert len(result["findings"]) == 1
+    assert result["findings"][0]["matched"] == "private data"
 
 
 def test_warn_only_match_returns_warn_decision():

@@ -25,6 +25,8 @@ def test_logos_validate_blocks_marketing_integrity_violation():
     payload = json.loads(result.stdout)
     assert payload["decision"] == "block"
     assert payload["findings"][0]["matched"] == "刷单"
+    assert "LogosGate blocked action" in result.stderr
+    assert "marketing_integrity.no_fake_orders" in result.stderr
 
 
 def test_logos_validate_allows_marketing_integrity_safe_text():
