@@ -7,6 +7,8 @@ from omniglyph import __version__
 from omniglyph.code_linter import format_json_report, format_text_report, scan_path
 from omniglyph.config import settings
 from omniglyph.lexicon_pack import entries_from_source, init_lexicon_pack, source_paths, validate_lexicon_pack
+from omniglyph.logos.loader import load_policy_file
+from omniglyph.logos.validator import validate_action
 from omniglyph.normalizer import parse_unicode_data
 from omniglyph.unihan import parse_unihan_data
 from omniglyph.repository import GlyphRepository, SourceSnapshot
@@ -174,6 +176,15 @@ def main() -> None:
     scan_code.add_argument("--format", choices=["text", "json"], default="text")
     scan_code.add_argument("--fail-on", choices=["never", "warning"], default="never")
 
+    logos = subcommands.add_parser("logos")
+    logos_subcommands = logos.add_subparsers(dest="logos_command", required=True)
+
+    logos_validate = logos_subcommands.add_parser("validate")
+    logos_validate.add_argument("--policy", type=Path, required=True)
+    logos_validate.add_argument("--text")
+    logos_validate.add_argument("--text-file", type=Path)
+    logos_validate.add_argument("--format", choices=["json"], default="json")
+
     args = parser.parse_args()
     if args.command == "download-unicode":
         download_unicode(args.expected_sha256)
@@ -217,6 +228,16 @@ def main() -> None:
             print(format_text_report(report))
         if args.fail_on == "warning" and report["status"] == "warn":
             raise SystemExit(1)
+    elif args.command == "logos":
+        if args.logos_command == "validate":
+            if (args.text is None) == (args.text_file is None):
+                raise SystemExit("Provide exactly one of --text or --text-file")
+            text = args.text if args.text is not None else args.text_file.read_text(encoding="utf-8")
+            policy = load_policy_file(args.policy)
+            result = validate_action(text, policy)
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            if result["decision"] == "block":
+                raise SystemExit(1)
 
 
 if __name__ == "__main__":
