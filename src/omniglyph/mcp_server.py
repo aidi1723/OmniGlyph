@@ -322,7 +322,10 @@ def handle_mcp_request(request: dict[str, Any], repository: GlyphRepository | No
                 return _error(request_id, -32602, "validate_action_policy requires policy_path")
             if not isinstance(text, str) or not text.strip():
                 return _error(request_id, -32602, "validate_action_policy requires text")
-            policy = load_policy_file(Path(policy_path))
+            try:
+                policy = load_policy_file(Path(policy_path))
+            except (FileNotFoundError, PermissionError, json.JSONDecodeError, ValueError) as error:
+                return _error(request_id, -32602, f"validate_action_policy invalid policy_path: {error}")
             return _result(request_id, {"content": [{"type": "json", "json": validate_action(text, policy)}]})
 
         if tool_name == "enforce_grounded_output":

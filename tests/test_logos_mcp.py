@@ -43,3 +43,40 @@ def test_handle_mcp_validate_action_policy_requires_text():
 
     assert response["error"]["code"] == -32602
     assert "text" in response["error"]["message"]
+
+
+def test_handle_mcp_validate_action_policy_rejects_nonexistent_policy_path():
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 3,
+            "method": "tools/call",
+            "params": {
+                "name": "validate_action_policy",
+                "arguments": {"policy_path": "examples/logos-policies/missing.json", "text": "计划雇佣水军刷单。"},
+            },
+        }
+    )
+
+    assert response["error"]["code"] == -32602
+    assert "invalid policy_path" in response["error"]["message"]
+
+
+def test_handle_mcp_validate_action_policy_rejects_malformed_policy_file(tmp_path):
+    policy_path = tmp_path / "malformed.json"
+    policy_path.write_text("{", encoding="utf-8")
+
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 4,
+            "method": "tools/call",
+            "params": {
+                "name": "validate_action_policy",
+                "arguments": {"policy_path": str(policy_path), "text": "计划雇佣水军刷单。"},
+            },
+        }
+    )
+
+    assert response["error"]["code"] == -32602
+    assert "invalid policy_path" in response["error"]["message"]
