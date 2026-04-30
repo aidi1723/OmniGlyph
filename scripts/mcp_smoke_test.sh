@@ -21,6 +21,7 @@ expected = {
     "list_namespaces",
     "validate_lexicon_pack",
     "validate_output_terms",
+    "validate_action_policy",
     "enforce_grounded_output",
     "scan_code_symbols",
     "scan_unicode_security",
