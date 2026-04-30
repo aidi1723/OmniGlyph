@@ -1,5 +1,6 @@
 import json
 import sys
+from pathlib import Path
 from typing import Any, TextIO
 
 from omniglyph import __version__
@@ -10,6 +11,8 @@ from omniglyph.explanation import explain_code_security, explain_glyph, explain_
 from omniglyph.guardrail import enforce_grounded_output, validate_output_terms
 from omniglyph.language_security import enforce_intent_manifest, scan_language_input, scan_output_dlp
 from omniglyph.lexicon_pack import validate_lexicon_pack
+from omniglyph.logos.loader import load_policy_file
+from omniglyph.logos.validator import validate_action
 from omniglyph.normalization import compact_normalize, normalize_tokens
 from omniglyph.repository import GlyphRepository
 
@@ -104,6 +107,18 @@ def build_tools_list() -> list[dict[str, Any]]:
                 "type": "object",
                 "properties": {"terms": {"type": "array", "items": {"type": "string"}}},
                 "required": ["terms"],
+            },
+        },
+        {
+            "name": "validate_action_policy",
+            "description": "Validate an agent action plan against a local LogosGate JSON policy file and return allow, warn, review, or block.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "policy_path": {"type": "string", "description": "Path to a local LogosGate JSON policy file."},
+                    "text": {"type": "string", "description": "Agent action plan text to validate."},
+                },
+                "required": ["policy_path", "text"],
             },
         },
         {
@@ -299,6 +314,25 @@ def handle_mcp_request(request: dict[str, Any], repository: GlyphRepository | No
             if not isinstance(terms, list) or not all(isinstance(item, str) for item in terms):
                 return _error(request_id, -32602, "validate_output_terms requires a list of string terms")
             return _result(request_id, {"content": [{"type": "json", "json": validate_output_terms(glyph_repository, terms)}]})
+
+        if tool_name == "validate_action_policy":
+            policy_path = arguments.get("policy_path")
+            text = arguments.get("text")
+            if not isinstance(policy_path, str) or not policy_path.strip():
+                return _error(request_id, -32602, "validate_action_policy requires policy_path")
+            if not isinstance(text, str) or not text.strip():
+                return _error(request_id, -32602, "validate_action_policy requires text")
+            try:
+                policy = load_policy_file(Path(policy_path))
+            except FileNotFoundError as error:
+                return _error(request_id, -32602, f"validate_action_policy policy_path not found: {error}")
+            except PermissionError as error:
+                return _error(request_id, -32602, f"validate_action_policy policy_path not readable: {error}")
+            except json.JSONDecodeError as error:
+                return _error(request_id, -32602, f"validate_action_policy policy file is not valid JSON: {error}")
+            except ValueError as error:
+                return _error(request_id, -32602, f"validate_action_policy invalid policy file: {error}")
+            return _result(request_id, {"content": [{"type": "json", "json": validate_action(text, policy)}]})
 
         if tool_name == "enforce_grounded_output":
             terms = arguments.get("terms")

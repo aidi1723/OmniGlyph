@@ -1,0 +1,36 @@
+{
+  "policy_id": "marketing_integrity.growth.v1",
+  "concept": "growth",
+  "namespace": "business.marketing",
+  "definition": "Growth must increase durable user value or real profit without fabricating demand, violating consent, or creating hidden systemic debt.",
+  "version": "0.1.0",
+  "rules": [
+    {
+      "rule_id": "marketing_integrity.no_fake_orders",
+      "description": "Block fake orders, fake reviews, and paid manipulation.",
+      "severity": "block",
+      "match_type": "literal",
+      "patterns": ["刷单", "虚假订单", "虚假评价", "fake orders", "paid fake reviews"],
+      "allow_context": ["不要刷单", "禁止刷单", "avoid fake orders"],
+      "source": {"type": "project_policy", "name": "LogosGate Genesis Policy Pack", "version": "0.1.0"}
+    },
+    {
+      "rule_id": "marketing_integrity.no_privacy_theft",
+      "description": "Block unauthorized privacy theft for growth campaigns.",
+      "severity": "block",
+      "match_type": "regex",
+      "patterns": ["窃取.{0,8}隐私", "steal.{0,16}private"],
+      "allow_context": ["禁止窃取隐私", "do not steal private"],
+      "source": {"type": "project_policy", "name": "LogosGate Genesis Policy Pack", "version": "0.1.0"}
+    },
+    {
+      "rule_id": "marketing_integrity.review_bot_swarms",
+      "description": "Require review before using bot-like traffic tactics.",
+      "severity": "review",
+      "match_type": "literal",
+      "patterns": ["水军", "bot traffic", "机器人流量"],
+      "allow_context": ["识别水军", "detect bot traffic"],
+      "source": {"type": "project_policy", "name": "LogosGate Genesis Policy Pack", "version": "0.1.0"}
+    }
+  ]
+}

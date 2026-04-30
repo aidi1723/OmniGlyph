@@ -18,7 +18,7 @@ It is suitable for experimentation, local agent workflows, RAG preprocessing, co
 - Private domain pack CSV ingestion.
 - Standard Lexicon Pack directories with `pack.json`, `terms.csv`, validation, dry-run import, and namespace replacement.
 - `GET /api/v1/glyph`, `GET /api/v1/term`, `POST /api/v1/normalize`, OES explanation, Unicode security scan, and audit APIs.
-- MCP stdio server with sixteen tools in the current source branch:
+- MCP stdio server with seventeen tools in the current source branch:
   - `lookup_glyph`
   - `lookup_term`
   - `explain_glyph`
@@ -34,6 +34,7 @@ It is suitable for experimentation, local agent workflows, RAG preprocessing, co
   - `scan_language_input`
   - `scan_output_dlp`
   - `enforce_intent`
+  - `validate_action_policy`
   - `audit_explain`
 - Code-symbol linting for zero-width characters, Bidi controls, unexpected controls, source-backed confusables, fullwidth/halfwidth forms, NFKC changes, and cross-script homoglyph risks.
 - Software-development domain pack example under `examples/domain-packs/software_development.csv`.
@@ -42,6 +43,10 @@ It is suitable for experimentation, local agent workflows, RAG preprocessing, co
 - Approved `sensitivity=secret` lexicon entries can feed output DLP redaction when requested by the host.
 - Structured audit events that report actor, action, input, source IDs, findings, and unknown limits.
 - PyPI distribution and MCP Registry publication.
+
+## Experimental LogosGate Status
+
+LogosGate is incubating inside OmniGlyph as an experimental action-policy firewall. It is not a universal ethics engine. The MVP validates agent action-plan text against explicit JSON policies and returns deterministic `allow`, `warn`, `review`, or `block` decisions with structured evidence.
 
 ## Best-Fit Users
 

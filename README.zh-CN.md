@@ -109,7 +109,7 @@ printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | omniglyph-mcp
 
 当前源码分支版本为 `0.7.0b0`，已经提供 v0.7 MCP 工具集。`0.7.0b0` 的 PyPI 发布属于单独 release 步骤。
 
-当前源码 MCP 工具：`lookup_glyph`、`lookup_term`、`explain_glyph`、`explain_term`、`explain_code_security`、`normalize_tokens`、`list_namespaces`、`validate_lexicon_pack`、`validate_output_terms`、`enforce_grounded_output`、`scan_code_symbols`、`scan_unicode_security`、`scan_language_input`、`scan_output_dlp`、`enforce_intent`、`audit_explain`。
+当前源码 MCP 工具：`lookup_glyph`、`lookup_term`、`explain_glyph`、`explain_term`、`explain_code_security`、`normalize_tokens`、`list_namespaces`、`validate_lexicon_pack`、`validate_output_terms`、`enforce_grounded_output`、`scan_code_symbols`、`scan_unicode_security`、`scan_language_input`、`scan_output_dlp`、`enforce_intent`、`validate_action_policy`、`audit_explain`。
 
 ## 为什么说它是 Agent 基础设施
 
@@ -397,6 +397,27 @@ OmniGlyph 可以挂载在 Agent/RAG 工作流的两端：
 - `enforce_intent`：根据 intent manifest 校验 Agent 动作请求，只返回决策，不执行 shell 命令。
 
 这不是“彻底消灭 prompt injection”的承诺，而是给 AgentCore / MCP 工作流增加确定性安全检查点，让模型即使被诱导也不能直接越过边界。
+
+## 实验功能：LogosGate（言法界枢）动作策略防火墙
+
+LogosGate 是 OmniGlyph 内部孵化的实验性上层模块，用于在 Agent 执行动作前做确定性策略校验。OmniGlyph 回答：**这个符号或术语是什么？** LogosGate 回答：**这个动作在当前策略命名空间下能不能继续执行？**
+
+例如：
+
+```bash
+omniglyph logos validate --policy examples/logos-policies/marketing_integrity.json --text "计划雇佣水军刷单。"
+```
+
+预期决策状态：
+
+```json
+{
+  "decision": "block",
+  "status": "unsafe"
+}
+```
+
+LogosGate 不会再调用一个 LLM 来裁决动作。它使用有来源支撑的 JSON 策略数据、字面量/正则匹配、允许上下文抑制和结构化证据，让宿主工作流可以在模型外执行 `allow`、`warn`、`review` 或 `block` 决策。
 
 ## 实测数据与预期效果
 

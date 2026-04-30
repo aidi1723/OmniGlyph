@@ -118,7 +118,7 @@ printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | omniglyph-mcp
 
 The source branch is now versioned as `0.7.0b0` and exposes the v0.7 MCP tool set. PyPI publication for `0.7.0b0` is a separate release step.
 
-Current source MCP tools: `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `explain_code_security`, `normalize_tokens`, `list_namespaces`, `validate_lexicon_pack`, `validate_output_terms`, `enforce_grounded_output`, `scan_code_symbols`, `scan_unicode_security`, `scan_language_input`, `scan_output_dlp`, `enforce_intent`, and `audit_explain`.
+Current source MCP tools: `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `explain_code_security`, `normalize_tokens`, `list_namespaces`, `validate_lexicon_pack`, `validate_output_terms`, `enforce_grounded_output`, `scan_code_symbols`, `scan_unicode_security`, `scan_language_input`, `scan_output_dlp`, `enforce_intent`, `validate_action_policy`, and `audit_explain`.
 
 ## Why It Exists
 
@@ -405,6 +405,27 @@ Implemented surfaces:
 
 This is not a promise that prompt injection is globally solved. It is a deterministic safety checkpoint that limits what untrusted language can make an agent ingest, reveal, or execute.
 
+## Experimental: LogosGate Action Policy Firewall
+
+LogosGate is an experimental OmniGlyph layer for deterministic agent action validation. OmniGlyph answers: **What is this symbol or term?** LogosGate answers: **May this action proceed under the selected policy namespace?**
+
+For example:
+
+```bash
+omniglyph logos validate --policy examples/logos-policies/marketing_integrity.json --text "计划雇佣水军刷单。"
+```
+
+Expected decision status:
+
+```json
+{
+  "decision": "block",
+  "status": "unsafe"
+}
+```
+
+LogosGate does not call another LLM to judge the action. It uses source-backed JSON policy data, literal and regex matching, allow-context suppression, and structured evidence so the host workflow can enforce `allow`, `warn`, `review`, or `block` outside the model.
+
 ## Measured Data and Expected Impact
 
 OmniGlyph is designed to reduce token waste and hallucination risk by replacing ad-hoc web reading or model guessing with local, source-backed lookups.
@@ -660,7 +681,7 @@ Example JSON-RPC request over stdio:
 {"jsonrpc":"2.0","id":1,"method":"tools/list"}
 ```
 
-The MCP server reads from the same local SQLite symbol fact base used by `/api/v1/glyph`. In the current source branch, it exposes `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `explain_code_security`, `normalize_tokens`, `list_namespaces`, `validate_lexicon_pack`, `validate_output_terms`, `enforce_grounded_output`, `scan_code_symbols`, `scan_unicode_security`, `scan_language_input`, `scan_output_dlp`, `enforce_intent`, and `audit_explain`.
+The MCP server reads from the same local SQLite symbol fact base used by `/api/v1/glyph`. In the current source branch, it exposes `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `explain_code_security`, `normalize_tokens`, `list_namespaces`, `validate_lexicon_pack`, `validate_output_terms`, `enforce_grounded_output`, `scan_code_symbols`, `scan_unicode_security`, `scan_language_input`, `scan_output_dlp`, `enforce_intent`, `validate_action_policy`, and `audit_explain`.
 
 ## Local MVP Commands
 

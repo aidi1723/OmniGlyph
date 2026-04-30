@@ -29,6 +29,12 @@ Goals:
 - Domain spoofing and username validation helpers.
 - Math/science/programming symbol starter pack for `∂`, `∇`, `λ`, `σ`, `∑`, and similar dense technical symbols.
 - Optional `--suggest-fix` reports without automatic mutation.
+- LogosGate experimental runtime:
+  - JSON policy model.
+  - Deterministic action validation.
+  - `omniglyph logos validate`.
+  - `validate_action_policy` MCP tool.
+  - Example policies for code safety, marketing integrity, and trade compliance.
 
 ## v0.5.x — Text Audit Workflows
 
