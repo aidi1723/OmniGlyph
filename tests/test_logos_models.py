@@ -58,6 +58,15 @@ def test_logos_policy_rejects_invalid_match_type():
         LogosPolicy.from_mapping(mapping)
 
 
+def test_logos_policy_rejects_invalid_regex_pattern():
+    mapping = sample_policy_mapping()
+    mapping["rules"][0]["match_type"] = "regex"
+    mapping["rules"][0]["patterns"] = ["["]
+
+    with pytest.raises(ValueError, match=r"regex.*marketing_integrity\.no_fake_orders"):
+        LogosPolicy.from_mapping(mapping)
+
+
 def test_logos_rule_requires_patterns():
     with pytest.raises(ValueError, match="patterns"):
         LogosRule.from_mapping(

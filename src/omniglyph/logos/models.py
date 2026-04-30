@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -26,6 +27,16 @@ def _string_list(mapping: dict[str, Any], key: str, required: bool = False) -> l
     return list(value)
 
 
+def _validate_regex_patterns(rule_id: str, patterns: list[str]) -> None:
+    for index, pattern in enumerate(patterns):
+        try:
+            re.compile(pattern)
+        except re.error as error:
+            raise ValueError(
+                f"invalid regex pattern for rule {rule_id} at index {index}: {pattern!r}: {error}"
+            ) from error
+
+
 @dataclass(frozen=True)
 class LogosRule:
     rule_id: str
@@ -38,23 +49,27 @@ class LogosRule:
 
     @classmethod
     def from_mapping(cls, mapping: dict[str, Any]) -> "LogosRule":
+        rule_id = _require_string(mapping, "rule_id")
         severity = _require_string(mapping, "severity")
         if severity not in VALID_SEVERITIES:
             raise ValueError(f"severity must be one of {sorted(VALID_SEVERITIES)}")
         match_type = _require_string(mapping, "match_type")
         if match_type not in VALID_MATCH_TYPES:
             raise ValueError(f"match_type must be one of {sorted(VALID_MATCH_TYPES)}")
+        patterns = _string_list(mapping, "patterns", required=True)
+        if match_type == "regex":
+            _validate_regex_patterns(rule_id, patterns)
         source = mapping.get("source", {})
         if source is None:
             source = {}
         if not isinstance(source, dict):
             raise ValueError("source must be an object")
         return cls(
-            rule_id=_require_string(mapping, "rule_id"),
+            rule_id=rule_id,
             description=_require_string(mapping, "description"),
             severity=severity,
             match_type=match_type,
-            patterns=_string_list(mapping, "patterns", required=True),
+            patterns=patterns,
             allow_context=_string_list(mapping, "allow_context"),
             source=dict(source),
         )
