@@ -3,6 +3,8 @@
 > 正义为导向，规则为底线。<br>
 > Justice as the Vector, Rules as the Boundary.
 
+语言：中文 | English counterpart: [LogosGate Whitepaper and Development Manual.md](./LogosGate%20Whitepaper%20and%20Development%20Manual.md)
+
 ## 文档性质
 
 本文是 OmniGlyph 生态下 LogosGate（言法界枢）的理论白皮书与开发手册草案。它用于定义发展方向、系统哲学、架构边界和未来实现路径。
