@@ -76,10 +76,15 @@ Expected tools:
 - `explain_term`
 - `explain_code_security`
 - `normalize_tokens`
+- `list_namespaces`
+- `validate_lexicon_pack`
 - `validate_output_terms`
 - `enforce_grounded_output`
 - `scan_code_symbols`
 - `scan_unicode_security`
+- `scan_language_input`
+- `scan_output_dlp`
+- `enforce_intent`
 - `audit_explain`
 
 ## 5. Recommended Claude Prompt
@@ -117,3 +122,7 @@ Scan suspicious code text:
 ## Safety Boundary
 
 OmniGlyph MCP is read-only by design. It does not execute shell commands, edit files, call external APIs by default, or automatically rewrite model output. `enforce_grounded_output` returns deterministic allow/block evidence for checked terms; the MCP client decides how to halt, regenerate, or escalate. See `docs/security/mcp-safety.md`.
+
+## Data Directory
+
+By default, OmniGlyph stores its local SQLite database under `data/` relative to the process working directory. Set `OMNIGLYPH_DATA_DIR` to use an explicit shared directory across CLI, API, and MCP processes. `OMNIGLYPH_SQLITE_PATH` can override only the SQLite file path when needed.

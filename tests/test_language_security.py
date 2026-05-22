@@ -1,3 +1,5 @@
+import json
+
 from fastapi.testclient import TestClient
 
 from omniglyph.api import create_app
@@ -43,6 +45,15 @@ def test_scan_output_dlp_redacts_api_key_and_secret_terms():
     assert "Alpha Factory" not in report["redacted_text"]
     assert report["redacted_text"].count("[REDACTED]") == 2
     assert {finding["rule_id"] for finding in report["findings"]} == {"dlp-api-key", "dlp-secret-term"}
+
+
+def test_scan_output_dlp_reports_offsets_against_original_text_after_redaction():
+    text = "Use sk-proj-abcdefghijklmnopqrstuvwxyz123456 before Alpha Factory."
+
+    report = scan_output_dlp(text, secret_terms=["Alpha Factory"], source_name="reply.txt")
+
+    secret_finding = next(finding for finding in report["findings"] if finding["rule_id"] == "dlp-secret-term")
+    assert text[secret_finding["start"]:secret_finding["end"]] == "Alpha Factory"
 
 
 def test_enforce_intent_manifest_allows_role_approved_intent():
@@ -146,4 +157,4 @@ def test_mcp_exposes_language_security_tools(tmp_path):
         repository=repository,
     )
 
-    assert response["result"]["content"][0]["json"]["decision"] == "block"
+    assert json.loads(response["result"]["content"][0]["text"])["decision"] == "block"

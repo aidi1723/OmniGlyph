@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 
 import omniglyph.api as api_module
 from omniglyph import __version__
+import omniglyph.api as api_module
 from omniglyph.api import create_app
 from omniglyph.config import Settings
 from omniglyph.domain_pack import parse_domain_pack

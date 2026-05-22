@@ -45,20 +45,17 @@ def scan_language_input(text: str, source_name: str = "<input>") -> dict:
 
 def scan_output_dlp(text: str, secret_terms: list[str] | None = None, source_name: str = "<output>") -> dict:
     findings = []
-    redacted_text = text
     for rule_id, pattern in DLP_PATTERNS:
-        for match in list(pattern.finditer(redacted_text)):
+        for match in list(pattern.finditer(text)):
             findings.append(_dlp_finding(rule_id, match.group(0), match.start(), match.end(), source_name))
-        redacted_text = pattern.sub("[REDACTED]", redacted_text)
     for term in secret_terms or []:
         if not term:
             continue
         pattern = re.compile(re.escape(term))
-        for match in list(pattern.finditer(redacted_text)):
+        for match in list(pattern.finditer(text)):
             findings.append(_dlp_finding("dlp-secret-term", match.group(0), match.start(), match.end(), source_name))
-        redacted_text = pattern.sub("[REDACTED]", redacted_text)
     report = _language_report("output", source_name, text, findings)
-    report["redacted_text"] = redacted_text
+    report["redacted_text"] = _redact_matches(text, findings)
     return report
 
 
@@ -118,6 +115,24 @@ def _dlp_finding(rule_id: str, value: str, start: int, end: int, source_name: st
         "auto_fixable": True,
         "why_it_matters": "Sensitive output can leak credentials, private contacts, or business-confidential terms.",
     }
+
+
+def _redact_matches(text: str, findings: list[dict]) -> str:
+    spans = sorted(
+        ((finding["start"], finding["end"]) for finding in findings),
+        key=lambda span: (span[0], span[1]),
+    )
+    redacted_parts = []
+    cursor = 0
+    for start, end in spans:
+        if end <= cursor:
+            continue
+        if start > cursor:
+            redacted_parts.append(text[cursor:start])
+        redacted_parts.append("[REDACTED]")
+        cursor = max(cursor, end)
+    redacted_parts.append(text[cursor:])
+    return "".join(redacted_parts)
 
 
 def _language_report(surface: str, source_name: str, text: str, findings: list[dict]) -> dict:
