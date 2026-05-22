@@ -60,6 +60,22 @@ TEXT_EXTENSIONS = {
     ".yml",
 }
 
+SKIPPED_DIRECTORY_NAMES = {
+    ".git",
+    ".hg",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".tox",
+    ".uv-cache",
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+}
+
 
 def scan_text(text: str, source_name: str = "<text>") -> dict:
     findings = []
@@ -304,5 +320,7 @@ def _is_fullwidth_or_halfwidth(code_point: int) -> bool:
 
 def _iter_text_files(root: Path) -> Iterable[Path]:
     for file_path in sorted(root.rglob("*")):
+        if any(part in SKIPPED_DIRECTORY_NAMES for part in file_path.relative_to(root).parts[:-1]):
+            continue
         if file_path.is_file() and file_path.suffix.lower() in TEXT_EXTENSIONS:
             yield file_path

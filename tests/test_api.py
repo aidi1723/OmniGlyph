@@ -3,7 +3,9 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from omniglyph import __version__
+import omniglyph.api as api_module
 from omniglyph.api import create_app
+from omniglyph.config import Settings
 from omniglyph.domain_pack import parse_domain_pack
 from omniglyph.normalizer import GlyphRecord
 from omniglyph.repository import GlyphRepository, SourceSnapshot
@@ -79,7 +81,12 @@ def test_health_check_returns_service_status(tmp_path):
     response = client.get("/api/v1/health")
 
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "service": "omniglyph", "version": __version__}
+    assert response.json() == {
+        "status": "ok",
+        "service": "omniglyph",
+        "version": __version__,
+        "database": {"path": str(repository.sqlite_path), "exists": True},
+    }
 
 
 def test_api_metadata_uses_package_version(tmp_path):
@@ -224,3 +231,25 @@ def test_lexicon_validate_pack_endpoint_reports_valid_example_pack(tmp_path):
     assert response.status_code == 200
     assert response.json()["status"] == "pass"
     assert response.json()["summary"]["entry_count"] == 4
+
+
+def test_lexicon_validate_pack_endpoint_rejects_paths_outside_configured_root(tmp_path, monkeypatch):
+    pack_root = tmp_path / "packs"
+    outside_pack = tmp_path / "outside"
+    pack_root.mkdir()
+    outside_pack.mkdir()
+    monkeypatch.setattr(
+        api_module,
+        "settings",
+        Settings(
+            data_dir=tmp_path / "data",
+            raw_dir=tmp_path / "data" / "raw",
+            sqlite_path=tmp_path / "data" / "omniglyph.sqlite3",
+            lexicon_pack_root=pack_root,
+        ),
+    )
+    client = TestClient(create_app(GlyphRepository(tmp_path / "test.sqlite3")))
+
+    response = client.post("/api/v1/lexicon/validate-pack", json={"path": str(outside_pack)})
+
+    assert response.status_code == 403

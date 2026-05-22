@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.0-beta - Unreleased
+
+- Align MCP tool call results with text content blocks containing JSON payloads for broader MCP client compatibility.
+- Add environment-based runtime configuration for data directories, SQLite path, Unicode source URL, and optional Lexicon Pack root restrictions.
+- Add API health metadata for the active SQLite database path and existence state.
+- Add optional Lexicon Pack path sandboxing for `/api/v1/lexicon/validate-pack`.
+- Fix output DLP finding offsets so redaction reports continue to reference the original text.
+- Skip virtual environments, build outputs, VCS metadata, and cache directories during recursive code scans.
+- Make demo and release check scripts safer and more portable by avoiding destructive `data` deletion and supporting configurable Python interpreters.
+- Add source download timeout handling and release packaging coverage for fixtures, examples, and scripts.
+- Refresh Claude Desktop MCP integration docs for the v0.7 tool set and data-directory configuration.
+
 ## 0.6.0-beta - 2026-04-25
 
 - Add `omniglyph.oes` runtime helpers so OES is a project protocol, not only a document.

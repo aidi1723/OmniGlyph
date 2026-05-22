@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, Field
 from typing import Literal
@@ -73,7 +75,15 @@ def create_app(repository: GlyphRepository | None = None) -> FastAPI:
 
     @app.get("/api/v1/health")
     def health() -> dict:
-        return {"status": "ok", "service": "omniglyph", "version": __version__}
+        return {
+            "status": "ok",
+            "service": "omniglyph",
+            "version": __version__,
+            "database": {
+                "path": str(glyph_repository.sqlite_path),
+                "exists": glyph_repository.sqlite_path.exists(),
+            },
+        }
 
     @app.get("/api/v1/glyph")
     def get_glyph(char: str = Query(...)) -> dict:
@@ -98,6 +108,7 @@ def create_app(repository: GlyphRepository | None = None) -> FastAPI:
 
     @app.post("/api/v1/lexicon/validate-pack")
     def validate_lexicon_pack_endpoint(request: LexiconValidatePackRequest) -> dict:
+        _validate_allowed_pack_path(request.path)
         return validate_lexicon_pack(request.path)
 
     @app.get("/api/v1/explain/glyph")
@@ -177,3 +188,12 @@ def _explain_for_audit(repository: GlyphRepository, kind: str, text: str, source
     if kind == "code":
         return explain_code_security(text, source_name=source_name or "<api-text>"), "explain_code_security"
     raise HTTPException(status_code=400, detail=f"unsupported audit kind: {kind}")
+
+
+def _validate_allowed_pack_path(path: str) -> None:
+    if settings.lexicon_pack_root is None:
+        return
+    pack_path = Path(path).resolve()
+    root = settings.lexicon_pack_root.resolve()
+    if pack_path != root and root not in pack_path.parents:
+        raise HTTPException(status_code=403, detail="lexicon pack path is outside OMNIGLYPH_LEXICON_PACK_ROOT")
