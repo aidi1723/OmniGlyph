@@ -1,6 +1,5 @@
 import argparse
 import json
-import sys
 from pathlib import Path
 
 from omniglyph import __version__
@@ -8,9 +7,9 @@ from omniglyph.code_linter import format_json_report, format_text_report, scan_p
 from omniglyph.config import settings
 from omniglyph.lexicon_pack import entries_from_source, init_lexicon_pack, source_paths, validate_lexicon_pack
 from omniglyph.normalizer import parse_unicode_data
-from omniglyph.unihan import parse_unihan_data
 from omniglyph.repository import GlyphRepository, SourceSnapshot
 from omniglyph.sources import download_source, register_local_source
+from omniglyph.unihan import parse_unihan_data
 
 UNICODE_LICENSE = "Unicode Terms of Use"
 UNIHAN_LICENSE = "Unicode Terms of Use"
@@ -205,10 +204,11 @@ def main() -> None:
     elif args.command == "lookup":
         repository = GlyphRepository(settings.sqlite_path)
         repository.initialize()
-        if len(args.text) == 1:
-            print(repository.find_by_glyph(args.text))
-        else:
-            print(repository.find_term(args.text))
+        result = repository.find_by_glyph(args.text) if len(args.text) == 1 else repository.find_term(args.text)
+        if result is None:
+            print(json.dumps({"error": "not found", "text": args.text}, ensure_ascii=False))
+            raise SystemExit(1)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
     elif args.command == "scan-code":
         report = scan_path(args.path)
         if args.format == "json":

@@ -83,10 +83,10 @@ def enforce_intent_manifest(
 
 
 def _prompt_findings(text: str, source_name: str) -> list[dict]:
+    findings = []
     for pattern in PROMPT_INJECTION_PATTERNS:
-        match = pattern.search(text)
-        if match is not None:
-            return [
+        for match in pattern.finditer(text):
+            findings.append(
                 {
                     "rule_id": "prompt-injection-directive",
                     "severity": "high",
@@ -100,8 +100,8 @@ def _prompt_findings(text: str, source_name: str) -> list[dict]:
                     "auto_fixable": False,
                     "why_it_matters": "Instruction-override text can hijack an agent before tool or policy checks run.",
                 }
-            ]
-    return []
+            )
+    return findings
 
 
 def _dlp_finding(rule_id: str, value: str, start: int, end: int, source_name: str) -> dict:
@@ -121,7 +121,7 @@ def _dlp_finding(rule_id: str, value: str, start: int, end: int, source_name: st
 
 
 def _language_report(surface: str, source_name: str, text: str, findings: list[dict]) -> dict:
-    rule_counts = {}
+    rule_counts: dict[str, int] = {}
     for finding in findings:
         rule_counts[finding["rule_id"]] = rule_counts.get(finding["rule_id"], 0) + 1
     decision = "allow" if not findings else "block"

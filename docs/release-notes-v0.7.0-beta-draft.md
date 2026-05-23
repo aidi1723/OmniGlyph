@@ -25,7 +25,7 @@ v0.7 clarifies OmniGlyph around three layers:
 
 ## New MCP Tools in Source Branch
 
-The current v0.7 source branch exposes 16 MCP tools:
+The current v0.7 source branch exposes 15 MCP tools:
 
 - `lookup_glyph`
 - `lookup_term`
@@ -37,12 +37,13 @@ The current v0.7 source branch exposes 16 MCP tools:
 - `validate_lexicon_pack`
 - `validate_output_terms`
 - `enforce_grounded_output`
-- `scan_code_symbols`
 - `scan_unicode_security`
 - `scan_language_input`
 - `scan_output_dlp`
 - `enforce_intent`
 - `audit_explain`
+
+The legacy `scan_code_symbols` tool name remains accepted as a backward-compatible alias for `scan_unicode_security`.
 
 ## Guardrail Updates
 

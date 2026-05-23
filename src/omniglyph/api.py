@@ -1,12 +1,14 @@
+from pathlib import Path
+from typing import Literal
+
 from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, Field
-from typing import Literal
 
 from omniglyph import __version__
 from omniglyph.audit import build_audit_event
 from omniglyph.code_linter import scan_text
 from omniglyph.config import settings
-from omniglyph.explanation import explain_code_security, explain_glyph, explain_term
+from omniglyph.explanation import explain_code_security, explain_for_audit, explain_glyph, explain_term
 from omniglyph.guardrail import enforce_grounded_output, validate_output_terms
 from omniglyph.language_security import enforce_intent_manifest, scan_language_input, scan_output_dlp
 from omniglyph.lexicon_pack import validate_lexicon_pack
@@ -73,7 +75,15 @@ def create_app(repository: GlyphRepository | None = None) -> FastAPI:
 
     @app.get("/api/v1/health")
     def health() -> dict:
-        return {"status": "ok", "service": "omniglyph", "version": __version__}
+        return {
+            "status": "ok",
+            "service": "omniglyph",
+            "version": __version__,
+            "database": {
+                "path": str(glyph_repository.sqlite_path),
+                "exists": glyph_repository.sqlite_path.exists(),
+            },
+        }
 
     @app.get("/api/v1/glyph")
     def get_glyph(char: str = Query(...)) -> dict:
@@ -98,6 +108,7 @@ def create_app(repository: GlyphRepository | None = None) -> FastAPI:
 
     @app.post("/api/v1/lexicon/validate-pack")
     def validate_lexicon_pack_endpoint(request: LexiconValidatePackRequest) -> dict:
+        _validate_allowed_pack_path(request.path)
         return validate_lexicon_pack(request.path)
 
     @app.get("/api/v1/explain/glyph")
@@ -135,7 +146,10 @@ def create_app(repository: GlyphRepository | None = None) -> FastAPI:
 
     @app.post("/api/v1/audit/explain")
     def audit_explain_endpoint(request: AuditExplainRequest) -> dict:
-        result, action = _explain_for_audit(glyph_repository, request.kind, request.text, request.source_name)
+        try:
+            result, action = explain_for_audit(glyph_repository, request.kind, request.text, request.source_name or "<api-text>")
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
         return {"result": result, "audit": build_audit_event(request.actor_id, action, result)}
 
     @app.post("/api/v1/audit/security-scan")
@@ -162,18 +176,26 @@ def create_app(repository: GlyphRepository | None = None) -> FastAPI:
     return app
 
 
-app = create_app()
+_app: FastAPI | None = None
 
 
-def _explain_for_audit(repository: GlyphRepository, kind: str, text: str, source_name: str | None) -> tuple[dict, str]:
-    if kind == "glyph":
-        if len(text) != 1:
-            raise HTTPException(status_code=400, detail="glyph audit text must contain exactly one Unicode character")
-        return explain_glyph(repository, text), "explain_glyph"
-    if kind == "term":
-        if not text.strip():
-            raise HTTPException(status_code=400, detail="term audit text must be non-empty")
-        return explain_term(repository, text), "explain_term"
-    if kind == "code":
-        return explain_code_security(text, source_name=source_name or "<api-text>"), "explain_code_security"
-    raise HTTPException(status_code=400, detail=f"unsupported audit kind: {kind}")
+def get_app() -> FastAPI:
+    """Lazy app singleton. Use this for programmatic access without side effects."""
+    global _app
+    if _app is None:
+        _app = create_app()
+    return _app
+
+
+# Module-level reference for uvicorn (`uvicorn omniglyph.api:app`).
+# Uvicorn needs a concrete ASGI app at import time.
+app: FastAPI = get_app()
+
+
+def _validate_allowed_pack_path(path: str) -> None:
+    if settings.lexicon_pack_root is None:
+        return
+    pack_path = Path(path).resolve()
+    root = settings.lexicon_pack_root.resolve()
+    if pack_path != root and root not in pack_path.parents:
+        raise HTTPException(status_code=403, detail="lexicon pack path is outside OMNIGLYPH_LEXICON_PACK_ROOT")

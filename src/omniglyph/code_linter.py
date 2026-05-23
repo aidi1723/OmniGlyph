@@ -1,7 +1,7 @@
 import json
 import unicodedata
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 from omniglyph.oes import risk_level_for_findings
 from omniglyph.security_pack import PYTHON_UNICODEDATA_SOURCE, find_confusable
@@ -257,7 +257,7 @@ def _finding(
 def _report(source_name: str, scanned_chars: int, findings: list[dict]) -> dict:
     for finding in findings:
         finding["source"] = source_name
-    rule_counts = {}
+    rule_counts: dict[str, int] = {}
     for finding in findings:
         rule_counts[finding["rule_id"]] = rule_counts.get(finding["rule_id"], 0) + 1
     return {

@@ -28,8 +28,9 @@ def build_audit_event(
 
 
 def _extract_input(payload: dict) -> dict:
-    if isinstance(payload.get("input"), dict):
-        return payload["input"]
+    input_payload = payload.get("input")
+    if isinstance(input_payload, dict):
+        return input_payload
     source = payload.get("source", "<unknown>")
     return {"text": source, "kind": "code", "normalized": source}
 

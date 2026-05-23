@@ -109,7 +109,7 @@ printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | omniglyph-mcp
 
 当前源码分支版本为 `0.7.0b0`，已经提供 v0.7 MCP 工具集。`0.7.0b0` 的 PyPI 发布属于单独 release 步骤。
 
-当前源码 MCP 工具：`lookup_glyph`、`lookup_term`、`explain_glyph`、`explain_term`、`explain_code_security`、`normalize_tokens`、`list_namespaces`、`validate_lexicon_pack`、`validate_output_terms`、`enforce_grounded_output`、`scan_code_symbols`、`scan_unicode_security`、`scan_language_input`、`scan_output_dlp`、`enforce_intent`、`audit_explain`。
+当前源码 MCP 工具：`lookup_glyph`、`lookup_term`、`explain_glyph`、`explain_term`、`explain_code_security`、`normalize_tokens`、`list_namespaces`、`validate_lexicon_pack`、`validate_output_terms`、`enforce_grounded_output`、`scan_unicode_security`、`scan_language_input`、`scan_output_dlp`、`enforce_intent`、`audit_explain`。旧工具名 `scan_code_symbols` 仍可作为向后兼容别名调用。
 
 ## 为什么说它是 Agent 基础设施
 
@@ -206,7 +206,7 @@ OmniGlyph 把字符、别名、缩写和领域术语转换为 canonical ID、JSO
 - 软件开发领域词库 starter pack：`examples/domain-packs/software_development.csv`。
 - Audit Workflow：记录谁查询了什么、来源是什么、哪里未知。
 - Language Security Gateway：输入 prompt-injection 扫描、输出 DLP 脱敏、intent manifest 沙盒决策。
-- MCP 工具：`lookup_glyph`、`lookup_term`、`explain_glyph`、`explain_term`、`explain_code_security`、`normalize_tokens`、`validate_output_terms`、`enforce_grounded_output`、`scan_code_symbols`、`scan_unicode_security`、`scan_language_input`、`scan_output_dlp`、`enforce_intent`、`audit_explain`。
+- MCP 工具：`lookup_glyph`、`lookup_term`、`explain_glyph`、`explain_term`、`explain_code_security`、`normalize_tokens`、`validate_output_terms`、`enforce_grounded_output`、`scan_unicode_security`、`scan_language_input`、`scan_output_dlp`、`enforce_intent`、`audit_explain`；`scan_code_symbols` 保留为向后兼容别名。
 - 建材外贸 demo pack 与跨境询盘 demo。
 - Docker、CI、release check、N100 验证记录。
 
@@ -312,7 +312,6 @@ Need aluminum profile and tempered glass, FOB Bangkok, MOQ 500 sets.
 - `normalize_tokens`
 - `validate_output_terms`
 - `enforce_grounded_output`
-- `scan_code_symbols`
 - `scan_unicode_security`
 - `scan_language_input`
 - `scan_output_dlp`

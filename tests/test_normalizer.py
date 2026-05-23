@@ -2,7 +2,6 @@ from pathlib import Path
 
 from omniglyph.normalizer import parse_unicode_data
 
-
 FIXTURE = Path(__file__).parent / "fixtures" / "UnicodeData.sample.txt"
 
 
