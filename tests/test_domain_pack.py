@@ -2,7 +2,6 @@ from pathlib import Path
 
 from omniglyph.domain_pack import bundled_domain_pack, parse_domain_pack
 
-
 FIXTURE = Path(__file__).parent / "fixtures" / "domain_pack.csv"
 SOFTWARE_PACK = Path("examples/domain-packs/software_development.csv")
 

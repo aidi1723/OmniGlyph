@@ -2,8 +2,8 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from omniglyph import __version__
 import omniglyph.api as api_module
+from omniglyph import __version__
 from omniglyph.api import create_app
 from omniglyph.config import Settings
 from omniglyph.domain_pack import parse_domain_pack
@@ -173,6 +173,26 @@ def test_audit_explain_endpoint_records_unknown_limits(tmp_path):
     payload = response.json()
     assert payload["result"]["status"] == "unknown"
     assert payload["audit"]["unknowns"] == ["No local source-backed term explanation found."]
+
+
+def test_audit_explain_endpoint_rejects_invalid_glyph_text(tmp_path):
+    client = TestClient(create_app(seeded_repository(tmp_path)))
+
+    response = client.post("/api/v1/audit/explain", json={"actor_id": "user:alice", "kind": "glyph", "text": "ab"})
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "glyph audit text must contain exactly one Unicode character"
+
+
+def test_audit_explain_endpoint_rejects_empty_term_text(tmp_path):
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+    client = TestClient(create_app(repository))
+
+    response = client.post("/api/v1/audit/explain", json={"actor_id": "user:alice", "kind": "term", "text": "   "})
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "term audit text must be non-empty"
 
 
 def test_audit_security_scan_endpoint_records_findings(tmp_path):

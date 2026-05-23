@@ -123,8 +123,23 @@ def _glyph_lexical(record: dict) -> list[dict]:
 def _source_id_by_name(sources: list[dict], source_name: str | None) -> str | None:
     for source in sources:
         if source["source_name"] == source_name:
-            return source["id"]
+            return str(source["id"])
     return None
+
+
+def explain_for_audit(repository: GlyphRepository, kind: str, text: str, source_name: str) -> tuple[dict, str]:
+    """Shared helper for audit_explain in both API and MCP surfaces."""
+    if kind == "glyph":
+        if len(text) != 1:
+            raise ValueError("glyph audit text must contain exactly one Unicode character")
+        return explain_glyph(repository, text), "explain_glyph"
+    if kind == "term":
+        if not text.strip():
+            raise ValueError("term audit text must be non-empty")
+        return explain_term(repository, text), "explain_term"
+    if kind == "code":
+        return explain_code_security(text, source_name=source_name), "explain_code_security"
+    raise ValueError(f"unsupported audit kind: {kind}")
 
 
 def _normalize_text(text: str) -> str:

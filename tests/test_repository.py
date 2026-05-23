@@ -1,3 +1,5 @@
+import threading
+
 from omniglyph.normalizer import GlyphRecord
 from omniglyph.repository import GlyphRepository, SourceSnapshot
 
@@ -156,3 +158,20 @@ def test_repository_initialization_creates_lookup_indexes(tmp_path):
     assert "idx_glyph_property_glyph_uid" in index_names
     assert "idx_lexical_entry_normalized_term" in index_names
     assert "idx_lexical_alias_normalized_alias" in index_names
+
+
+def test_repository_reuses_connections_per_thread(tmp_path):
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+    main_connection = repository.connect()
+    worker_connections = []
+
+    def capture_connection() -> None:
+        worker_connections.append(repository.connect())
+
+    thread = threading.Thread(target=capture_connection)
+    thread.start()
+    thread.join()
+
+    assert repository.connect() is main_connection
+    assert worker_connections[0] is not main_connection

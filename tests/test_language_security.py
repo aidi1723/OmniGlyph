@@ -19,7 +19,7 @@ def test_scan_language_input_blocks_hidden_prompt_injection():
     rule_ids = {finding["rule_id"] for finding in report["findings"]}
     assert "unicode-invisible-format" in rule_ids
     assert "prompt-injection-directive" in rule_ids
-    assert report["summary"]["finding_count"] == 2
+    assert report["summary"]["finding_count"] == 3  # 1 unicode + 2 prompt-injection patterns
 
 
 def test_scan_language_input_allows_clean_business_text():

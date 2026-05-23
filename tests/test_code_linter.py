@@ -1,4 +1,3 @@
-from pathlib import Path
 
 from omniglyph.code_linter import format_text_report, scan_file, scan_path, scan_text
 

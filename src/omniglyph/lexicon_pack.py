@@ -71,7 +71,7 @@ def load_lexicon_pack(path: Path | str) -> LexiconPack:
 def validate_lexicon_pack(path: Path | str) -> dict:
     pack_dir = Path(path)
     errors = []
-    metadata = {}
+    metadata: dict[str, Any] = {}
     if not pack_dir.exists():
         errors.append(f"pack directory not found: {pack_dir}")
     elif not pack_dir.is_dir():
@@ -123,7 +123,10 @@ def entries_from_source(path: Path | str, namespace: str | None = None) -> tuple
 
 def _read_metadata(pack_dir: Path) -> dict:
     metadata_path = pack_dir / PACK_FILENAME
-    return json.loads(metadata_path.read_text(encoding="utf-8"))
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    if not isinstance(metadata, dict):
+        raise ValueError(f"{PACK_FILENAME}: metadata must be a JSON object")
+    return metadata
 
 
 def _validate_metadata(pack_dir: Path) -> tuple[dict, list[str]]:

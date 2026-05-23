@@ -2,6 +2,19 @@
 
 ## 0.7.0-beta - Unreleased
 
+### Improvements
+
+- Optimize `GlyphRepository` connection management with cached connections to reduce overhead under concurrent API usage.
+- Merge duplicate `scan_code_symbols` and `scan_unicode_security` MCP tools into a single handler (`scan_code_symbols` retained as backward-compatible alias).
+- Extract shared `explain_for_audit` helper to `omniglyph.explanation` module, eliminating duplication between API and MCP surfaces.
+- Enhance prompt-injection detection to report all matching patterns instead of only the first match.
+- Fix CLI `lookup` command to output formatted JSON instead of Python repr; return exit code 1 when not found.
+- Add `get_app()` factory function for cleaner ASGI startup; Dockerfile updated to use `--factory` mode.
+- Add `ruff` and `mypy` to dev dependencies with project-level configuration in `pyproject.toml`.
+- Remove stale `src/omniglyph/logos/` directory (contained only orphaned `__pycache__` artifacts).
+
+### Previous (carried forward)
+
 - Align MCP tool call results with text content blocks containing JSON payloads for broader MCP client compatibility.
 - Add environment-based runtime configuration for data directories, SQLite path, Unicode source URL, and optional Lexicon Pack root restrictions.
 - Add API health metadata for the active SQLite database path and existence state.

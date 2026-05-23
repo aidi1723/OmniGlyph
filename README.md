@@ -118,7 +118,7 @@ printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | omniglyph-mcp
 
 The source branch is now versioned as `0.7.0b0` and exposes the v0.7 MCP tool set. PyPI publication for `0.7.0b0` is a separate release step.
 
-Current source MCP tools: `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `explain_code_security`, `normalize_tokens`, `list_namespaces`, `validate_lexicon_pack`, `validate_output_terms`, `enforce_grounded_output`, `scan_code_symbols`, `scan_unicode_security`, `scan_language_input`, `scan_output_dlp`, `enforce_intent`, and `audit_explain`.
+Current source MCP tools: `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `explain_code_security`, `normalize_tokens`, `list_namespaces`, `validate_lexicon_pack`, `validate_output_terms`, `enforce_grounded_output`, `scan_unicode_security`, `scan_language_input`, `scan_output_dlp`, `enforce_intent`, and `audit_explain`. The legacy `scan_code_symbols` tool name remains accepted as a backward-compatible alias.
 
 ## Why It Exists
 
@@ -660,7 +660,7 @@ Example JSON-RPC request over stdio:
 {"jsonrpc":"2.0","id":1,"method":"tools/list"}
 ```
 
-The MCP server reads from the same local SQLite symbol fact base used by `/api/v1/glyph`. In the current source branch, it exposes `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `explain_code_security`, `normalize_tokens`, `list_namespaces`, `validate_lexicon_pack`, `validate_output_terms`, `enforce_grounded_output`, `scan_code_symbols`, `scan_unicode_security`, `scan_language_input`, `scan_output_dlp`, `enforce_intent`, and `audit_explain`.
+The MCP server reads from the same local SQLite symbol fact base used by `/api/v1/glyph`. In the current source branch, it exposes `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `explain_code_security`, `normalize_tokens`, `list_namespaces`, `validate_lexicon_pack`, `validate_output_terms`, `enforce_grounded_output`, `scan_unicode_security`, `scan_language_input`, `scan_output_dlp`, `enforce_intent`, and `audit_explain`. The legacy `scan_code_symbols` tool name remains accepted as a backward-compatible alias.
 
 ## Local MVP Commands
 

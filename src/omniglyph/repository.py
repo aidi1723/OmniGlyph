@@ -1,9 +1,11 @@
 import json
 import sqlite3
+import threading
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import cast
 
 from omniglyph.normalizer import GlyphRecord
 
@@ -21,15 +23,26 @@ class SourceSnapshot:
 class GlyphRepository:
     def __init__(self, sqlite_path: Path | str):
         self.sqlite_path = Path(sqlite_path)
+        self._local = threading.local()
 
     def connect(self) -> sqlite3.Connection:
+        connection = getattr(self._local, "connection", None)
+        if connection is not None:
+            return cast(sqlite3.Connection, connection)
         self.sqlite_path.parent.mkdir(parents=True, exist_ok=True)
         connection = sqlite3.connect(self.sqlite_path)
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA journal_mode=WAL")
         connection.execute("PRAGMA busy_timeout=5000")
         connection.execute("PRAGMA foreign_keys=ON")
+        self._local.connection = connection
         return connection
+
+    def close(self) -> None:
+        connection = getattr(self._local, "connection", None)
+        if connection is not None:
+            connection.close()
+            self._local.connection = None
 
     def initialize(self) -> None:
         with self.connect() as connection:
@@ -389,16 +402,17 @@ class GlyphRepository:
 
 
     def _shape_lexical(self, properties: list[dict]) -> dict:
-        lexical = {"pinyin": None, "basic_meaning": None, "sources": {}}
+        lexical: dict[str, str | dict[str, str] | None] = {"pinyin": None, "basic_meaning": None, "sources": {}}
+        sources = cast(dict[str, str], lexical["sources"])
         for item in properties:
             if item["namespace"] != "unihan":
                 continue
             if item["name"] == "kMandarin" and lexical["pinyin"] is None:
                 lexical["pinyin"] = item["value"]
-                lexical["sources"]["pinyin"] = item["source_name"]
+                sources["pinyin"] = item["source_name"]
             elif item["name"] == "kDefinition" and lexical["basic_meaning"] is None:
                 lexical["basic_meaning"] = item["value"]
-                lexical["sources"]["basic_meaning"] = item["source_name"]
+                sources["basic_meaning"] = item["source_name"]
         return lexical
 
     def _shape_domain_traits(self, properties: list[dict]) -> dict:
