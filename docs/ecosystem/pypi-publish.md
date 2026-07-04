@@ -16,46 +16,51 @@ This checklist records the OmniGlyph PyPI publication flow so it can be repeated
 Run from the repository root:
 
 ```bash
-rm -rf dist build src/omniglyph.egg-info
 UV_CACHE_DIR=.uv-cache uv venv .venv --python 3.11
 UV_CACHE_DIR=.uv-cache uv pip install -e '.[dev]'
+```
+
+Run the full local release gate:
+
+```bash
+scripts/release_check.sh
+```
+
+The release gate performs:
+
+- Python tests
+- Ruff
+- mypy
+- `git diff --check`
+- MCP `tools/list` smoke test
+- package build with `python -m build --no-isolation`
+- `twine check dist/*`
+- artifact content audit
+- clean wheel install smoke test
+- cross-border demo output check
+
+## Manual Build Commands
+
+Use these only when debugging a failed release gate:
+
+```bash
 .venv/bin/python -m pytest -q
-```
-
-Verify MCP stdio:
-
-```bash
-printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | .venv/bin/omniglyph-mcp
-```
-
-## Build
-
-Install build tooling:
-
-```bash
-UV_CACHE_DIR=.uv-cache uv pip install build twine
-```
-
-Build source distribution and wheel:
-
-```bash
-.venv/bin/python -m build
-```
-
-Check package metadata:
-
-```bash
+.venv/bin/python -m ruff check .
+.venv/bin/python -m mypy src
+git diff --check
+PYTHON=.venv/bin/python scripts/mcp_smoke_test.sh .venv/bin/omniglyph-mcp
+.venv/bin/python -m build --no-isolation
 .venv/bin/python -m twine check dist/*
+.venv/bin/python scripts/artifact_audit.py --quiet
+PYTHON=.venv/bin/python bash scripts/wheel_smoke_test.sh
 ```
 
 ## Local Wheel Smoke Test
 
-Use a clean temporary virtual environment:
+The release gate runs the scripted smoke test automatically:
 
 ```bash
-python3 -m venv /tmp/omniglyph-wheel-test
-/tmp/omniglyph-wheel-test/bin/pip install dist/omniglyph-0.7.0b0-py3-none-any.whl
-printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | /tmp/omniglyph-wheel-test/bin/omniglyph-mcp
+PYTHON=.venv/bin/python bash scripts/wheel_smoke_test.sh
 ```
 
 Expected tools:
@@ -79,8 +84,10 @@ Expected tools:
 
 ## Publish to TestPyPI First
 
+Use exact filenames so old artifacts in `dist/` are not uploaded accidentally:
+
 ```bash
-.venv/bin/python -m twine upload --repository testpypi dist/*
+.venv/bin/python -m twine upload --repository testpypi dist/omniglyph-0.7.0b0.tar.gz dist/omniglyph-0.7.0b0-py3-none-any.whl
 ```
 
 Install from TestPyPI in a clean environment and rerun the MCP smoke test.
@@ -108,7 +115,8 @@ After PyPI publication:
 Prepared in source, not uploaded yet.
 
 - Package metadata version is `0.7.0b0`.
-- Local tests, MCP smoke, build, twine check, and local wheel smoke pass in the release-prep branch.
+- Full `scripts/release_check.sh` gate passes locally.
+- Current branch verification includes `136 passed`, MCP smoke with 16 tools, package build, Twine metadata check, artifact audit, clean wheel smoke, and cross-border demo check.
 - Use exact filenames when uploading `0.7.0b0` artifacts.
 
 ## Previous v0.6.0b0 Release Status
