@@ -89,35 +89,55 @@ def scan_text(text: str, source_name: str = "<text>") -> dict:
 
 def scan_file(path: Path | str) -> dict:
     file_path = Path(path)
-    text = file_path.read_text(encoding="utf-8")
+    try:
+        text = file_path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        return _file_error_report(file_path, "UnicodeDecodeError", "file is not valid UTF-8 text")
+    except OSError as exc:
+        return _file_error_report(file_path, type(exc).__name__, str(exc))
     return scan_text(text, source_name=str(file_path))
 
 
 def scan_path(path: Path | str) -> dict:
     scan_root = Path(path)
-    if scan_root.is_file():
+    if not scan_root.exists():
+        reports = [_file_error_report(scan_root, "FileNotFoundError", "path does not exist")]
+    elif scan_root.is_file():
         reports = [scan_file(scan_root)]
     else:
         reports = [scan_file(file_path) for file_path in _iter_text_files(scan_root)]
     findings = []
     scanned_files = []
+    failed_files = []
     for report in reports:
+        if report["status"] == "error":
+            failed_files.extend(report["failed_files"])
+            continue
         scanned_files.append(report["source"])
         findings.extend(report["findings"])
+    status = "error" if failed_files else "warn" if findings else "pass"
     return {
         "source": str(scan_root),
-        "status": "pass" if not findings else "warn",
-        "summary": {"file_count": len(scanned_files), "finding_count": len(findings)},
+        "status": status,
+        "summary": {"file_count": len(scanned_files), "finding_count": len(findings), "failed_count": len(failed_files)},
         "files": scanned_files,
+        "failed_files": failed_files,
         "findings": findings,
     }
 
 
 def format_text_report(report: dict) -> str:
     lines = [f"OmniGlyph Code Linter: {report['source']}"]
+    failed_files = report.get("failed_files", [])
+    if failed_files:
+        lines.append(f"ERROR: failed to scan {len(failed_files)} file(s).")
+        for failure in failed_files:
+            lines.append(f"[error] {failure['source']} {failure['error_type']} - {failure['message']}")
     finding_count = report["summary"]["finding_count"]
-    if finding_count == 0:
+    if finding_count == 0 and not failed_files:
         lines.append("PASS: no suspicious Unicode symbols found.")
+        return "\n".join(lines)
+    if finding_count == 0:
         return "\n".join(lines)
     lines.append(f"WARN: found {finding_count} suspicious Unicode symbol(s).")
     for index, finding in enumerate(report["findings"], 1):
@@ -286,6 +306,21 @@ def _report(source_name: str, scanned_chars: int, findings: list[dict]) -> dict:
             "rule_counts": rule_counts,
         },
         "findings": findings,
+    }
+
+
+def _file_error_report(file_path: Path, error_type: str, message: str) -> dict:
+    return {
+        "source": str(file_path),
+        "status": "error",
+        "summary": {
+            "scanned_chars": 0,
+            "finding_count": 0,
+            "risk_level": "unknown",
+            "rule_counts": {},
+        },
+        "failed_files": [{"source": str(file_path), "error_type": error_type, "message": message}],
+        "findings": [],
     }
 
 

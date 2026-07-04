@@ -26,10 +26,14 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+  "build>=1.2",
   "pytest>=8.0",
   "httpx>=0.27",
   "ruff>=0.4",
   "mypy>=1.10",
+  "setuptools>=68",
+  "tomli>=2.0; python_version < \"3.11\"",
+  "twine>=5.0",
 ]
 
 [project.scripts]

@@ -419,7 +419,7 @@ The current `v0.7.0-beta` source candidate has been verified locally with:
 | Unihan_Readings import | `291,227` properties |
 | Unihan_DictionaryLikeData import | `156,251` properties |
 | Total verified Unihan properties | `447,478` properties |
-| Local test suite | `112 passed` |
+| Local test suite | `136 passed` |
 | N100 Linux test suite | Previously verified on beta branch |
 | Docker build/run/healthcheck | Previously verified on N100 |
 | SQLite lookup benchmark for `铝` | P95 about `0.17ms` over 1,000 lookups |

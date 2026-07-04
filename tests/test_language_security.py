@@ -56,6 +56,20 @@ def test_scan_output_dlp_reports_offsets_against_original_text_after_redaction()
     assert text[secret_finding["start"]:secret_finding["end"]] == "Alpha Factory"
 
 
+def test_scan_output_dlp_findings_do_not_echo_sensitive_values():
+    text = "Use sk-proj-abcdefghijklmnopqrstuvwxyz123456 before Alpha Factory."
+
+    report = scan_output_dlp(text, secret_terms=["Alpha Factory"], source_name="reply.txt")
+
+    serialized_findings = json.dumps(report["findings"], ensure_ascii=False)
+    assert "sk-proj-abcdefghijklmnopqrstuvwxyz123456" not in serialized_findings
+    assert "Alpha Factory" not in serialized_findings
+    for finding in report["findings"]:
+        assert finding["match"] == "[REDACTED]"
+        assert finding["match_length"] == finding["end"] - finding["start"]
+        assert len(finding["match_sha256"]) == 64
+
+
 def test_enforce_intent_manifest_allows_role_approved_intent():
     manifest = {
         "intents": [

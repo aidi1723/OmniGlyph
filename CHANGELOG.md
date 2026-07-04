@@ -2,6 +2,27 @@
 
 ## 0.7.0-beta - Unreleased
 
+### Improvements
+
+- Harden v0.7 release gates: `scripts/release_check.sh` now prefers the project virtualenv, runs tests, Ruff, mypy, whitespace checks, MCP smoke, package build, Twine metadata checks, artifact audit, wheel smoke, and the cross-border demo in one command.
+- Add `scripts/wheel_smoke_test.sh` to install the built wheel into a fresh temporary virtualenv and verify installed CLI/MCP entry points.
+- Add `scripts/artifact_audit.py` to inspect built wheel/sdist contents, dependency metadata, entry points, required examples/scripts, and forbidden local artifacts, with quiet release logs and defaults derived from `pyproject.toml`.
+- Add release tooling dependencies (`build`, `setuptools`, `twine`, and `tomli` on Python <3.11) to the `dev` extra so local release checks have the required packaging backend and validators.
+- Expose the legacy `scan_code_symbols` MCP tool in `tools/list` as a deprecated alias, matching the documented backward-compatibility promise and MCP smoke expectations.
+- Apply the same Lexicon Pack root restriction to MCP `validate_lexicon_pack` that the API already applies when `OMNIGLYPH_LEXICON_PACK_ROOT` is set.
+- Redact DLP finding matches by default; findings now return `[REDACTED]`, match length, and SHA-256 instead of echoing full secret values.
+- Make recursive `scan-code` resilient to non-UTF-8 or unreadable files by reporting `failed_files` instead of aborting the whole scan.
+- Optimize `GlyphRepository` connection management with cached connections to reduce overhead under concurrent API usage.
+- Merge duplicate `scan_code_symbols` and `scan_unicode_security` MCP tools into a single handler (`scan_code_symbols` retained as backward-compatible alias).
+- Extract shared `explain_for_audit` helper to `omniglyph.explanation` module, eliminating duplication between API and MCP surfaces.
+- Enhance prompt-injection detection to report all matching patterns instead of only the first match.
+- Fix CLI `lookup` command to output formatted JSON instead of Python repr; return exit code 1 when not found.
+- Add `get_app()` factory function for cleaner ASGI startup; Dockerfile updated to use `--factory` mode.
+- Add `ruff` and `mypy` to dev dependencies with project-level configuration in `pyproject.toml`.
+- Remove stale `src/omniglyph/logos/` directory (contained only orphaned `__pycache__` artifacts).
+
+### Previous (carried forward)
+
 - Align MCP tool call results with text content blocks containing JSON payloads for broader MCP client compatibility.
 - Add environment-based runtime configuration for data directories, SQLite path, Unicode source URL, and optional Lexicon Pack root restrictions.
 - Add API health metadata for the active SQLite database path and existence state.
