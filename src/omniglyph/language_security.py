@@ -1,3 +1,4 @@
+import hashlib
 import re
 from typing import Any
 
@@ -107,7 +108,9 @@ def _dlp_finding(rule_id: str, value: str, start: int, end: int, source_name: st
         "severity": "high",
         "message": "Potential sensitive data in model output",
         "source": source_name,
-        "match": value,
+        "match": "[REDACTED]",
+        "match_length": len(value),
+        "match_sha256": hashlib.sha256(value.encode("utf-8")).hexdigest(),
         "start": start,
         "end": end,
         "source_id": DLP_SOURCE_ID,

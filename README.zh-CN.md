@@ -411,7 +411,7 @@ OmniGlyph 的目标是用本地、可追溯、结构化查询，替代 Agent 临
 | Unihan_Readings 导入 | `291,227` 条 properties |
 | Unihan_DictionaryLikeData 导入 | `156,251` 条 properties |
 | 已验证 Unihan 属性总量 | `447,478` 条 properties |
-| 本地测试 | `112 passed` |
+| 本地测试 | `136 passed` |
 | N100 Linux 测试 | beta 分支曾验证通过 |
 | Docker build/run/healthcheck | N100 曾验证通过 |
 | `铝` 的 SQLite 查询 benchmark | 1000 次查询 P95 约 `0.17ms` |

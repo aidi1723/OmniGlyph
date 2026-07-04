@@ -104,6 +104,15 @@ def validate_lexicon_pack(path: Path | str) -> dict:
     }
 
 
+def ensure_allowed_pack_path(path: str, root: Path | None) -> None:
+    if root is None:
+        return
+    pack_path = Path(path).resolve()
+    allowed_root = root.resolve()
+    if pack_path != allowed_root and allowed_root not in pack_path.parents:
+        raise ValueError("lexicon pack path is outside OMNIGLYPH_LEXICON_PACK_ROOT")
+
+
 def source_paths(path: Path | str) -> tuple[Path, Path | None]:
     source = Path(path)
     if source.is_dir():

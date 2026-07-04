@@ -114,7 +114,13 @@ def test_mcp_tools_list_includes_explain_tools():
 def test_mcp_tools_list_includes_security_and_audit_tools():
     names = {tool["name"] for tool in build_tools_list()}
 
-    assert {"scan_unicode_security", "explain_code_security", "audit_explain", "enforce_grounded_output"}.issubset(names)
+    assert {
+        "scan_code_symbols",
+        "scan_unicode_security",
+        "explain_code_security",
+        "audit_explain",
+        "enforce_grounded_output",
+    }.issubset(names)
 
 
 def test_mcp_tools_list_includes_lexicon_product_tools():
@@ -363,3 +369,38 @@ def test_handle_mcp_validate_lexicon_pack_tool_call(tmp_path):
     payload = mcp_json(response)
     assert payload["status"] == "pass"
     assert payload["pack"]["pack_id"] == "company.example.trade_terms"
+
+
+def test_handle_mcp_validate_lexicon_pack_rejects_paths_outside_configured_root(tmp_path, monkeypatch):
+    from omniglyph import mcp_server
+    from omniglyph.config import Settings
+
+    pack_root = tmp_path / "packs"
+    outside_pack = tmp_path / "outside"
+    pack_root.mkdir()
+    outside_pack.mkdir()
+    monkeypatch.setattr(
+        mcp_server,
+        "settings",
+        Settings(
+            data_dir=tmp_path / "data",
+            raw_dir=tmp_path / "data" / "raw",
+            sqlite_path=tmp_path / "data" / "omniglyph.sqlite3",
+            lexicon_pack_root=pack_root,
+        ),
+    )
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 21,
+            "method": "tools/call",
+            "params": {"name": "validate_lexicon_pack", "arguments": {"path": str(outside_pack)}},
+        },
+        repository=repository,
+    )
+
+    assert response["error"]["code"] == -32602
+    assert "outside OMNIGLYPH_LEXICON_PACK_ROOT" in response["error"]["message"]

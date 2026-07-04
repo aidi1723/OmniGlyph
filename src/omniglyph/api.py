@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Query
@@ -11,7 +10,7 @@ from omniglyph.config import settings
 from omniglyph.explanation import explain_code_security, explain_for_audit, explain_glyph, explain_term
 from omniglyph.guardrail import enforce_grounded_output, validate_output_terms
 from omniglyph.language_security import enforce_intent_manifest, scan_language_input, scan_output_dlp
-from omniglyph.lexicon_pack import validate_lexicon_pack
+from omniglyph.lexicon_pack import ensure_allowed_pack_path, validate_lexicon_pack
 from omniglyph.normalization import compact_normalize, normalize_tokens
 from omniglyph.repository import GlyphRepository
 
@@ -193,9 +192,7 @@ app: FastAPI = get_app()
 
 
 def _validate_allowed_pack_path(path: str) -> None:
-    if settings.lexicon_pack_root is None:
-        return
-    pack_path = Path(path).resolve()
-    root = settings.lexicon_pack_root.resolve()
-    if pack_path != root and root not in pack_path.parents:
-        raise HTTPException(status_code=403, detail="lexicon pack path is outside OMNIGLYPH_LEXICON_PACK_ROOT")
+    try:
+        ensure_allowed_pack_path(path, settings.lexicon_pack_root)
+    except ValueError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc

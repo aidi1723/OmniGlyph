@@ -215,7 +215,7 @@ def main() -> None:
             print(format_json_report(report))
         else:
             print(format_text_report(report))
-        if args.fail_on == "warning" and report["status"] == "warn":
+        if args.fail_on == "warning" and report["status"] in {"warn", "error"}:
             raise SystemExit(1)
 
 

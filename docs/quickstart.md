@@ -73,3 +73,11 @@ Expected compact idea:
 ```bash
 PYTHONPATH=src .venv/bin/python examples/scripts/run_cross_border_demo.py
 ```
+
+## 10. Scan Source Text
+
+```bash
+.venv/bin/omniglyph scan-code src --format json --fail-on warning
+```
+
+The scanner reports suspicious Unicode findings and unreadable or non-UTF-8 files without aborting the entire directory scan.
