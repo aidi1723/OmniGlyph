@@ -90,9 +90,9 @@ In one sentence:
 
 > OmniGlyph is a local Symbol Ground Truth Layer, deterministic enterprise guardrail, and language security gateway for AI agents.
 
-## Available on PyPI + MCP Registry
+## Published Package and Current Source Candidate
 
-OmniGlyph is prepared as both a Python package and an MCP Registry server.
+OmniGlyph is prepared as both a Python package and an MCP Registry server. The current GitHub source candidate is newer than the latest published PyPI package.
 
 - Current source package version: `omniglyph==0.8.0b0`
 - Latest published PyPI package: `omniglyph==0.6.0b0`

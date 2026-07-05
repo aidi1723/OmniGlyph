@@ -116,9 +116,10 @@ After PyPI publication:
 Prepared in source, not uploaded yet.
 
 - Package metadata version is `0.8.0b0`.
-- Full `scripts/release_check.sh` gate passes locally for the release-prep branch.
+- Full `scripts/release_check.sh` gate passed locally during release-prep verification.
 - Current release-prep verification includes `184 passed`, Ruff pass, mypy pass, MCP smoke with 17 tools, package build, Twine metadata check, artifact audit, clean wheel smoke, and cross-border demo check.
 - Use exact filenames when uploading `0.8.0b0` artifacts.
+- GitHub source and closeout documentation are merged into `main`; package publication remains paused until explicit operator approval.
 
 ## Previous v0.6.0b0 Release Status
 

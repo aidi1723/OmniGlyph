@@ -526,38 +526,3 @@ Response:
 ```
 
 When `include_lexicon_secrets` is true, OmniGlyph also redacts approved lexicon entries where `sensitivity` is `secret`, including their aliases.
-
-## `POST /api/v1/language-security/enforce-intent`
-
-Validate an agent's requested action against a deterministic intent manifest. OmniGlyph returns a decision but never executes commands.
-
-Request:
-
-```json
-{
-  "intent_id": "network.restart",
-  "actor_role": "admin",
-  "manifest": {
-    "intents": [
-      {
-        "intent_id": "network.restart",
-        "allowed_commands": ["systemctl restart network"],
-        "allowed_roles": ["admin"],
-        "requires_approval": true
-      }
-    ]
-  }
-}
-```
-
-Response:
-
-```json
-{
-  "schema": "omniglyph.intent_sandbox:0.1",
-  "mode": "deterministic_execution_sandbox",
-  "decision": "review",
-  "status": "matched",
-  "limits": ["Intent requires approval before execution."]
-}
-```

@@ -80,9 +80,9 @@ OmniGlyph 也把自然语言当作运行时攻击面处理。`scan_language_inpu
 
 > OmniGlyph 是面向 AI Agent 的本地符号真值层、确定性企业护栏与语言安全网关。
 
-## 已发布到 PyPI + MCP Registry
+## 已发布包与当前源码候选
 
-OmniGlyph 已准备为 Python 包和 MCP Registry server。
+OmniGlyph 已准备为 Python 包和 MCP Registry server。当前 GitHub 源码候选版本高于最新已发布 PyPI 包。
 
 - 当前源码包版本：`omniglyph==0.8.0b0`
 - 最新已发布 PyPI 包：`omniglyph==0.6.0b0`
