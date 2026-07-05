@@ -355,6 +355,25 @@ def test_handle_mcp_enforce_grounded_output_tool_call(tmp_path):
     assert payload["audit"]["action"] == "enforce_grounded_output"
 
 
+def test_handle_mcp_enforce_grounded_output_accepts_policy_modes(tmp_path):
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 26,
+            "method": "tools/call",
+            "params": {
+                "name": "enforce_grounded_output",
+                "arguments": {"terms": ["FOB", "HS 7604.99X"], "policy": {"unknown_action": "review"}},
+            },
+        },
+        repository=seeded_domain_repository(tmp_path),
+    )
+
+    payload = mcp_json(response)
+    assert payload["decision"] == "review"
+    assert payload["severity"] == "medium"
+
+
 def test_handle_mcp_list_namespaces_tool_call(tmp_path):
     response = handle_mcp_request(
         {

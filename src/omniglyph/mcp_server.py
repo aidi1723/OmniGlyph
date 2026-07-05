@@ -126,6 +126,7 @@ def build_tools_list() -> list[dict[str, Any]]:
                 "properties": {
                     "terms": {"type": "array", "items": {"type": "string"}},
                     "actor_id": {"type": "string", "description": "Optional user, service, or agent identifier for audit evidence."},
+                    "policy": {"type": "object", "description": "Optional output guardrail policy actions."},
                 },
                 "required": ["terms"],
             },
@@ -329,11 +330,17 @@ def handle_mcp_request(request: dict[str, Any], repository: GlyphRepository | No
         if tool_name == "enforce_grounded_output":
             terms = arguments.get("terms")
             actor_id = arguments.get("actor_id")
+            policy = arguments.get("policy")
             if not isinstance(terms, list) or not all(isinstance(item, str) for item in terms):
                 return _error(request_id, -32602, "enforce_grounded_output requires a list of string terms")
             if actor_id is not None and (not isinstance(actor_id, str) or not actor_id.strip()):
                 return _error(request_id, -32602, "enforce_grounded_output actor_id must be a string")
-            return _result(request_id, {"content": [_json_content(enforce_grounded_output(glyph_repository, terms, actor_id=actor_id))]})
+            if policy is not None and not isinstance(policy, dict):
+                return _error(request_id, -32602, "enforce_grounded_output policy must be an object")
+            return _result(
+                request_id,
+                {"content": [_json_content(enforce_grounded_output(glyph_repository, terms, actor_id=actor_id, policy=policy))]},
+            )
 
         if tool_name in ("scan_code_symbols", "scan_unicode_security"):
             text = arguments.get("text")
