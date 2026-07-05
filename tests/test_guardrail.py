@@ -254,3 +254,65 @@ def test_enforce_grounded_output_deduplicates_repeated_risky_terms_in_review_pac
     assert result["unknown"] == ["HS 7604.99X", "HS 7604.99X"]
     assert result["review_packet"]["summary"]["term_count"] == 1
     assert result["review_packet"]["groups"][0]["terms"] == [{"term": "HS 7604.99X", "canonical_id": None}]
+
+
+def test_enforce_grounded_output_review_packet_includes_unapproved_terms(tmp_path):
+    source = tmp_path / "terms.csv"
+    source.write_text(
+        "term,canonical_id,entry_type,language,aliases,definition,traits,sensitivity,review_status\n"
+        'Draft Spec,company:draft_spec,product_spec,en,,Draft only,"{}",normal,draft\n',
+        encoding="utf-8",
+    )
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+    source_id = repository.add_source_snapshot(SourceSnapshot("Private Domain Pack", "file://domain", "fixture", "sha-draft", "private", "domain"))
+    repository.insert_lexical_entries(list(parse_domain_pack(source, "private_acme")), source_id)
+
+    result = enforce_grounded_output(repository, ["Draft Spec"], policy={"unapproved_action": "review"})
+
+    assert result["decision"] == "review"
+    assert result["review_packet"]["summary"] == {
+        "term_count": 1,
+        "group_count": 1,
+        "actions": ["review"],
+        "classes": ["unapproved"],
+    }
+    assert result["review_packet"]["groups"][0] == {
+        "class": "unapproved",
+        "action": "review",
+        "reason": "Term exists in the local fact base but is not approved.",
+        "suggested_host_action": "Route to the source owner or reviewer before delivery.",
+        "terms": [
+            {
+                "term": "Draft Spec",
+                "canonical_id": "company:draft_spec",
+                "entry_type": "product_spec",
+                "sensitivity": "normal",
+                "review_status": "draft",
+                "source_id": source_id,
+                "source_name": "Private Domain Pack",
+            }
+        ],
+    }
+
+
+def test_enforce_grounded_output_review_packet_records_allowed_unknown_terms(tmp_path):
+    repository = seeded_repository(tmp_path)
+
+    result = enforce_grounded_output(repository, ["HS 7604.99X"], policy={"unknown_action": "allow"})
+
+    assert result["decision"] == "allow"
+    assert result["severity"] == "low"
+    assert result["review_packet"]["summary"] == {
+        "term_count": 1,
+        "group_count": 1,
+        "actions": ["allow"],
+        "classes": ["unknown"],
+    }
+    assert result["review_packet"]["groups"][0] == {
+        "class": "unknown",
+        "action": "allow",
+        "reason": "Term is not present in the local fact base.",
+        "suggested_host_action": "Deliver only if the host policy accepts unsupported terms.",
+        "terms": [{"term": "HS 7604.99X", "canonical_id": None}],
+    }

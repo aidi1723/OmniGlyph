@@ -9,7 +9,7 @@ DEFAULT_POLICY = {
     "secret_action": "block",
 }
 RISKY_STATUS_ORDER = ("unknown", "unapproved", "secret")
-ACTION_STRENGTH_ORDER = ("block", "review", "allow")
+ACTION_PRECEDENCE = ("block", "review", "allow")
 
 REVIEW_REASONS = {
     "unknown": "Term is not present in the local fact base.",
@@ -144,10 +144,9 @@ def _action_for_detail(detail: dict, policy: dict[str, str]) -> str:
 
 
 def _strongest_action(actions: list[str]) -> str:
-    if "block" in actions:
-        return "block"
-    if "review" in actions:
-        return "review"
+    for action in ACTION_PRECEDENCE:
+        if action in actions:
+            return action
     return "allow"
 
 
@@ -236,7 +235,7 @@ def _review_term_payload(detail: dict) -> dict:
 def _review_packet_summary(groups: list[dict]) -> dict:
     actions = []
     group_actions = {group["action"] for group in groups}
-    for action in ACTION_STRENGTH_ORDER:
+    for action in ACTION_PRECEDENCE:
         if action in group_actions:
             actions.append(action)
     return {
