@@ -23,8 +23,15 @@ Release gate for this source batch:
 - Python tests include Policy Pack, parameter schema, language security, guardrail, CLI guardrail, API, MCP, and config coverage.
 - MCP `tools/list` smoke test includes the Policy Pack and output guardrail tool surfaces.
 - Package build, Twine metadata check, artifact audit, wheel smoke test, and demo output check pass.
-- Package version is `0.8.0b0` for the v0.8.0 beta release-prep branch; publish only after TestPyPI verification.
+- Package version is `0.8.0b0` for the v0.8.0 beta source candidate; publish only after TestPyPI verification.
 - No automatic rewriting, command execution, persistent approval queue, or external workflow integration is implied by the new evidence surfaces.
+
+Current GitHub closeout:
+
+- v0.8.0 beta release-prep is merged into `main`.
+- Current package metadata is `0.8.0b0`.
+- GitHub closeout statement and maintenance log are recorded under `docs/product/v0.8.0b0-release-prep.md` and `docs/product/v0.8-maintenance-log.md`.
+- TestPyPI, PyPI, and MCP Registry publication remain paused until an explicit operator approval.
 
 ## v0.7.0-beta Development Scope
 

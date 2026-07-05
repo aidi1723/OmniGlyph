@@ -13,7 +13,10 @@ It is suitable for experimentation, local agent workflows, RAG preprocessing, co
 
 ## Current Closeout Reference
 
-- v0.8 closeout, maintenance log, verification evidence, and key paths: [`docs/product/v0.8-closeout.md`](v0.8-closeout.md).
+- v0.8 source-batch closeout and key paths: [`docs/product/v0.8-closeout.md`](v0.8-closeout.md).
+- v0.8.0b0 release-prep handoff, verification evidence, GitHub closeout statement, and publication boundary: [`docs/product/v0.8.0b0-release-prep.md`](v0.8.0b0-release-prep.md).
+- v0.8 maintenance log and maintainer path index: [`docs/product/v0.8-maintenance-log.md`](v0.8-maintenance-log.md).
+- v0.8 publish path checklists: [`docs/ecosystem/pypi-publish.md`](../ecosystem/pypi-publish.md) and [`docs/ecosystem/mcp-registry-submission.md`](../ecosystem/mcp-registry-submission.md).
 - v0.7 hardening closeout remains available at [`docs/product/v0.7-closeout.md`](v0.7-closeout.md).
 
 ## What Works Today
@@ -47,7 +50,7 @@ It is suitable for experimentation, local agent workflows, RAG preprocessing, co
 - Language Security Gateway checks for prompt-injection input, outbound DLP redaction, and manifest-based intent sandbox decisions.
 - Approved `sensitivity=secret` lexicon entries can feed output DLP redaction when requested by the host.
 - Structured audit events that report actor, action, input, source IDs, findings, and unknown limits.
-- PyPI distribution and MCP Registry publication.
+- PyPI distribution for the latest published package (`0.6.0b0`) and source-prepared MCP Registry metadata for the current candidate.
 
 ## Best-Fit Users
 

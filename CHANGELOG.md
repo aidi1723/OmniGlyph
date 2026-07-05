@@ -16,6 +16,7 @@
 - Add guardrail review packets that group unknown, unapproved, and secret output terms into deterministic host-review evidence.
 - Harden guardrail review packets with unapproved and policy-allowed branch coverage plus shared action precedence.
 - Add `omniglyph enforce-output` for local JSON output guardrail enforcement with optional policy and audit evidence.
+- Prepare `0.8.0b0` package metadata and align release-prep, closeout, maintenance, PyPI, MCP Registry, and GitHub closeout documentation while leaving TestPyPI, PyPI, and MCP Registry publication paused.
 
 ## 0.7.0-beta - Unreleased
 

@@ -43,7 +43,7 @@ omniglyph enforce-intent network.restart --policy-pack-path examples/policy-pack
 New or expanded API/MCP surfaces:
 
 - `POST /api/v1/policy/validate-pack`
-- `POST /api/v1/security/enforce-intent` with `policy_pack_path`
+- `POST /api/v1/language-security/enforce-intent` with `policy_pack_path`
 - MCP `validate_policy_pack`
 - MCP `enforce_intent` with `policy_pack_path`
 
@@ -175,6 +175,8 @@ Final closeout verification:
 ## Release Notes for Maintainers
 
 - Package version is now prepared as `0.8.0b0`.
+- GitHub source and closeout documentation are merged into `main`.
+- TestPyPI, PyPI, and MCP Registry publication remain paused until explicit operator approval.
 - Before publishing, rebuild artifacts after a clean `scripts/release_check.sh` run.
 - Publish to TestPyPI first using exact artifact filenames.
 - Re-run CLI and MCP smoke checks from a clean wheel install before PyPI upload.

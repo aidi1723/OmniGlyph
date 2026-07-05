@@ -33,6 +33,8 @@ Note: the current source branch is prepared for v0.8 metadata. Do not submit the
 
 OmniGlyph `0.8.0b0` is prepared but not published to PyPI yet.
 
+GitHub source and closeout documentation are merged into `main`. MCP Registry submission remains paused until the `0.8.0b0` package is published and smoke-tested from PyPI.
+
 Previous release `0.6.0b0` was published to PyPI on 2026-04-25:
 
 - PyPI: `https://pypi.org/project/omniglyph/0.6.0b0/`
