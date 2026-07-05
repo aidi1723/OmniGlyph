@@ -67,17 +67,44 @@ def enforce_intent_manifest(
     parameters: dict[str, Any] | None = None,
 ) -> dict:
     intent = _find_intent(intent_id, manifest)
+    policy = manifest.get("policy")
     if intent is None:
-        return _intent_result(intent_id, "block", "unknown", None, ["Intent is not defined in the manifest."], parameters)
+        return _intent_result(
+            intent_id,
+            "block",
+            "unknown",
+            None,
+            ["Intent is not defined in the manifest."],
+            parameters,
+            policy,
+        )
+    if intent.get("decision") == "block":
+        return _intent_result(
+            intent_id,
+            "block",
+            "matched",
+            intent,
+            ["Intent policy blocks this request."],
+            parameters,
+            policy,
+        )
     allowed_roles = intent.get("allowed_roles") or []
     if allowed_roles and actor_role not in allowed_roles:
-        return _intent_result(intent_id, "block", "forbidden", intent, ["Actor role is not allowed to request this intent."], parameters)
+        return _intent_result(
+            intent_id,
+            "block",
+            "forbidden",
+            intent,
+            ["Actor role is not allowed to request this intent."],
+            parameters,
+            policy,
+        )
     limits = []
     decision = "allow"
-    if intent.get("requires_approval"):
+    if intent.get("decision") == "review" or intent.get("requires_approval"):
         decision = "review"
         limits.append("Intent requires approval before execution.")
-    return _intent_result(intent_id, decision, "matched", intent, limits, parameters)
+    return _intent_result(intent_id, decision, "matched", intent, limits, parameters, policy)
 
 
 def _prompt_findings(text: str, source_name: str) -> list[dict]:
@@ -179,8 +206,9 @@ def _intent_result(
     intent: dict | None,
     limits: list[str],
     parameters: dict[str, Any] | None,
+    policy: dict[str, Any] | None = None,
 ) -> dict:
-    return {
+    result = {
         "schema": INTENT_SANDBOX_SCHEMA,
         "mode": "deterministic_execution_sandbox",
         "intent_id": intent_id,
@@ -190,3 +218,6 @@ def _intent_result(
         "parameters": parameters or {},
         "limits": limits,
     }
+    if policy:
+        result["policy"] = policy
+    return result
