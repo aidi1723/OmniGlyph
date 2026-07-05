@@ -28,3 +28,15 @@ def test_settings_can_limit_lexicon_pack_root(monkeypatch, tmp_path):
 
     monkeypatch.delenv("OMNIGLYPH_LEXICON_PACK_ROOT")
     importlib.reload(config)
+
+
+def test_settings_can_limit_policy_pack_root(monkeypatch, tmp_path):
+    pack_root = tmp_path / "policy-packs"
+    monkeypatch.setenv("OMNIGLYPH_POLICY_PACK_ROOT", str(pack_root))
+
+    reloaded = importlib.reload(config)
+
+    assert reloaded.settings.policy_pack_root == pack_root
+
+    monkeypatch.delenv("OMNIGLYPH_POLICY_PACK_ROOT")
+    importlib.reload(config)
