@@ -1,5 +1,31 @@
 # Release Checklist
 
+## v0.8 Source Batch Development Scope
+
+This source batch adds local Policy Pack intent guardrails, deterministic intent parameter validation, configurable output guardrail policy modes, review packet evidence, and a CLI surface for output guardrail checks.
+
+Included in the working tree:
+
+- Policy Pack Standard v0.1 with `policy.json`, `intents.csv`, validation, example packs, and manifest conversion.
+- CLI commands for Policy Pack initialization, validation, and intent enforcement.
+- API and MCP Policy Pack validation surfaces plus `policy_pack_path` support for `enforce_intent`.
+- `OMNIGLYPH_POLICY_PACK_ROOT` path restriction for API/MCP Policy Pack usage.
+- Dependency-free `parameters_schema` validation for intent parameters.
+- Output guardrail policy modes for unknown, unapproved, and secret terms with `allow`, `review`, and `block` actions.
+- `review_packet` evidence for risky output terms grouped by class and action.
+- Review packet hardening for direct unapproved and policy-allowed unknown branches.
+- `omniglyph enforce-output` for local JSON output guardrail evidence.
+- v0.8 closeout and draft release notes under `docs/product/v0.8-closeout.md` and `docs/release-notes-v0.8-source-batch-draft.md`.
+
+Release gate for this source batch:
+
+- `scripts/release_check.sh` passes locally or in CI.
+- Python tests include Policy Pack, parameter schema, language security, guardrail, CLI guardrail, API, MCP, and config coverage.
+- MCP `tools/list` smoke test includes the Policy Pack and output guardrail tool surfaces.
+- Package build, Twine metadata check, artifact audit, wheel smoke test, and demo output check pass.
+- Package version remains `0.7.0b0` until a real v0.8 package release decision is made.
+- No automatic rewriting, command execution, persistent approval queue, or external workflow integration is implied by the new evidence surfaces.
+
 ## v0.7.0-beta Development Scope
 
 This release prepares OmniGlyph as a broader local-first Agent checkpoint layer: symbol facts, lexical guardrails, language security, Lexicon Pack operations, and release hardening.
