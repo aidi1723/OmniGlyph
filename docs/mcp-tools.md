@@ -127,6 +127,27 @@ Returns the same validation report as `omniglyph validate-domain-pack`:
 
 Use this before importing a company or personal Lexicon Pack.
 
+## Tool: `validate_policy_pack`
+
+Input:
+
+```json
+{"path":"examples/policy-packs/agent_intents"}
+```
+
+Returns the same validation report as `omniglyph validate-policy-pack`:
+
+```json
+{
+  "schema": "omniglyph.policy_pack:0.1",
+  "status": "pass",
+  "summary": {"intent_count": 3, "allow_count": 1, "review_count": 1, "block_count": 1},
+  "errors": []
+}
+```
+
+Use this before wiring a local agent Policy Pack into an MCP host. When `OMNIGLYPH_POLICY_PACK_ROOT` is configured, paths outside that root are rejected.
+
 ## Tool: `validate_output_terms`
 
 Input:
@@ -274,7 +295,7 @@ Set `include_lexicon_secrets` to include approved lexicon-pack entries marked `s
 
 ## Tool: `enforce_intent`
 
-Input:
+Inline manifest input:
 
 ```json
 {
@@ -293,6 +314,17 @@ Input:
 }
 ```
 
+Policy Pack input:
+
+```json
+{
+  "intent_id": "network.restart",
+  "actor_role": "admin",
+  "policy_pack_path": "examples/policy-packs/agent_intents",
+  "parameters": {"service": "network"}
+}
+```
+
 Returns an intent sandbox decision:
 
 ```json
@@ -305,7 +337,7 @@ Returns an intent sandbox decision:
 }
 ```
 
-OmniGlyph validates the manifest and returns evidence. It does not execute shell commands, call APIs, or route tasks.
+OmniGlyph validates exactly one policy source, either `manifest` or `policy_pack_path`, and returns evidence. It does not execute shell commands, call APIs, or route tasks.
 
 ## Tool: `audit_explain`
 

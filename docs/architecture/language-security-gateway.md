@@ -71,6 +71,18 @@ Example manifest:
 
 OmniGlyph never executes `allowed_commands`. They are evidence for a host gateway, policy engine, or human reviewer.
 
+v0.8 also supports Policy Packs for reusable intent policy:
+
+```text
+agent_intents/
+  policy.json
+  intents.csv
+```
+
+Policy Packs are validated with `validate-policy-pack`, API `POST /api/v1/policy/validate-pack`, or MCP `validate_policy_pack`. `enforce_intent` can then receive `policy_pack_path` instead of an inline manifest. Inline manifests remain supported for compatibility.
+
+When `OMNIGLYPH_POLICY_PACK_ROOT` is configured, API and MCP reject Policy Pack paths outside that directory.
+
 ## Runtime Flow
 
 ```text
@@ -79,7 +91,7 @@ Untrusted language
   → model
   → scan_output_dlp
   → intent extraction by host
-  → enforce_intent
+  → enforce_intent with inline manifest or Policy Pack
   → host allow / review / block
 ```
 
@@ -93,6 +105,6 @@ It creates deterministic safety checkpoints for the parts OmniGlyph can inspect:
 - known prompt-injection phrases
 - obvious sensitive output patterns
 - explicit secret terms
-- manifest-defined intents
+- manifest-defined or Policy Pack-defined intents
 
 Anything outside those checked layers remains the responsibility of the host model policy, retrieval design, tool permissioning, and human review.

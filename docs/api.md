@@ -259,6 +259,82 @@ Response:
 }
 ```
 
+## `POST /api/v1/policy/validate-pack`
+
+Validate a local Policy Pack directory containing `policy.json` and `intents.csv`.
+
+Request:
+
+```json
+{"path":"examples/policy-packs/agent_intents"}
+```
+
+Response excerpt:
+
+```json
+{
+  "schema": "omniglyph.policy_pack:0.1",
+  "status": "pass",
+  "policy": {
+    "policy_id": "company.example.agent_intents",
+    "namespace": "private_example",
+    "version": "2026.07.05"
+  },
+  "summary": {"intent_count": 3, "allow_count": 1, "review_count": 1, "block_count": 1},
+  "errors": []
+}
+```
+
+When `OMNIGLYPH_POLICY_PACK_ROOT` is set, API calls may only validate packs inside that root.
+
+## `POST /api/v1/language-security/enforce-intent`
+
+Validate an agent intent against either an inline manifest or a Policy Pack path.
+
+Inline manifest request:
+
+```json
+{
+  "intent_id": "network.restart",
+  "actor_role": "admin",
+  "manifest": {
+    "intents": [
+      {
+        "intent_id": "network.restart",
+        "allowed_roles": ["admin"],
+        "requires_approval": true
+      }
+    ]
+  }
+}
+```
+
+Policy Pack request:
+
+```json
+{
+  "intent_id": "network.restart",
+  "actor_role": "admin",
+  "policy_pack_path": "examples/policy-packs/agent_intents",
+  "parameters": {"service": "network"}
+}
+```
+
+Response excerpt:
+
+```json
+{
+  "schema": "omniglyph.intent_sandbox:0.1",
+  "mode": "deterministic_execution_sandbox",
+  "intent_id": "network.restart",
+  "decision": "review",
+  "status": "matched",
+  "limits": ["Intent requires approval before execution."]
+}
+```
+
+Requests must provide exactly one of `manifest` or `policy_pack_path`. OmniGlyph returns policy evidence only; it does not execute commands or call tools.
+
 ## `POST /api/v1/lexicon/validate-pack`
 
 Validate an OmniGlyph Lexicon Pack directory before import.

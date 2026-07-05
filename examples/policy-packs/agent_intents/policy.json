@@ -1,0 +1,11 @@
+{
+  "schema": "omniglyph.policy_pack:0.1",
+  "policy_id": "company.example.agent_intents",
+  "namespace": "private_example",
+  "name": "Example Agent Intent Policy",
+  "version": "2026.07.05",
+  "owner_type": "enterprise",
+  "license": "private",
+  "visibility": "private",
+  "description": "Example role and approval rules for deterministic agent intent checks."
+}

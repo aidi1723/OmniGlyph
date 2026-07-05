@@ -2,6 +2,7 @@ import importlib.util
 from pathlib import Path
 
 from omniglyph.domain_pack import parse_domain_pack
+from omniglyph.policy_pack import validate_policy_pack
 
 
 def test_building_materials_example_pack_is_parseable():
@@ -13,6 +14,14 @@ def test_building_materials_example_pack_is_parseable():
     assert "trade:fob" in canonical_ids
     assert "trade:moq" in canonical_ids
     assert len(entries) >= 9
+
+
+def test_agent_intents_policy_pack_example_is_valid():
+    report = validate_policy_pack(Path("examples/policy-packs/agent_intents"))
+
+    assert report["status"] == "pass"
+    assert report["policy"]["policy_id"] == "company.example.agent_intents"
+    assert report["summary"] == {"intent_count": 3, "allow_count": 1, "review_count": 1, "block_count": 1}
 
 
 def test_cross_border_demo_normalizes_expected_terms():
