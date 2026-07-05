@@ -5,6 +5,7 @@ from pathlib import Path
 from omniglyph import __version__
 from omniglyph.code_linter import format_json_report, format_text_report, scan_path
 from omniglyph.config import settings
+from omniglyph.guardrail import enforce_grounded_output
 from omniglyph.language_security import enforce_intent_manifest
 from omniglyph.lexicon_pack import entries_from_source, init_lexicon_pack, source_paths, validate_lexicon_pack
 from omniglyph.normalizer import parse_unicode_data
@@ -182,6 +183,11 @@ def main() -> None:
     enforce_intent.add_argument("--actor-role")
     enforce_intent.add_argument("--parameters", default="{}")
 
+    enforce_output = subcommands.add_parser("enforce-output")
+    enforce_output.add_argument("--term", action="append", required=True)
+    enforce_output.add_argument("--actor-id")
+    enforce_output.add_argument("--policy")
+
     lookup = subcommands.add_parser("lookup")
     lookup.add_argument("text")
 
@@ -240,6 +246,19 @@ def main() -> None:
             actor_role=args.actor_role,
             parameters=parameters,
         )
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+    elif args.command == "enforce-output":
+        policy = None
+        if args.policy is not None:
+            try:
+                policy = json.loads(args.policy)
+            except json.JSONDecodeError as exc:
+                parser.error(f"--policy must be a JSON object: {exc.msg}")
+            if not isinstance(policy, dict):
+                parser.error("--policy must be a JSON object")
+        repository = GlyphRepository(settings.sqlite_path)
+        repository.initialize()
+        report = enforce_grounded_output(repository, args.term, actor_id=args.actor_id, policy=policy)
         print(json.dumps(report, ensure_ascii=False, indent=2))
     elif args.command == "lookup":
         repository = GlyphRepository(settings.sqlite_path)
