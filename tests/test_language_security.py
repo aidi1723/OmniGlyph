@@ -109,6 +109,37 @@ def test_enforce_intent_manifest_blocks_unknown_or_disallowed_intent():
     assert disallowed["limits"] == ["Actor role is not allowed to request this intent."]
 
 
+def test_enforce_intent_manifest_blocks_explicit_block_decision():
+    manifest = {
+        "intents": [
+            {
+                "intent_id": "system.delete_root",
+                "decision": "block",
+                "allowed_roles": ["admin"],
+                "requires_approval": False,
+            }
+        ]
+    }
+
+    result = enforce_intent_manifest("system.delete_root", manifest, actor_role="admin")
+
+    assert result["decision"] == "block"
+    assert result["status"] == "matched"
+    assert result["limits"] == ["Intent policy blocks this request."]
+
+
+def test_enforce_intent_manifest_includes_policy_metadata_when_present():
+    manifest = {
+        "policy": {"policy_id": "company.acme.agent_policy", "namespace": "private_acme", "version": "2026.07.05"},
+        "intents": [{"intent_id": "ticket.create", "decision": "allow", "allowed_roles": ["operator"]}],
+    }
+
+    result = enforce_intent_manifest("ticket.create", manifest, actor_role="operator")
+
+    assert result["decision"] == "allow"
+    assert result["policy"]["policy_id"] == "company.acme.agent_policy"
+
+
 def test_language_security_api_exposes_input_output_and_intent_endpoints(tmp_path):
     repository = GlyphRepository(tmp_path / "test.sqlite3")
     client = TestClient(create_app(repository))
