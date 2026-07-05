@@ -106,7 +106,7 @@ def test_api_metadata_uses_package_version(tmp_path):
     repository = GlyphRepository(tmp_path / "test.sqlite3")
     app = create_app(repository)
 
-    assert __version__ == "0.7.0b0"
+    assert __version__ == "0.8.0b0"
     assert app.version == __version__
 
 

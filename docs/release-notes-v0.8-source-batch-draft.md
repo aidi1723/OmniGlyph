@@ -1,10 +1,10 @@
-# OmniGlyph v0.8 Source Batch Draft Release Notes
+# OmniGlyph v0.8.0 Beta Draft Release Notes
 
-Status: draft for the current source branch.
+Status: release-prep draft for the current source branch.
 
-Current source version: `0.7.0b0`.
+Current source version: `0.8.0b0`.
 
-This source batch is not published to PyPI yet. The latest published PyPI version remains `0.6.0b0`.
+This release candidate is not published to TestPyPI or PyPI yet. The latest published PyPI version remains `0.6.0b0`.
 
 ## Product Positioning
 
@@ -166,7 +166,7 @@ Final closeout verification:
 - Ruff: pass
 - mypy: pass
 - MCP smoke: 17 tools available
-- Package build: `omniglyph-0.7.0b0.tar.gz` and `omniglyph-0.7.0b0-py3-none-any.whl`
+- Package build: `omniglyph-0.8.0b0.tar.gz` and `omniglyph-0.8.0b0-py3-none-any.whl`
 - Twine metadata check: pass
 - Artifact content audit: pass
 - Clean wheel install with CLI/MCP smoke: pass
@@ -174,8 +174,8 @@ Final closeout verification:
 
 ## Release Notes for Maintainers
 
-- Keep package version at `0.7.0b0` until the release version is explicitly chosen.
-- Before publishing, update `pyproject.toml`, changelog entries, and artifact names consistently.
+- Package version is now prepared as `0.8.0b0`.
+- Before publishing, rebuild artifacts after a clean `scripts/release_check.sh` run.
 - Publish to TestPyPI first using exact artifact filenames.
 - Re-run CLI and MCP smoke checks from a clean wheel install before PyPI upload.
 - Update MCP registry metadata only after the package release plan is settled.

@@ -7,11 +7,11 @@
     "url": "https://github.com/aidi1723/OmniGlyph",
     "source": "github"
   },
-  "version": "0.7.0-beta",
+  "version": "0.8.0-beta",
   "packages": [
     {
       "identifier": "omniglyph",
-      "version": "0.7.0b0",
+      "version": "0.8.0b0",
       "transport": {
         "type": "stdio"
       },
@@ -50,6 +50,10 @@
     {
       "name": "validate_lexicon_pack",
       "description": "Validate an OmniGlyph Lexicon Pack directory with pack.json and terms.csv."
+    },
+    {
+      "name": "validate_policy_pack",
+      "description": "Validate an OmniGlyph Policy Pack directory with policy.json and intents.csv."
     },
     {
       "name": "validate_output_terms",
