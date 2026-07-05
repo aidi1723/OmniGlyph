@@ -249,6 +249,13 @@ def test_guardrail_enforce_output_endpoint_accepts_policy_modes(tmp_path):
     payload = response.json()
     assert payload["decision"] == "review"
     assert payload["severity"] == "medium"
+    assert payload["review_packet"]["summary"] == {
+        "term_count": 1,
+        "group_count": 1,
+        "actions": ["review"],
+        "classes": ["unknown"],
+    }
+    assert payload["review_packet"]["groups"][0]["suggested_host_action"] == "Route to human review or regenerate with verified terms only."
 
 
 def test_lexicon_namespaces_endpoint_lists_loaded_packs(tmp_path):
