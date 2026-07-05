@@ -11,6 +11,7 @@
 - Add MCP `validate_policy_pack` and support `policy_pack_path` in `enforce_intent`.
 - Preserve inline intent manifest compatibility while adding explicit `decision=block` precedence and policy metadata passthrough.
 - Add `examples/policy-packs/agent_intents` and `docs/specs/policy-pack-standard.md`.
+- Add dependency-free `parameters_schema` runtime validation for intent parameters, returning `decision=block` and `status=invalid_parameters` on mismatch.
 
 ## 0.7.0-beta - Unreleased
 

@@ -335,6 +335,19 @@ Response excerpt:
 
 Requests must provide exactly one of `manifest` or `policy_pack_path`. OmniGlyph returns policy evidence only; it does not execute commands or call tools.
 
+If `parameters` do not match the intent `parameters_schema`, the endpoint still returns HTTP `200` with a blocking policy result:
+
+```json
+{
+  "decision": "block",
+  "status": "invalid_parameters",
+  "limits": ["Intent parameters do not match parameters_schema."],
+  "parameter_findings": [
+    {"path": "$.service", "rule": "type", "message": "Expected string."}
+  ]
+}
+```
+
 ## `POST /api/v1/lexicon/validate-pack`
 
 Validate an OmniGlyph Lexicon Pack directory before import.

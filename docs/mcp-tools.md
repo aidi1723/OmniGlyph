@@ -339,6 +339,8 @@ Returns an intent sandbox decision:
 
 OmniGlyph validates exactly one policy source, either `manifest` or `policy_pack_path`, and returns evidence. It does not execute shell commands, call APIs, or route tasks.
 
+If `parameters` do not match `parameters_schema`, the tool returns a normal JSON payload with `decision: "block"` and `status: "invalid_parameters"` plus `parameter_findings`.
+
 ## Tool: `audit_explain`
 
 Input:
