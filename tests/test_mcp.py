@@ -67,7 +67,7 @@ def test_handle_mcp_tools_list_request():
 def test_handle_mcp_initialize_uses_package_version():
     response = handle_mcp_request({"jsonrpc": "2.0", "id": 1, "method": "initialize"})
 
-    assert __version__ == "0.7.0b0"
+    assert __version__ == "0.8.0b0"
     assert response["result"]["serverInfo"]["version"] == __version__
 
 

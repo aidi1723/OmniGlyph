@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.8.0-beta - Unreleased
+## 0.8.0-beta - 2026-07-05
 
 ### Improvements
 

@@ -5,7 +5,7 @@ This checklist records the OmniGlyph PyPI publication flow so it can be repeated
 ## Package Identity
 
 - PyPI name: `omniglyph`
-- Current package version: `0.7.0b0`
+- Current package version: `0.8.0b0`
 - MCP server name: `io.github.aidi1723/omniglyph`
 - Console scripts:
   - `omniglyph`
@@ -73,6 +73,7 @@ Expected tools:
 - `normalize_tokens`
 - `list_namespaces`
 - `validate_lexicon_pack`
+- `validate_policy_pack`
 - `validate_output_terms`
 - `enforce_grounded_output`
 - `scan_code_symbols`
@@ -87,7 +88,7 @@ Expected tools:
 Use exact filenames so old artifacts in `dist/` are not uploaded accidentally:
 
 ```bash
-.venv/bin/python -m twine upload --repository testpypi dist/omniglyph-0.7.0b0.tar.gz dist/omniglyph-0.7.0b0-py3-none-any.whl
+.venv/bin/python -m twine upload --repository testpypi dist/omniglyph-0.8.0b0.tar.gz dist/omniglyph-0.8.0b0-py3-none-any.whl
 ```
 
 Install from TestPyPI in a clean environment and rerun the MCP smoke test.
@@ -99,7 +100,7 @@ Only after TestPyPI succeeds:
 Use exact filenames so old artifacts in `dist/` are not uploaded accidentally:
 
 ```bash
-TWINE_NON_INTERACTIVE=1 TWINE_USERNAME=__token__ TWINE_PASSWORD="$PYPI_TOKEN" .venv/bin/python -m twine upload dist/omniglyph-0.7.0b0.tar.gz dist/omniglyph-0.7.0b0-py3-none-any.whl
+TWINE_NON_INTERACTIVE=1 TWINE_USERNAME=__token__ TWINE_PASSWORD="$PYPI_TOKEN" .venv/bin/python -m twine upload dist/omniglyph-0.8.0b0.tar.gz dist/omniglyph-0.8.0b0-py3-none-any.whl
 ```
 
 ## MCP Registry Follow-Up
@@ -110,14 +111,14 @@ After PyPI publication:
 2. Confirm `package-registry/server.json` references the exact published version.
 3. Submit the MCP registry PR using `docs/ecosystem/mcp-registry-submission.md`.
 
-## v0.7.0b0 Release Status
+## v0.8.0b0 Release Status
 
 Prepared in source, not uploaded yet.
 
-- Package metadata version is `0.7.0b0`.
-- Full `scripts/release_check.sh` gate passes locally.
-- Current branch verification includes `136 passed`, MCP smoke with 16 tools, package build, Twine metadata check, artifact audit, clean wheel smoke, and cross-border demo check.
-- Use exact filenames when uploading `0.7.0b0` artifacts.
+- Package metadata version is `0.8.0b0`.
+- Full `scripts/release_check.sh` gate passes locally for the release-prep branch.
+- Current release-prep verification includes `184 passed`, Ruff pass, mypy pass, MCP smoke with 17 tools, package build, Twine metadata check, artifact audit, clean wheel smoke, and cross-border demo check.
+- Use exact filenames when uploading `0.8.0b0` artifacts.
 
 ## Previous v0.6.0b0 Release Status
 

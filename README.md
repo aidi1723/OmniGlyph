@@ -94,7 +94,7 @@ In one sentence:
 
 OmniGlyph is prepared as both a Python package and an MCP Registry server.
 
-- Current source package version: `omniglyph==0.7.0b0`
+- Current source package version: `omniglyph==0.8.0b0`
 - Latest published PyPI package: `omniglyph==0.6.0b0`
 - MCP Registry server: `io.github.aidi1723/omniglyph`
 - Transport: local stdio MCP server
@@ -117,7 +117,7 @@ Quick MCP smoke test:
 printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | omniglyph-mcp
 ```
 
-The source branch is now versioned as `0.7.0b0` and exposes the v0.7 MCP tool set. PyPI publication for `0.7.0b0` is a separate release step.
+The source branch is now versioned as `0.8.0b0` and exposes the v0.8 MCP tool set. PyPI publication for `0.8.0b0` is a separate release step.
 
 Current source MCP tools: `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `explain_code_security`, `normalize_tokens`, `list_namespaces`, `validate_lexicon_pack`, `validate_policy_pack`, `validate_output_terms`, `enforce_grounded_output`, `scan_unicode_security`, `scan_language_input`, `scan_output_dlp`, `enforce_intent`, and `audit_explain`. The legacy `scan_code_symbols` tool name remains accepted as a backward-compatible alias.
 
@@ -423,7 +423,7 @@ OmniGlyph is designed to reduce token waste and hallucination risk by replacing 
 
 ### Verified Data
 
-The current `v0.7.0-beta` source candidate has been verified locally with:
+The current `v0.8.0-beta` source candidate has been verified locally with:
 
 | Metric | Result |
 | --- | ---: |
@@ -431,7 +431,7 @@ The current `v0.7.0-beta` source candidate has been verified locally with:
 | Unihan_Readings import | `291,227` properties |
 | Unihan_DictionaryLikeData import | `156,251` properties |
 | Total verified Unihan properties | `447,478` properties |
-| Local test suite | `136 passed` |
+| Local test suite | `184 passed` |
 | N100 Linux test suite | Previously verified on beta branch |
 | Docker build/run/healthcheck | Previously verified on N100 |
 | SQLite lookup benchmark for `铝` | P95 about `0.17ms` over 1,000 lookups |

@@ -13,7 +13,8 @@ It is suitable for experimentation, local agent workflows, RAG preprocessing, co
 
 ## Current Closeout Reference
 
-- v0.7 hardening closeout, maintenance log, verification evidence, and key paths: [`docs/product/v0.7-closeout.md`](v0.7-closeout.md).
+- v0.8 closeout, maintenance log, verification evidence, and key paths: [`docs/product/v0.8-closeout.md`](v0.8-closeout.md).
+- v0.7 hardening closeout remains available at [`docs/product/v0.7-closeout.md`](v0.7-closeout.md).
 
 ## What Works Today
 
@@ -22,7 +23,7 @@ It is suitable for experimentation, local agent workflows, RAG preprocessing, co
 - Private domain pack CSV ingestion.
 - Standard Lexicon Pack directories with `pack.json`, `terms.csv`, validation, dry-run import, and namespace replacement.
 - `GET /api/v1/glyph`, `GET /api/v1/term`, `POST /api/v1/normalize`, OES explanation, Unicode security scan, and audit APIs.
-- MCP stdio server with sixteen tools in the current source branch:
+- MCP stdio server with seventeen tools in the current source branch:
   - `lookup_glyph`
   - `lookup_term`
   - `explain_glyph`
@@ -31,6 +32,7 @@ It is suitable for experimentation, local agent workflows, RAG preprocessing, co
   - `normalize_tokens`
   - `list_namespaces`
   - `validate_lexicon_pack`
+  - `validate_policy_pack`
   - `validate_output_terms`
   - `enforce_grounded_output`
   - `scan_code_symbols`
