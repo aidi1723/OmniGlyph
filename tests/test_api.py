@@ -237,6 +237,20 @@ def test_guardrail_enforce_output_endpoint_blocks_unknown_terms(tmp_path):
     assert payload["audit"]["actor"] == {"id": "agent:quote"}
 
 
+def test_guardrail_enforce_output_endpoint_accepts_policy_modes(tmp_path):
+    client = TestClient(create_app(seeded_domain_repository(tmp_path)))
+
+    response = client.post(
+        "/api/v1/guardrail/enforce-output",
+        json={"terms": ["FOB", "HS 7604.99X"], "policy": {"unknown_action": "review"}},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["decision"] == "review"
+    assert payload["severity"] == "medium"
+
+
 def test_lexicon_namespaces_endpoint_lists_loaded_packs(tmp_path):
     client = TestClient(create_app(seeded_domain_repository(tmp_path)))
 

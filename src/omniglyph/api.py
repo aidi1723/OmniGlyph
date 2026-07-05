@@ -26,6 +26,7 @@ class GuardrailRequest(BaseModel):
 
 class GuardrailEnforceRequest(GuardrailRequest):
     actor_id: str | None = None
+    policy: dict | None = None
 
 
 class SecurityScanRequest(BaseModel):
@@ -189,7 +190,7 @@ def create_app(repository: GlyphRepository | None = None) -> FastAPI:
 
     @app.post("/api/v1/guardrail/enforce-output")
     def enforce_output(request: GuardrailEnforceRequest) -> dict:
-        return enforce_grounded_output(glyph_repository, request.terms, actor_id=request.actor_id)
+        return enforce_grounded_output(glyph_repository, request.terms, actor_id=request.actor_id, policy=request.policy)
 
     return app
 
