@@ -8,6 +8,26 @@ DEFAULT_POLICY = {
     "unapproved_action": "block",
     "secret_action": "block",
 }
+RISKY_STATUS_ORDER = ("unknown", "unapproved", "secret")
+ACTION_STRENGTH_ORDER = ("block", "review", "allow")
+
+REVIEW_REASONS = {
+    "unknown": "Term is not present in the local fact base.",
+    "unapproved": "Term exists in the local fact base but is not approved.",
+    "secret": "Term is approved but marked secret.",
+}
+
+SUGGESTED_HOST_ACTIONS = {
+    ("unknown", "block"): "Block delivery until the term is reviewed, removed, or added to an approved source.",
+    ("unknown", "review"): "Route to human review or regenerate with verified terms only.",
+    ("unknown", "allow"): "Deliver only if the host policy accepts unsupported terms.",
+    ("unapproved", "block"): "Block delivery until the term is approved or removed.",
+    ("unapproved", "review"): "Route to the source owner or reviewer before delivery.",
+    ("unapproved", "allow"): "Deliver only if the host policy accepts unapproved terms.",
+    ("secret", "block"): "Block delivery and remove or redact the sensitive term.",
+    ("secret", "review"): "Route to an authorized reviewer before delivery.",
+    ("secret", "allow"): "Deliver only if the host policy explicitly permits sensitive terms.",
+}
 
 
 def validate_output_terms(repository: GlyphRepository, terms: list[str]) -> dict:
@@ -71,6 +91,7 @@ def enforce_grounded_output(
         }
     )
     limits = _limits_for_details(details, actions)
+    review_packet = _review_packet_for_details(details, actions)
     result = {
         "schema": GUARDRAIL_SCHEMA,
         "mode": "strict_source_grounding" if policy is None else "policy_source_grounding",
@@ -83,6 +104,8 @@ def enforce_grounded_output(
         "source_ids": source_ids,
         "limits": limits,
     }
+    if review_packet:
+        result["review_packet"] = review_packet
     if policy_warnings:
         result["policy_warnings"] = policy_warnings
     if actor_id is not None:
@@ -163,6 +186,65 @@ def _limit_for(action: str, detail: dict) -> str | None:
     if action == "review":
         return f"{label} require review before output is trusted."
     return f"{label} were allowed by output policy."
+
+
+def _review_packet_for_details(details: list[dict], actions: list[str]) -> dict | None:
+    groups = []
+    for status in RISKY_STATUS_ORDER:
+        terms = []
+        action = None
+        seen_terms = set()
+        for detail, detail_action in zip(details, actions, strict=True):
+            if detail["status"] != status:
+                continue
+            if detail["term"] in seen_terms:
+                continue
+            seen_terms.add(detail["term"])
+            action = detail_action
+            terms.append(_review_term_payload(detail))
+        if not terms or action is None:
+            continue
+        groups.append(
+            {
+                "class": status,
+                "action": action,
+                "reason": REVIEW_REASONS[status],
+                "suggested_host_action": SUGGESTED_HOST_ACTIONS[(status, action)],
+                "terms": terms,
+            }
+        )
+    if not groups:
+        return None
+    return {
+        "status": "needs_review",
+        "summary": _review_packet_summary(groups),
+        "groups": groups,
+    }
+
+
+def _review_term_payload(detail: dict) -> dict:
+    payload = {
+        "term": detail["term"],
+        "canonical_id": detail.get("canonical_id"),
+    }
+    for key in ("entry_type", "sensitivity", "review_status", "source_id", "source_name"):
+        if key in detail:
+            payload[key] = detail[key]
+    return payload
+
+
+def _review_packet_summary(groups: list[dict]) -> dict:
+    actions = []
+    group_actions = {group["action"] for group in groups}
+    for action in ACTION_STRENGTH_ORDER:
+        if action in group_actions:
+            actions.append(action)
+    return {
+        "term_count": sum(len(group["terms"]) for group in groups),
+        "group_count": len(groups),
+        "actions": actions,
+        "classes": [group["class"] for group in groups],
+    }
 
 
 def _audit_payload(result: dict) -> dict:

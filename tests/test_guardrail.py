@@ -163,3 +163,94 @@ def test_enforce_grounded_output_invalid_policy_action_falls_back_to_block(tmp_p
 
     assert result["decision"] == "block"
     assert result["policy_warnings"] == ["unknown_action must be one of allow, block, review; using block."]
+
+
+def test_enforce_grounded_output_includes_review_packet_for_default_unknown_block(tmp_path):
+    repository = seeded_repository(tmp_path)
+
+    result = enforce_grounded_output(repository, ["FOB", "HS 7604.99X"])
+
+    assert result["decision"] == "block"
+    assert result["review_packet"] == {
+        "status": "needs_review",
+        "summary": {
+            "term_count": 1,
+            "group_count": 1,
+            "actions": ["block"],
+            "classes": ["unknown"],
+        },
+        "groups": [
+            {
+                "class": "unknown",
+                "action": "block",
+                "reason": "Term is not present in the local fact base.",
+                "suggested_host_action": "Block delivery until the term is reviewed, removed, or added to an approved source.",
+                "terms": [{"term": "HS 7604.99X", "canonical_id": None}],
+            }
+        ],
+    }
+
+
+def test_enforce_grounded_output_review_packet_reflects_review_policy(tmp_path):
+    repository = seeded_repository(tmp_path)
+
+    result = enforce_grounded_output(repository, ["HS 7604.99X"], policy={"unknown_action": "review"})
+
+    assert result["decision"] == "review"
+    assert result["review_packet"]["summary"]["actions"] == ["review"]
+    assert result["review_packet"]["groups"][0]["action"] == "review"
+    assert result["review_packet"]["groups"][0]["suggested_host_action"] == "Route to human review or regenerate with verified terms only."
+
+
+def test_enforce_grounded_output_omits_review_packet_for_safe_output(tmp_path):
+    repository = seeded_repository(tmp_path)
+
+    result = enforce_grounded_output(repository, ["FOB", "tempered glass"])
+
+    assert result["decision"] == "allow"
+    assert "review_packet" not in result
+
+
+def test_enforce_grounded_output_groups_mixed_unknown_and_secret_terms(tmp_path):
+    source = tmp_path / "terms.csv"
+    source.write_text(
+        "term,canonical_id,entry_type,language,aliases,definition,traits,sensitivity,review_status\n"
+        'Floor Price,company:floor_price,confidential_term,en,,Internal floor price,"{}",secret,approved\n',
+        encoding="utf-8",
+    )
+    repository = seeded_repository(tmp_path)
+    source_id = repository.add_source_snapshot(SourceSnapshot("Private Domain Pack", "file://secret", "fixture", "sha-secret", "private", "domain"))
+    repository.insert_lexical_entries(list(parse_domain_pack(source, "private_acme")), source_id)
+
+    result = enforce_grounded_output(
+        repository,
+        ["HS 7604.99X", "Floor Price"],
+        policy={"unknown_action": "review", "secret_action": "block"},
+    )
+
+    assert result["decision"] == "block"
+    assert result["review_packet"]["summary"] == {
+        "term_count": 2,
+        "group_count": 2,
+        "actions": ["block", "review"],
+        "classes": ["unknown", "secret"],
+    }
+    assert result["review_packet"]["groups"][0]["class"] == "unknown"
+    assert result["review_packet"]["groups"][0]["action"] == "review"
+    assert result["review_packet"]["groups"][0]["terms"] == [{"term": "HS 7604.99X", "canonical_id": None}]
+    assert result["review_packet"]["groups"][1]["class"] == "secret"
+    assert result["review_packet"]["groups"][1]["action"] == "block"
+    assert result["review_packet"]["groups"][1]["terms"][0]["term"] == "Floor Price"
+    assert result["review_packet"]["groups"][1]["terms"][0]["canonical_id"] == "company:floor_price"
+    assert result["review_packet"]["groups"][1]["terms"][0]["sensitivity"] == "secret"
+    assert result["review_packet"]["groups"][1]["terms"][0]["source_name"] == "Private Domain Pack"
+
+
+def test_enforce_grounded_output_deduplicates_repeated_risky_terms_in_review_packet(tmp_path):
+    repository = seeded_repository(tmp_path)
+
+    result = enforce_grounded_output(repository, ["HS 7604.99X", "HS 7604.99X"])
+
+    assert result["unknown"] == ["HS 7604.99X", "HS 7604.99X"]
+    assert result["review_packet"]["summary"]["term_count"] == 1
+    assert result["review_packet"]["groups"][0]["terms"] == [{"term": "HS 7604.99X", "canonical_id": None}]
