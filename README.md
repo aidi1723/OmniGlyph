@@ -384,6 +384,8 @@ The default strict-source-grounding policy returns:
 
 Hosts can optionally pass an output policy such as `{"unknown_action":"review"}` to route unknown, unapproved, or secret terms to review instead of using the default block behavior.
 
+When risky terms are present, `enforce_grounded_output` also returns a `review_packet` that groups unknown, unapproved, and secret terms into deterministic host-review evidence.
+
 This does not replace the language and symbol foundation. It is the enterprise boundary-control use case built on top of that foundation.
 
 ## Language Security Gateway

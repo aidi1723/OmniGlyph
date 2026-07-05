@@ -68,6 +68,8 @@ Hosts may pass an optional policy object to choose actions for specific classes 
 
 Allowed actions are `allow`, `review`, and `block`. Invalid action values fall back to `block` with a policy warning.
 
+v0.8.3 adds `review_packet` as an additive evidence layer. It groups risky terms by class and policy action, but it does not rewrite output, persist queues, or call external systems.
+
 API:
 
 ```text

@@ -439,6 +439,24 @@ Response:
   "limits": [
     "Unknown terms must be reviewed or removed before model output is trusted."
   ],
+  "review_packet": {
+    "status": "needs_review",
+    "summary": {
+      "term_count": 1,
+      "group_count": 1,
+      "actions": ["block"],
+      "classes": ["unknown"]
+    },
+    "groups": [
+      {
+        "class": "unknown",
+        "action": "block",
+        "reason": "Term is not present in the local fact base.",
+        "suggested_host_action": "Block delivery until the term is reviewed, removed, or added to an approved source.",
+        "terms": [{"term": "HS 7604.99X", "canonical_id": null}]
+      }
+    ]
+  },
   "audit": {
     "schema": "omniglyph.audit:0.1",
     "actor": {"id": "agent:quote"},
@@ -447,6 +465,8 @@ Response:
   }
 }
 ```
+
+`review_packet` is omitted when every checked term is approved and non-secret.
 
 Suggested host behavior:
 

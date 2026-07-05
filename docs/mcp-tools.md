@@ -202,6 +202,24 @@ Output:
   "unknown": ["HS 7604.99X"],
   "source_ids": ["..."],
   "limits": ["Unknown terms must be reviewed or removed before model output is trusted."],
+  "review_packet": {
+    "status": "needs_review",
+    "summary": {
+      "term_count": 1,
+      "group_count": 1,
+      "actions": ["block"],
+      "classes": ["unknown"]
+    },
+    "groups": [
+      {
+        "class": "unknown",
+        "action": "block",
+        "reason": "Term is not present in the local fact base.",
+        "suggested_host_action": "Block delivery until the term is reviewed, removed, or added to an approved source.",
+        "terms": [{"term": "HS 7604.99X", "canonical_id": null}]
+      }
+    ]
+  },
   "audit": {
     "schema": "omniglyph.audit:0.1",
     "actor": {"id": "agent:quote"},
@@ -211,6 +229,8 @@ Output:
 ```
 
 Use this as the stricter Deterministic MCP Guardrail mode. `validate_output_terms` reports known and unknown terms; `enforce_grounded_output` turns that evidence into an `allow`, `review`, or `block` decision. Optional policy keys are `unknown_action`, `unapproved_action`, and `secret_action`.
+
+The packet is derived from `details` and policy actions; MCP clients can use it to build review queues without parsing free text.
 
 ## Tool: `scan_code_symbols`
 
