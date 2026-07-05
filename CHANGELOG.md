@@ -12,6 +12,7 @@
 - Preserve inline intent manifest compatibility while adding explicit `decision=block` precedence and policy metadata passthrough.
 - Add `examples/policy-packs/agent_intents` and `docs/specs/policy-pack-standard.md`.
 - Add dependency-free `parameters_schema` runtime validation for intent parameters, returning `decision=block` and `status=invalid_parameters` on mismatch.
+- Add output guardrail policy modes so unknown, unapproved, and secret terms can be allowed, reviewed, or blocked while strict blocking remains the default.
 
 ## 0.7.0-beta - Unreleased
 

@@ -40,7 +40,7 @@ This turns "please do not make things up" from a prompt instruction into a runti
 2. Terms, symbols, or identifiers are extracted by the host workflow.
 3. The host calls OmniGlyph through API or MCP.
 4. OmniGlyph checks each candidate against the local fact base.
-5. OmniGlyph returns allow/block evidence.
+5. OmniGlyph returns allow/review/block evidence.
 6. The host sends, blocks, rewrites, or routes to human review.
 ```
 
@@ -48,13 +48,25 @@ The model may still reason, summarize, and write. The factual boundary is enforc
 
 ## Current Implementation
 
-The current strict-source-grounding policy is intentionally small:
+The default strict-source-grounding policy is intentionally small:
 
 - Input: a list of candidate output terms.
 - Known term: term exists in the local lexical/domain fact base.
 - Unknown term: term does not exist in the local fact base.
 - Decision: `allow` if all terms are known, otherwise `block`.
 - Evidence: known canonical IDs, unknown terms, source IDs, limits, and optional audit event.
+
+Hosts may pass an optional policy object to choose actions for specific classes of risky terms:
+
+```json
+{
+  "unknown_action": "review",
+  "unapproved_action": "block",
+  "secret_action": "block"
+}
+```
+
+Allowed actions are `allow`, `review`, and `block`. Invalid action values fall back to `block` with a policy warning.
 
 API:
 
@@ -76,6 +88,7 @@ enforce_grounded_output
   "mode": "strict_source_grounding",
   "decision": "block",
   "status": "warn",
+  "severity": "high",
   "known": {
     "FOB": "trade:fob"
   },

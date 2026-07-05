@@ -358,7 +358,7 @@ As an **Input Normalizer**, OmniGlyph maps noisy customer text, OCR fragments, a
 
 As an **Output Guardrail**, OmniGlyph checks generated text before it reaches customers or downstream systems. If a model invents an unknown HS code, material name, or profile model, the workflow can flag, block, or route the output for review.
 
-Current implementation covers the input-normalization side with `POST /api/v1/normalize` and MCP `normalize_tokens`, and adds a minimal output guardrail for known/unknown term checking. Full policy-based blocking, rewriting, and ERP/email integration are future work.
+Current implementation covers the input-normalization side with `POST /api/v1/normalize` and MCP `normalize_tokens`, and adds output guardrails for known/unknown term checking plus optional policy modes for `allow`, `review`, or `block`. Automatic rewriting and ERP/email integration are future work.
 
 See `docs/architecture/sandwich-architecture.md`.
 
@@ -374,12 +374,15 @@ User / system output
   → block or review if unknown terms appear
 ```
 
-The current strict-source-grounding policy returns:
+The default strict-source-grounding policy returns:
 
 - `decision: "allow"` when every candidate term exists in the local fact base.
 - `decision: "block"` when any candidate term is unknown.
+- `severity` evidence for none, low, medium, or high risk.
 - `source_ids` for the known facts used by the decision.
 - `audit` evidence when an `actor_id` is provided.
+
+Hosts can optionally pass an output policy such as `{"unknown_action":"review"}` to route unknown, unapproved, or secret terms to review instead of using the default block behavior.
 
 This does not replace the language and symbol foundation. It is the enterprise boundary-control use case built on top of that foundation.
 

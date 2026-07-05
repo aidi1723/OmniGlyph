@@ -406,14 +406,20 @@ Suggested agent behavior:
 
 ## `POST /api/v1/guardrail/enforce-output`
 
-Apply strict source-grounding policy to candidate output terms.
+Apply source-grounding policy to candidate output terms.
 
-This endpoint is the Deterministic MCP Guardrail API surface. It uses the same local lexical/domain fact base as `validate-output`, but returns an explicit `allow` or `block` decision.
+This endpoint is the Deterministic MCP Guardrail API surface. It uses the same local lexical/domain fact base as `validate-output`, but returns an explicit `allow`, `review`, or `block` decision. Without a policy object, it preserves strict default behavior and blocks unknown, unapproved, or secret terms.
 
 Request:
 
 ```json
 {"terms":["FOB","HS 7604.99X"],"actor_id":"agent:quote"}
+```
+
+Policy-mode request:
+
+```json
+{"terms":["FOB","HS 7604.99X"],"policy":{"unknown_action":"review"}}
 ```
 
 Response:
@@ -424,6 +430,7 @@ Response:
   "mode": "strict_source_grounding",
   "decision": "block",
   "status": "warn",
+  "severity": "high",
   "known": {
     "FOB": "trade:fob"
   },
@@ -444,6 +451,7 @@ Response:
 Suggested host behavior:
 
 - `allow`: deliver or continue the workflow.
+- `review`: route to human review or stricter regeneration.
 - `block`: stop delivery, route to review, or ask the model to rewrite using verified terms only.
 
 ## `POST /api/v1/language-security/scan-input`

@@ -62,7 +62,6 @@ def enforce_grounded_output(
     details = [_classify_secret_detail(detail) for detail in validation["details"]]
     actions = [_action_for_detail(detail, guardrail_policy) for detail in details]
     decision = _strongest_action(actions)
-    risky_count = sum(1 for action in actions if action != "allow" or decision == "allow")
     unknown = [detail["term"] for detail in details if detail["status"] in {"unknown", "unapproved"}]
     source_ids = sorted(
         {

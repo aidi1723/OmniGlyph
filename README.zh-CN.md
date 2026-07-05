@@ -368,7 +368,7 @@ OmniGlyph 可以挂载在 Agent/RAG 工作流的两端：
 
 作为 **Output Guardrail（输出守门员）**，OmniGlyph 在模型生成内容发给客户或下游系统之前进行校验。如果模型编造了不存在的 HS code、材料名或型材型号，工作流可以标记、阻断或转人工复核。
 
-当前版本已经实现输入标准化侧的基础能力：`POST /api/v1/normalize` 和 MCP `normalize_tokens`，并新增输出 guardrail，用于已知/未知术语检查和严格溯源的 `allow/block` 决策。重写、ERP/邮件系统集成、完整人工复核流仍属于后续工作。
+当前版本已经实现输入标准化侧的基础能力：`POST /api/v1/normalize` 和 MCP `normalize_tokens`，并新增输出 guardrail，用于已知/未知术语检查，以及可选的 `allow` / `review` / `block` 策略模式。自动重写、ERP/邮件系统集成仍属于后续工作。
 
 详见：`docs/architecture/sandwich-architecture.md`。
 
@@ -384,8 +384,11 @@ OmniGlyph 可以挂载在 Agent/RAG 工作流的两端：
 
 - 所有候选术语都存在于本地事实库时，`decision: "allow"`。
 - 任何候选术语未知时，`decision: "block"`。
+- `severity` 风险等级证据。
 - 已知事实对应的 `source_ids`。
 - 传入 `actor_id` 时返回审计证据。
+
+调用方也可以传入输出策略，例如 `{"unknown_action":"review"}`，把未知、未批准或敏感术语转为人工复核，而不是使用默认阻断。
 
 ## Language Security Gateway（语言安全网关）
 
