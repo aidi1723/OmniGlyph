@@ -6,7 +6,9 @@ from omniglyph import __version__
 from omniglyph.code_linter import format_json_report, format_text_report, scan_path
 from omniglyph.config import settings
 from omniglyph.lexicon_pack import entries_from_source, init_lexicon_pack, source_paths, validate_lexicon_pack
+from omniglyph.language_security import enforce_intent_manifest
 from omniglyph.normalizer import parse_unicode_data
+from omniglyph.policy_pack import init_policy_pack, load_policy_pack, validate_policy_pack
 from omniglyph.repository import GlyphRepository, SourceSnapshot
 from omniglyph.sources import download_source, register_local_source
 from omniglyph.unihan import parse_unihan_data
@@ -165,6 +167,21 @@ def main() -> None:
     validate_pack = subcommands.add_parser("validate-domain-pack")
     validate_pack.add_argument("path", type=Path)
 
+    init_policy = subcommands.add_parser("init-policy-pack")
+    init_policy.add_argument("path", type=Path)
+    init_policy.add_argument("--namespace", required=True)
+    init_policy.add_argument("--policy-id", required=True)
+    init_policy.add_argument("--name", required=True)
+
+    validate_policy = subcommands.add_parser("validate-policy-pack")
+    validate_policy.add_argument("path", type=Path)
+
+    enforce_intent = subcommands.add_parser("enforce-intent")
+    enforce_intent.add_argument("intent_id")
+    enforce_intent.add_argument("--policy-pack", type=Path, required=True)
+    enforce_intent.add_argument("--actor-role")
+    enforce_intent.add_argument("--parameters", default="{}")
+
     lookup = subcommands.add_parser("lookup")
     lookup.add_argument("text")
 
@@ -201,6 +218,29 @@ def main() -> None:
         print(json.dumps(report, ensure_ascii=False, indent=2))
         if report["status"] != "pass":
             raise SystemExit(1)
+    elif args.command == "init-policy-pack":
+        init_policy_pack(args.path, namespace=args.namespace, policy_id=args.policy_id, name=args.name)
+        print(f"Created policy pack at {args.path}")
+    elif args.command == "validate-policy-pack":
+        report = validate_policy_pack(args.path)
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        if report["status"] != "pass":
+            raise SystemExit(1)
+    elif args.command == "enforce-intent":
+        try:
+            parameters = json.loads(args.parameters)
+        except json.JSONDecodeError as exc:
+            parser.error(f"--parameters must be a JSON object: {exc.msg}")
+        if not isinstance(parameters, dict):
+            parser.error("--parameters must be a JSON object")
+        manifest = load_policy_pack(args.policy_pack).to_manifest()
+        report = enforce_intent_manifest(
+            args.intent_id,
+            manifest,
+            actor_role=args.actor_role,
+            parameters=parameters,
+        )
+        print(json.dumps(report, ensure_ascii=False, indent=2))
     elif args.command == "lookup":
         repository = GlyphRepository(settings.sqlite_path)
         repository.initialize()
