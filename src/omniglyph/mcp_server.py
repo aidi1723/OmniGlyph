@@ -11,6 +11,7 @@ from omniglyph.guardrail import enforce_grounded_output, validate_output_terms
 from omniglyph.language_security import enforce_intent_manifest, scan_language_input, scan_output_dlp
 from omniglyph.lexicon_pack import ensure_allowed_pack_path, validate_lexicon_pack
 from omniglyph.normalization import compact_normalize, normalize_tokens
+from omniglyph.policy_pack import ensure_allowed_policy_pack_path, load_policy_pack, validate_policy_pack
 from omniglyph.repository import GlyphRepository
 
 JSONRPC_VERSION = "2.0"
@@ -98,6 +99,17 @@ def build_tools_list() -> list[dict[str, Any]]:
             },
         },
         {
+            "name": "validate_policy_pack",
+            "description": "Validate an OmniGlyph Policy Pack directory with policy.json and intents.csv.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Path to a Policy Pack directory."},
+                },
+                "required": ["path"],
+            },
+        },
+        {
             "name": "validate_output_terms",
             "description": "Validate generated output terms against the local fact base.",
             "inputSchema": {
@@ -176,10 +188,11 @@ def build_tools_list() -> list[dict[str, Any]]:
                 "properties": {
                     "intent_id": {"type": "string", "description": "Canonical intent requested by the agent."},
                     "manifest": {"type": "object", "description": "Intent manifest with allowed roles and commands."},
+                    "policy_pack_path": {"type": "string", "description": "Path to a Policy Pack directory."},
                     "actor_role": {"type": "string", "description": "Optional role requesting the intent."},
                     "parameters": {"type": "object", "description": "Optional structured intent parameters."},
                 },
-                "required": ["intent_id", "manifest"],
+                "required": ["intent_id"],
             },
         },
         {
@@ -297,6 +310,16 @@ def handle_mcp_request(request: dict[str, Any], repository: GlyphRepository | No
                 return _error(request_id, -32602, str(exc))
             return _result(request_id, {"content": [_json_content(validate_lexicon_pack(path))]})
 
+        if tool_name == "validate_policy_pack":
+            path = arguments.get("path")
+            if not isinstance(path, str) or not path.strip():
+                return _error(request_id, -32602, "validate_policy_pack requires path")
+            try:
+                ensure_allowed_policy_pack_path(path, settings.policy_pack_root)
+            except ValueError as exc:
+                return _error(request_id, -32602, str(exc))
+            return _result(request_id, {"content": [_json_content(validate_policy_pack(path))]})
+
         if tool_name == "validate_output_terms":
             terms = arguments.get("terms")
             if not isinstance(terms, list) or not all(isinstance(item, str) for item in terms):
@@ -350,16 +373,27 @@ def handle_mcp_request(request: dict[str, Any], repository: GlyphRepository | No
         if tool_name == "enforce_intent":
             intent_id = arguments.get("intent_id")
             manifest = arguments.get("manifest")
+            policy_pack_path = arguments.get("policy_pack_path")
             actor_role = arguments.get("actor_role")
             parameters = arguments.get("parameters")
             if not isinstance(intent_id, str) or not intent_id.strip():
                 return _error(request_id, -32602, "enforce_intent requires intent_id")
-            if not isinstance(manifest, dict):
-                return _error(request_id, -32602, "enforce_intent requires manifest object")
+            if (manifest is None) == (policy_pack_path is None):
+                return _error(request_id, -32602, "enforce_intent requires exactly one of manifest or policy_pack_path")
+            if manifest is not None and not isinstance(manifest, dict):
+                return _error(request_id, -32602, "enforce_intent manifest must be an object")
+            if policy_pack_path is not None and (not isinstance(policy_pack_path, str) or not policy_pack_path.strip()):
+                return _error(request_id, -32602, "enforce_intent policy_pack_path must be a string")
             if actor_role is not None and (not isinstance(actor_role, str) or not actor_role.strip()):
                 return _error(request_id, -32602, "enforce_intent actor_role must be a string")
             if parameters is not None and not isinstance(parameters, dict):
                 return _error(request_id, -32602, "enforce_intent parameters must be an object")
+            if policy_pack_path is not None:
+                try:
+                    ensure_allowed_policy_pack_path(policy_pack_path, settings.policy_pack_root)
+                except ValueError as exc:
+                    return _error(request_id, -32602, str(exc))
+                manifest = load_policy_pack(policy_pack_path).to_manifest()
             return _result(
                 request_id,
                 {
