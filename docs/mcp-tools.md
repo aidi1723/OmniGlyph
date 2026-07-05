@@ -183,6 +183,12 @@ Input:
 {"terms":["FOB","HS 7604.99X"],"actor_id":"agent:quote"}
 ```
 
+Policy-mode input:
+
+```json
+{"terms":["FOB","HS 7604.99X"],"policy":{"unknown_action":"review"}}
+```
+
 Output:
 
 ```json
@@ -191,6 +197,7 @@ Output:
   "mode": "strict_source_grounding",
   "decision": "block",
   "status": "warn",
+  "severity": "high",
   "known": {"FOB": "trade:fob"},
   "unknown": ["HS 7604.99X"],
   "source_ids": ["..."],
@@ -203,7 +210,7 @@ Output:
 }
 ```
 
-Use this as the stricter Deterministic MCP Guardrail mode. `validate_output_terms` reports known and unknown terms; `enforce_grounded_output` turns that evidence into an allow/block decision.
+Use this as the stricter Deterministic MCP Guardrail mode. `validate_output_terms` reports known and unknown terms; `enforce_grounded_output` turns that evidence into an `allow`, `review`, or `block` decision. Optional policy keys are `unknown_action`, `unapproved_action`, and `secret_action`.
 
 ## Tool: `scan_code_symbols`
 
