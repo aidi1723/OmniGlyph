@@ -58,7 +58,19 @@ Field rules:
 - `requires_approval`: boolean string: `true`, `false`, `yes`, `no`, `1`, or `0`.
 - `allowed_roles`: semicolon-separated role names. Empty role lists are only useful for explicit `block` intents.
 - `audit_required`: boolean string with the same accepted values as `requires_approval`.
-- `parameters_schema`: JSON object recorded as evidence. OmniGlyph v0.8 validates that it is an object but does not evaluate it.
+- `parameters_schema`: JSON object used for deterministic runtime parameter validation.
+
+Supported `parameters_schema` keywords:
+
+- `type`: `object`, `string`, `number`, `integer`, `boolean`, or `array`
+- `required`: required object fields
+- `properties`: object field schemas
+- `enum`: exact allowed values
+- `minLength`, `maxLength`: string bounds
+- `minimum`, `maximum`: numeric bounds
+- `items`: array item schema
+
+Unsupported keywords such as `$ref`, `oneOf`, `anyOf`, `pattern`, and `format` are ignored in v0.8.1. OmniGlyph does not execute expressions, mutate parameters, inject defaults, or coerce types.
 
 ## Runtime Behavior
 
@@ -69,10 +81,24 @@ Decision precedence:
 1. Unknown intent returns `block`.
 2. Explicit `decision=block` returns `block`.
 3. Role mismatch returns `block`.
-4. `decision=review` or `requires_approval=true` returns `review`.
-5. Otherwise the intent returns `allow`.
+4. Parameter mismatch returns `block` with `status: "invalid_parameters"`.
+5. `decision=review` or `requires_approval=true` returns `review`.
+6. Otherwise the intent returns `allow`.
 
 OmniGlyph never executes commands. It returns deterministic evidence for a host app, MCP client, policy gateway, or human reviewer.
+
+Invalid parameter response excerpt:
+
+```json
+{
+  "decision": "block",
+  "status": "invalid_parameters",
+  "limits": ["Intent parameters do not match parameters_schema."],
+  "parameter_findings": [
+    {"path": "$.service", "rule": "type", "message": "Expected string."}
+  ]
+}
+```
 
 ## CLI
 
