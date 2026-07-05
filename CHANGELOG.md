@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.8.0-beta - Unreleased
+
+### Improvements
+
+- Add Policy Pack standard (`policy.json` + `intents.csv`) for local deterministic agent intent rules.
+- Add `omniglyph.policy_pack` with init, validation, loading, manifest conversion, and `OMNIGLYPH_POLICY_PACK_ROOT` path restriction support.
+- Add CLI commands: `init-policy-pack`, `validate-policy-pack`, and `enforce-intent`.
+- Add `POST /api/v1/policy/validate-pack` and support `policy_pack_path` in `/api/v1/language-security/enforce-intent`.
+- Add MCP `validate_policy_pack` and support `policy_pack_path` in `enforce_intent`.
+- Preserve inline intent manifest compatibility while adding explicit `decision=block` precedence and policy metadata passthrough.
+- Add `examples/policy-packs/agent_intents` and `docs/specs/policy-pack-standard.md`.
+
 ## 0.7.0-beta - Unreleased
 
 ### Improvements
