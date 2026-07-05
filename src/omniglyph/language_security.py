@@ -224,7 +224,7 @@ def _intent_result(
     policy: dict[str, Any] | None = None,
     parameter_findings: list[dict[str, str]] | None = None,
 ) -> dict:
-    result = {
+    result: dict[str, Any] = {
         "schema": INTENT_SANDBOX_SCHEMA,
         "mode": "deterministic_execution_sandbox",
         "intent_id": intent_id,
