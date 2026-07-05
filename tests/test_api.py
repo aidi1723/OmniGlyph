@@ -40,7 +40,7 @@ def write_api_policy_pack(path: Path) -> None:
     )
     (path / "intents.csv").write_text(
         "intent_id,canonical_phrase,decision,risk_level,requires_approval,allowed_roles,audit_required,parameters_schema\n"
-        'network.restart,restart network service,review,high,true,admin,true,"{}"\n',
+        'network.restart,restart network service,review,high,true,admin,true,"{""type"":""object"",""required"":[""service""],""properties"":{""service"":{""type"":""string"",""enum"":[""network""]}}}"\n',
         encoding="utf-8",
     )
 
@@ -307,13 +307,39 @@ def test_language_security_enforce_intent_can_load_policy_pack_path(tmp_path):
 
     response = client.post(
         "/api/v1/language-security/enforce-intent",
-        json={"intent_id": "network.restart", "policy_pack_path": str(pack_dir), "actor_role": "admin"},
+        json={
+            "intent_id": "network.restart",
+            "policy_pack_path": str(pack_dir),
+            "actor_role": "admin",
+            "parameters": {"service": "network"},
+        },
     )
 
     assert response.status_code == 200
     payload = response.json()
     assert payload["decision"] == "review"
     assert payload["policy"]["policy_id"] == "company.acme.agent_policy"
+
+
+def test_language_security_enforce_intent_blocks_invalid_policy_pack_parameters(tmp_path):
+    pack_dir = tmp_path / "policy"
+    write_api_policy_pack(pack_dir)
+    client = TestClient(create_app(GlyphRepository(tmp_path / "test.sqlite3")))
+
+    response = client.post(
+        "/api/v1/language-security/enforce-intent",
+        json={
+            "intent_id": "network.restart",
+            "policy_pack_path": str(pack_dir),
+            "actor_role": "admin",
+            "parameters": {"service": 123},
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["decision"] == "block"
+    assert payload["status"] == "invalid_parameters"
 
 
 def test_language_security_enforce_intent_rejects_ambiguous_policy_sources(tmp_path):

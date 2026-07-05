@@ -33,7 +33,7 @@ def write_policy_pack(path: Path) -> None:
     )
     (path / "intents.csv").write_text(
         "intent_id,canonical_phrase,decision,risk_level,requires_approval,allowed_roles,audit_required,parameters_schema\n"
-        'network.restart,restart network service,review,high,true,admin,true,"{""type"":""object""}"\n'
+        'network.restart,restart network service,review,high,true,admin,true,"{""type"":""object"",""required"":[""service""],""properties"":{""service"":{""type"":""string"",""enum"":[""network""]}}}"\n'
         'ticket.create,create support ticket,allow,low,false,admin;operator,true,"{}"\n'
         'system.delete_root,delete root filesystem,block,critical,false,,true,"{}"\n',
         encoding="utf-8",
@@ -65,7 +65,7 @@ def test_load_policy_pack_converts_rows_to_manifest(tmp_path):
     assert manifest["policy"]["version"] == "2026.07.05"
     assert manifest["intents"][0]["intent_id"] == "network.restart"
     assert manifest["intents"][0]["allowed_roles"] == ["admin"]
-    assert manifest["intents"][0]["parameters_schema"] == {"type": "object"}
+    assert manifest["intents"][0]["parameters_schema"]["required"] == ["service"]
 
 
 def test_validate_policy_pack_reports_invalid_rows(tmp_path):
@@ -165,7 +165,7 @@ def test_cli_init_validate_and_enforce_policy_pack(tmp_path):
             "--actor-role",
             "admin",
             "--parameters",
-            '{"ticket":"123"}',
+            '{"service":"network"}',
         ],
         check=False,
         capture_output=True,
@@ -178,3 +178,32 @@ def test_cli_init_validate_and_enforce_policy_pack(tmp_path):
     assert '"status": "pass"' in validate_result.stdout
     assert enforce_result.returncode == 0, enforce_result.stderr
     assert json.loads(enforce_result.stdout)["decision"] == "review"
+
+
+def test_cli_enforce_policy_pack_reports_invalid_parameters(tmp_path):
+    target = tmp_path / "cli-policy"
+    write_policy_pack(target)
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "omniglyph.cli",
+            "enforce-intent",
+            "network.restart",
+            "--policy-pack",
+            str(target),
+            "--actor-role",
+            "admin",
+            "--parameters",
+            '{"service":123}',
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["decision"] == "block"
+    assert payload["status"] == "invalid_parameters"

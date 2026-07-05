@@ -140,6 +140,52 @@ def test_enforce_intent_manifest_includes_policy_metadata_when_present():
     assert result["policy"]["policy_id"] == "company.acme.agent_policy"
 
 
+def test_enforce_intent_manifest_blocks_invalid_parameters():
+    manifest = {
+        "intents": [
+            {
+                "intent_id": "network.restart",
+                "decision": "allow",
+                "allowed_roles": ["admin"],
+                "parameters_schema": {
+                    "type": "object",
+                    "required": ["service"],
+                    "properties": {"service": {"type": "string", "enum": ["network"]}},
+                },
+            }
+        ]
+    }
+
+    result = enforce_intent_manifest("network.restart", manifest, actor_role="admin", parameters={"service": 123})
+
+    assert result["decision"] == "block"
+    assert result["status"] == "invalid_parameters"
+    assert result["limits"] == ["Intent parameters do not match parameters_schema."]
+    assert result["parameter_findings"][0] == {"path": "$.service", "rule": "type", "message": "Expected string."}
+
+
+def test_enforce_intent_manifest_allows_valid_parameters():
+    manifest = {
+        "intents": [
+            {
+                "intent_id": "network.restart",
+                "decision": "allow",
+                "allowed_roles": ["admin"],
+                "parameters_schema": {
+                    "type": "object",
+                    "required": ["service"],
+                    "properties": {"service": {"type": "string", "enum": ["network"]}},
+                },
+            }
+        ]
+    }
+
+    result = enforce_intent_manifest("network.restart", manifest, actor_role="admin", parameters={"service": "network"})
+
+    assert result["decision"] == "allow"
+    assert "parameter_findings" not in result
+
+
 def test_language_security_api_exposes_input_output_and_intent_endpoints(tmp_path):
     repository = GlyphRepository(tmp_path / "test.sqlite3")
     client = TestClient(create_app(repository))
