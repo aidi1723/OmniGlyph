@@ -36,6 +36,19 @@ def seeded_domain_repository(tmp_path):
     return repository
 
 
+def write_mcp_policy_pack(path):
+    path.mkdir()
+    (path / "policy.json").write_text(
+        '{"schema":"omniglyph.policy_pack:0.1","policy_id":"company.acme.agent_policy","namespace":"private_acme","name":"ACME Agent Policy","version":"2026.07.05","owner_type":"enterprise","license":"private","visibility":"private"}',
+        encoding="utf-8",
+    )
+    (path / "intents.csv").write_text(
+        "intent_id,canonical_phrase,decision,risk_level,requires_approval,allowed_roles,audit_required,parameters_schema\n"
+        'network.restart,restart network service,review,high,true,admin,true,"{}"\n',
+        encoding="utf-8",
+    )
+
+
 def test_build_tools_list_exposes_lookup_glyph_tool():
     tools = build_tools_list()
 
@@ -127,6 +140,12 @@ def test_mcp_tools_list_includes_lexicon_product_tools():
     names = {tool["name"] for tool in build_tools_list()}
 
     assert {"list_namespaces", "validate_lexicon_pack"}.issubset(names)
+
+
+def test_mcp_tools_list_includes_policy_pack_tools():
+    names = {tool["name"] for tool in build_tools_list()}
+
+    assert "validate_policy_pack" in names
 
 
 def test_handle_mcp_lookup_term_tool_call(tmp_path):
@@ -404,3 +423,75 @@ def test_handle_mcp_validate_lexicon_pack_rejects_paths_outside_configured_root(
 
     assert response["error"]["code"] == -32602
     assert "outside OMNIGLYPH_LEXICON_PACK_ROOT" in response["error"]["message"]
+
+
+def test_handle_mcp_validate_policy_pack_tool_call(tmp_path):
+    pack_dir = tmp_path / "policy"
+    write_mcp_policy_pack(pack_dir)
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 22,
+            "method": "tools/call",
+            "params": {"name": "validate_policy_pack", "arguments": {"path": str(pack_dir)}},
+        },
+        repository=repository,
+    )
+
+    payload = mcp_json(response)
+    assert payload["status"] == "pass"
+    assert payload["policy"]["policy_id"] == "company.acme.agent_policy"
+
+
+def test_handle_mcp_enforce_intent_accepts_policy_pack_path(tmp_path):
+    pack_dir = tmp_path / "policy"
+    write_mcp_policy_pack(pack_dir)
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 23,
+            "method": "tools/call",
+            "params": {
+                "name": "enforce_intent",
+                "arguments": {"intent_id": "network.restart", "policy_pack_path": str(pack_dir), "actor_role": "admin"},
+            },
+        },
+        repository=repository,
+    )
+
+    payload = mcp_json(response)
+    assert payload["decision"] == "review"
+    assert payload["policy"]["policy_id"] == "company.acme.agent_policy"
+
+
+def test_handle_mcp_enforce_intent_rejects_ambiguous_policy_sources(tmp_path):
+    pack_dir = tmp_path / "policy"
+    write_mcp_policy_pack(pack_dir)
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 24,
+            "method": "tools/call",
+            "params": {
+                "name": "enforce_intent",
+                "arguments": {
+                    "intent_id": "network.restart",
+                    "manifest": {"intents": []},
+                    "policy_pack_path": str(pack_dir),
+                },
+            },
+        },
+        repository=repository,
+    )
+
+    assert response["error"]["code"] == -32602
+    assert response["error"]["message"] == "enforce_intent requires exactly one of manifest or policy_pack_path"
