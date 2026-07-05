@@ -390,6 +390,8 @@ OmniGlyph 可以挂载在 Agent/RAG 工作流的两端：
 
 调用方也可以传入输出策略，例如 `{"unknown_action":"review"}`，把未知、未批准或敏感术语转为人工复核，而不是使用默认阻断。
 
+当输出中存在风险术语时，`enforce_grounded_output` 还会返回 `review_packet`，把未知、未批准和敏感术语整理成确定性的人工复核证据。
+
 ## Language Security Gateway（语言安全网关）
 
 语言安全网关是 OmniGlyph 的安全分支能力，不替代原本的全球符号与语言基础设施。
