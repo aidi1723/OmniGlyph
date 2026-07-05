@@ -67,8 +67,7 @@ def download_source(
     expected_sha256: str | None = None,
 ) -> SourceArtifact:
     destination.parent.mkdir(parents=True, exist_ok=True)
-    with urlopen(url, timeout=30) as response:
-        with destination.open("wb") as file:
-            for chunk in iter(lambda: response.read(1024 * 1024), b""):
-                file.write(chunk)
+    with urlopen(url, timeout=30) as response, destination.open("wb") as file:
+        for chunk in iter(lambda: response.read(1024 * 1024), b""):
+            file.write(chunk)
     return register_local_source(destination, url, source_version, license, expected_sha256=expected_sha256)
