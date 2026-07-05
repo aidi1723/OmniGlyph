@@ -44,7 +44,7 @@ def write_mcp_policy_pack(path):
     )
     (path / "intents.csv").write_text(
         "intent_id,canonical_phrase,decision,risk_level,requires_approval,allowed_roles,audit_required,parameters_schema\n"
-        'network.restart,restart network service,review,high,true,admin,true,"{}"\n',
+        'network.restart,restart network service,review,high,true,admin,true,"{""type"":""object"",""required"":[""service""],""properties"":{""service"":{""type"":""string"",""enum"":[""network""]}}}"\n',
         encoding="utf-8",
     )
 
@@ -459,7 +459,12 @@ def test_handle_mcp_enforce_intent_accepts_policy_pack_path(tmp_path):
             "method": "tools/call",
             "params": {
                 "name": "enforce_intent",
-                "arguments": {"intent_id": "network.restart", "policy_pack_path": str(pack_dir), "actor_role": "admin"},
+                "arguments": {
+                    "intent_id": "network.restart",
+                    "policy_pack_path": str(pack_dir),
+                    "actor_role": "admin",
+                    "parameters": {"service": "network"},
+                },
             },
         },
         repository=repository,
@@ -468,6 +473,35 @@ def test_handle_mcp_enforce_intent_accepts_policy_pack_path(tmp_path):
     payload = mcp_json(response)
     assert payload["decision"] == "review"
     assert payload["policy"]["policy_id"] == "company.acme.agent_policy"
+
+
+def test_handle_mcp_enforce_intent_blocks_invalid_policy_pack_parameters(tmp_path):
+    pack_dir = tmp_path / "policy"
+    write_mcp_policy_pack(pack_dir)
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 25,
+            "method": "tools/call",
+            "params": {
+                "name": "enforce_intent",
+                "arguments": {
+                    "intent_id": "network.restart",
+                    "policy_pack_path": str(pack_dir),
+                    "actor_role": "admin",
+                    "parameters": {"service": 123},
+                },
+            },
+        },
+        repository=repository,
+    )
+
+    payload = mcp_json(response)
+    assert payload["decision"] == "block"
+    assert payload["status"] == "invalid_parameters"
 
 
 def test_handle_mcp_enforce_intent_rejects_ambiguous_policy_sources(tmp_path):

@@ -4,6 +4,7 @@ from typing import Any
 
 from omniglyph.code_linter import scan_text
 from omniglyph.oes import risk_level_for_findings
+from omniglyph.parameter_schema import validate_parameters
 
 LANGUAGE_SECURITY_SCHEMA = "omniglyph.language_security:0.1"
 INTENT_SANDBOX_SCHEMA = "omniglyph.intent_sandbox:0.1"
@@ -99,6 +100,20 @@ def enforce_intent_manifest(
             parameters,
             policy,
         )
+    parameters_schema = intent.get("parameters_schema")
+    if isinstance(parameters_schema, dict) and parameters_schema:
+        parameter_findings = validate_parameters(parameters or {}, parameters_schema)
+        if parameter_findings:
+            return _intent_result(
+                intent_id,
+                "block",
+                "invalid_parameters",
+                intent,
+                ["Intent parameters do not match parameters_schema."],
+                parameters,
+                policy,
+                parameter_findings=parameter_findings,
+            )
     limits = []
     decision = "allow"
     if intent.get("decision") == "review" or intent.get("requires_approval"):
@@ -207,6 +222,7 @@ def _intent_result(
     limits: list[str],
     parameters: dict[str, Any] | None,
     policy: dict[str, Any] | None = None,
+    parameter_findings: list[dict[str, str]] | None = None,
 ) -> dict:
     result = {
         "schema": INTENT_SANDBOX_SCHEMA,
@@ -220,4 +236,6 @@ def _intent_result(
     }
     if policy:
         result["policy"] = policy
+    if parameter_findings:
+        result["parameter_findings"] = parameter_findings
     return result
