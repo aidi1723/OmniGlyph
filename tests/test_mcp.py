@@ -372,6 +372,13 @@ def test_handle_mcp_enforce_grounded_output_accepts_policy_modes(tmp_path):
     payload = mcp_json(response)
     assert payload["decision"] == "review"
     assert payload["severity"] == "medium"
+    assert payload["review_packet"]["summary"] == {
+        "term_count": 1,
+        "group_count": 1,
+        "actions": ["review"],
+        "classes": ["unknown"],
+    }
+    assert payload["review_packet"]["groups"][0]["terms"] == [{"term": "HS 7604.99X", "canonical_id": None}]
 
 
 def test_handle_mcp_list_namespaces_tool_call(tmp_path):
