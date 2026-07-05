@@ -219,6 +219,7 @@ def _validate_intent_row(row: dict[str, str | None], row_number: int) -> tuple[d
         errors.append(f"{INTENTS_FILENAME} row {row_number}: parameters_schema must be a JSON object")
     if errors:
         return {}, errors
+    assert parameters_schema is not None
     return _intent_payload(row, decision, risk_level, bool(requires_approval), bool(audit_required), parameters_schema), []
 
 
