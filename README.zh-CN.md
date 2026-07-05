@@ -392,6 +392,12 @@ OmniGlyph 可以挂载在 Agent/RAG 工作流的两端：
 
 当输出中存在风险术语时，`enforce_grounded_output` 还会返回 `review_packet`，把未知、未批准和敏感术语整理成确定性的人工复核证据。
 
+CLI 工作流也可以调用同一条输出守门路径：
+
+```bash
+omniglyph enforce-output --term FOB --term "HS 7604.99X" --policy '{"unknown_action":"review"}'
+```
+
 ## Language Security Gateway（语言安全网关）
 
 语言安全网关是 OmniGlyph 的安全分支能力，不替代原本的全球符号与语言基础设施。
