@@ -2,7 +2,6 @@ from pathlib import Path
 
 from omniglyph.unihan import parse_unihan_data
 
-
 FIXTURE = Path(__file__).parent / "fixtures" / "Unihan.sample.txt"
 
 

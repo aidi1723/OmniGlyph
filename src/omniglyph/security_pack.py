@@ -1,5 +1,6 @@
 import unicodedata
 from dataclasses import dataclass
+from typing import Any, cast
 
 
 @dataclass(frozen=True)
@@ -10,7 +11,7 @@ class ConfusableMapping:
     why_it_matters: str
 
 
-UNICODE_CONFUSABLES_SOURCE = {
+UNICODE_CONFUSABLES_SOURCE: dict[str, Any] = {
     "source_id": "source:unicode-confusables:minimal",
     "source_name": "OmniGlyph Unicode Confusables Minimal Pack",
     "source_version": "0.1.0",
@@ -18,7 +19,7 @@ UNICODE_CONFUSABLES_SOURCE = {
     "confidence": 1.0,
 }
 
-PYTHON_UNICODEDATA_SOURCE = {
+PYTHON_UNICODEDATA_SOURCE: dict[str, Any] = {
     "source_id": f"source:python-unicodedata:{unicodedata.unidata_version}",
     "source_name": "Python unicodedata Unicode Character Database",
     "source_version": unicodedata.unidata_version,
@@ -26,7 +27,7 @@ PYTHON_UNICODEDATA_SOURCE = {
     "confidence": 1.0,
 }
 
-SECURITY_SOURCES = {
+SECURITY_SOURCES: dict[str, dict[str, Any]] = {
     UNICODE_CONFUSABLES_SOURCE["source_id"]: UNICODE_CONFUSABLES_SOURCE,
     PYTHON_UNICODEDATA_SOURCE["source_id"]: PYTHON_UNICODEDATA_SOURCE,
 }
@@ -70,7 +71,7 @@ def find_confusable(char: str) -> ConfusableMapping | None:
 
 
 def source_payloads_for_findings(findings: list[dict]) -> list[dict]:
-    source_ids = sorted({finding.get("source_id") for finding in findings if finding.get("source_id")})
+    source_ids = sorted(cast(str, finding["source_id"]) for finding in findings if finding.get("source_id"))
     return [
         {
             "source_id": source["source_id"],

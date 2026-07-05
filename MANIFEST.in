@@ -1,0 +1,7 @@
+recursive-include tests/fixtures *
+recursive-include examples *
+recursive-include scripts *
+global-exclude .DS_Store
+global-exclude *.py[cod]
+global-exclude __pycache__
+prune **/__pycache__

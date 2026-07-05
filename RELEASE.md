@@ -1,5 +1,60 @@
 # Release Checklist
 
+## v0.8 Source Batch Development Scope
+
+This source batch adds local Policy Pack intent guardrails, deterministic intent parameter validation, configurable output guardrail policy modes, review packet evidence, and a CLI surface for output guardrail checks.
+
+Included in the working tree:
+
+- Policy Pack Standard v0.1 with `policy.json`, `intents.csv`, validation, example packs, and manifest conversion.
+- CLI commands for Policy Pack initialization, validation, and intent enforcement.
+- API and MCP Policy Pack validation surfaces plus `policy_pack_path` support for `enforce_intent`.
+- `OMNIGLYPH_POLICY_PACK_ROOT` path restriction for API/MCP Policy Pack usage.
+- Dependency-free `parameters_schema` validation for intent parameters.
+- Output guardrail policy modes for unknown, unapproved, and secret terms with `allow`, `review`, and `block` actions.
+- `review_packet` evidence for risky output terms grouped by class and action.
+- Review packet hardening for direct unapproved and policy-allowed unknown branches.
+- `omniglyph enforce-output` for local JSON output guardrail evidence.
+- v0.8 closeout and draft release notes under `docs/product/v0.8-closeout.md` and `docs/release-notes-v0.8-source-batch-draft.md`.
+
+Release gate for this source batch:
+
+- `scripts/release_check.sh` passes locally or in CI.
+- Python tests include Policy Pack, parameter schema, language security, guardrail, CLI guardrail, API, MCP, and config coverage.
+- MCP `tools/list` smoke test includes the Policy Pack and output guardrail tool surfaces.
+- Package build, Twine metadata check, artifact audit, wheel smoke test, and demo output check pass.
+- Package version remains `0.7.0b0` until a real v0.8 package release decision is made.
+- No automatic rewriting, command execution, persistent approval queue, or external workflow integration is implied by the new evidence surfaces.
+
+## v0.7.0-beta Development Scope
+
+This release prepares OmniGlyph as a broader local-first Agent checkpoint layer: symbol facts, lexical guardrails, language security, Lexicon Pack operations, and release hardening.
+
+Included in the working tree:
+
+- MCP tools for lookup, explanation, normalization, namespace listing, Lexicon Pack validation, output guardrails, Unicode security scanning, language input scanning, DLP output scanning, intent enforcement, and audit explanations.
+- Backward-compatible `scan_code_symbols` alias exposed in `tools/list`.
+- Lexicon Pack Standard v0.1 with `pack.json`, `terms.csv`, validation, dry-run import, namespace replacement, and metadata fields for sensitivity/review status.
+- Language Security Gateway helpers for prompt-injection checks, DLP redaction, lexicon-backed secret redaction, and deterministic intent sandbox decisions.
+- DLP findings that avoid echoing raw secret values.
+- Shared API/MCP Lexicon Pack root restriction through `OMNIGLYPH_LEXICON_PACK_ROOT`.
+- Recursive code scanner error reporting for non-UTF-8 or unreadable files.
+- Hardened `scripts/release_check.sh` covering tests, Ruff, mypy, whitespace checks, MCP smoke, package build, Twine metadata checks, artifact audit, wheel smoke, and demo verification.
+- Clean wheel smoke verification that installs the built wheel into a fresh temporary virtualenv and checks CLI/MCP entry points.
+- Artifact audit that checks wheel/sdist contents, dependency metadata, console entry points, and forbidden local artifacts before release, with quiet output in the main release gate and default artifact names derived from `pyproject.toml`.
+- Python 3.10-compatible release tooling through a `tomllib`/`tomli` TOML parser fallback.
+
+Release gate for v0.7.0-beta:
+
+- `scripts/release_check.sh` passes locally or in CI.
+- MCP `tools/list` smoke test returns all 16 MCP tools.
+- `git diff --check` passes without trailing whitespace or conflict marker issues.
+- Package build succeeds and `twine check dist/*` passes.
+- Built wheel installs into a fresh temporary virtualenv and passes CLI/MCP smoke checks.
+- Artifact audit passes for the freshly built wheel and sdist.
+- DLP reports do not include full matched secret values in findings.
+- `scan-code --fail-on warning` exits non-zero for suspicious Unicode findings or scan errors.
+
 ## v0.6.0-beta Development Scope
 
 This release turns OES into a reusable project protocol and adds the first enterprise-facing audit slice.
@@ -132,7 +187,7 @@ UV_CACHE_DIR=.uv-cache uv pip install -e '.[dev]'
 Run tests:
 
 ```bash
-.venv/bin/python -m pytest -v
+scripts/release_check.sh
 ```
 
 Run fixture ingestion:

@@ -1,9 +1,17 @@
+import json
+
 from omniglyph import __version__
 from omniglyph.domain_pack import parse_domain_pack
 from omniglyph.mcp_server import build_tools_list, handle_mcp_request
 from omniglyph.normalizer import GlyphRecord
 from omniglyph.repository import GlyphRepository, SourceSnapshot
 from omniglyph.unihan import parse_unihan_data
+
+
+def mcp_json(response):
+    content = response["result"]["content"][0]
+    assert content["type"] == "text"
+    return json.loads(content["text"])
 
 
 def seeded_glyph_repository(tmp_path):
@@ -26,6 +34,19 @@ def seeded_domain_repository(tmp_path):
     source_id = repository.add_source_snapshot(SourceSnapshot("Private Domain Pack", "file://domain", "fixture", "sha-domain", "private", "domain"))
     repository.insert_lexical_entries(list(parse_domain_pack(Path("tests/fixtures/domain_pack.csv"), "private_building_materials")), source_id)
     return repository
+
+
+def write_mcp_policy_pack(path):
+    path.mkdir()
+    (path / "policy.json").write_text(
+        '{"schema":"omniglyph.policy_pack:0.1","policy_id":"company.acme.agent_policy","namespace":"private_acme","name":"ACME Agent Policy","version":"2026.07.05","owner_type":"enterprise","license":"private","visibility":"private"}',
+        encoding="utf-8",
+    )
+    (path / "intents.csv").write_text(
+        "intent_id,canonical_phrase,decision,risk_level,requires_approval,allowed_roles,audit_required,parameters_schema\n"
+        'network.restart,restart network service,review,high,true,admin,true,"{""type"":""object"",""required"":[""service""],""properties"":{""service"":{""type"":""string"",""enum"":[""network""]}}}"\n',
+        encoding="utf-8",
+    )
 
 
 def test_build_tools_list_exposes_lookup_glyph_tool():
@@ -70,8 +91,8 @@ def test_handle_mcp_lookup_glyph_tool_call(tmp_path):
 
     assert response["id"] == 2
     content = response["result"]["content"][0]
-    assert content["type"] == "json"
-    assert content["json"]["unicode"]["hex"] == "U+94DD"
+    assert content["type"] == "text"
+    assert json.loads(content["text"])["unicode"]["hex"] == "U+94DD"
 
 
 def test_handle_mcp_unknown_tool_returns_error(tmp_path):
@@ -106,13 +127,25 @@ def test_mcp_tools_list_includes_explain_tools():
 def test_mcp_tools_list_includes_security_and_audit_tools():
     names = {tool["name"] for tool in build_tools_list()}
 
-    assert {"scan_unicode_security", "explain_code_security", "audit_explain", "enforce_grounded_output"}.issubset(names)
+    assert {
+        "scan_code_symbols",
+        "scan_unicode_security",
+        "explain_code_security",
+        "audit_explain",
+        "enforce_grounded_output",
+    }.issubset(names)
 
 
 def test_mcp_tools_list_includes_lexicon_product_tools():
     names = {tool["name"] for tool in build_tools_list()}
 
     assert {"list_namespaces", "validate_lexicon_pack"}.issubset(names)
+
+
+def test_mcp_tools_list_includes_policy_pack_tools():
+    names = {tool["name"] for tool in build_tools_list()}
+
+    assert "validate_policy_pack" in names
 
 
 def test_handle_mcp_lookup_term_tool_call(tmp_path):
@@ -135,7 +168,7 @@ def test_handle_mcp_lookup_term_tool_call(tmp_path):
         repository=repository,
     )
 
-    assert response["result"]["content"][0]["json"]["canonical_id"] == "trade:fob"
+    assert mcp_json(response)["canonical_id"] == "trade:fob"
 
 
 def test_handle_mcp_normalize_tokens_tool_call(tmp_path):
@@ -160,7 +193,7 @@ def test_handle_mcp_normalize_tokens_tool_call(tmp_path):
         repository=repository,
     )
 
-    assert response["result"]["content"][0]["json"] == {"known": {"铝": "glyph:U+94DD", "FOB": "trade:fob"}, "unknown": ["unknown"]}
+    assert mcp_json(response) == {"known": {"铝": "glyph:U+94DD", "FOB": "trade:fob"}, "unknown": ["unknown"]}
 
 
 def test_handle_mcp_validate_output_terms_tool_call(tmp_path):
@@ -183,7 +216,7 @@ def test_handle_mcp_validate_output_terms_tool_call(tmp_path):
         repository=repository,
     )
 
-    payload = response["result"]["content"][0]["json"]
+    payload = mcp_json(response)
     assert payload["status"] == "warn"
     assert payload["unknown"] == ["HS 7604.99X"]
 
@@ -198,7 +231,7 @@ def test_handle_mcp_scan_code_symbols_tool_call():
         }
     )
 
-    payload = response["result"]["content"][0]["json"]
+    payload = mcp_json(response)
     assert payload["status"] == "warn"
     assert payload["findings"][0]["unicode_hex"] == "U+0430"
     assert payload["findings"][0]["source"] == "agent.py"
@@ -214,7 +247,7 @@ def test_handle_mcp_scan_unicode_security_tool_call():
         }
     )
 
-    payload = response["result"]["content"][0]["json"]
+    payload = mcp_json(response)
     assert payload["status"] == "warn"
     assert payload["findings"][0]["rule_id"] == "unicode-confusable"
     assert payload["findings"][0]["confusable_with"] == "a"
@@ -231,7 +264,7 @@ def test_handle_mcp_explain_glyph_tool_call(tmp_path):
         repository=seeded_glyph_repository(tmp_path),
     )
 
-    payload = response["result"]["content"][0]["json"]
+    payload = mcp_json(response)
     assert payload["schema"] == "oes:0.1"
     assert payload["canonical_id"] == "glyph:U+94DD"
 
@@ -247,7 +280,7 @@ def test_handle_mcp_explain_term_tool_call(tmp_path):
         repository=seeded_domain_repository(tmp_path),
     )
 
-    payload = response["result"]["content"][0]["json"]
+    payload = mcp_json(response)
     assert payload["schema"] == "oes:0.1"
     assert payload["canonical_id"] == "trade:fob"
 
@@ -262,7 +295,7 @@ def test_handle_mcp_explain_code_security_tool_call():
         }
     )
 
-    payload = response["result"]["content"][0]["json"]
+    payload = mcp_json(response)
     assert payload["schema"] == "oes:0.1"
     assert payload["status"] == "unsafe"
     assert payload["safety"]["findings"][0]["source_id"] == "source:unicode-confusables:minimal"
@@ -279,7 +312,7 @@ def test_handle_mcp_audit_explain_tool_call(tmp_path):
         repository=seeded_domain_repository(tmp_path),
     )
 
-    payload = response["result"]["content"][0]["json"]
+    payload = mcp_json(response)
     assert payload["result"]["canonical_id"] == "trade:fob"
     assert payload["audit"]["actor"] == {"id": "user:alice"}
     assert payload["audit"]["action"] == "explain_term"
@@ -315,11 +348,37 @@ def test_handle_mcp_enforce_grounded_output_tool_call(tmp_path):
         repository=seeded_domain_repository(tmp_path),
     )
 
-    payload = response["result"]["content"][0]["json"]
+    payload = mcp_json(response)
     assert payload["schema"] == "omniglyph.guardrail:0.1"
     assert payload["decision"] == "block"
     assert payload["unknown"] == ["HS 7604.99X"]
     assert payload["audit"]["action"] == "enforce_grounded_output"
+
+
+def test_handle_mcp_enforce_grounded_output_accepts_policy_modes(tmp_path):
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 26,
+            "method": "tools/call",
+            "params": {
+                "name": "enforce_grounded_output",
+                "arguments": {"terms": ["FOB", "HS 7604.99X"], "policy": {"unknown_action": "review"}},
+            },
+        },
+        repository=seeded_domain_repository(tmp_path),
+    )
+
+    payload = mcp_json(response)
+    assert payload["decision"] == "review"
+    assert payload["severity"] == "medium"
+    assert payload["review_packet"]["summary"] == {
+        "term_count": 1,
+        "group_count": 1,
+        "actions": ["review"],
+        "classes": ["unknown"],
+    }
+    assert payload["review_packet"]["groups"][0]["terms"] == [{"term": "HS 7604.99X", "canonical_id": None}]
 
 
 def test_handle_mcp_list_namespaces_tool_call(tmp_path):
@@ -333,7 +392,7 @@ def test_handle_mcp_list_namespaces_tool_call(tmp_path):
         repository=seeded_domain_repository(tmp_path),
     )
 
-    payload = response["result"]["content"][0]["json"]
+    payload = mcp_json(response)
     assert payload["schema"] == "omniglyph.lexicon_namespaces:0.1"
     assert payload["namespaces"][0]["namespace"] == "private_building_materials"
 
@@ -352,6 +411,147 @@ def test_handle_mcp_validate_lexicon_pack_tool_call(tmp_path):
         repository=seeded_domain_repository(tmp_path),
     )
 
-    payload = response["result"]["content"][0]["json"]
+    payload = mcp_json(response)
     assert payload["status"] == "pass"
     assert payload["pack"]["pack_id"] == "company.example.trade_terms"
+
+
+def test_handle_mcp_validate_lexicon_pack_rejects_paths_outside_configured_root(tmp_path, monkeypatch):
+    from omniglyph import mcp_server
+    from omniglyph.config import Settings
+
+    pack_root = tmp_path / "packs"
+    outside_pack = tmp_path / "outside"
+    pack_root.mkdir()
+    outside_pack.mkdir()
+    monkeypatch.setattr(
+        mcp_server,
+        "settings",
+        Settings(
+            data_dir=tmp_path / "data",
+            raw_dir=tmp_path / "data" / "raw",
+            sqlite_path=tmp_path / "data" / "omniglyph.sqlite3",
+            lexicon_pack_root=pack_root,
+        ),
+    )
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 21,
+            "method": "tools/call",
+            "params": {"name": "validate_lexicon_pack", "arguments": {"path": str(outside_pack)}},
+        },
+        repository=repository,
+    )
+
+    assert response["error"]["code"] == -32602
+    assert "outside OMNIGLYPH_LEXICON_PACK_ROOT" in response["error"]["message"]
+
+
+def test_handle_mcp_validate_policy_pack_tool_call(tmp_path):
+    pack_dir = tmp_path / "policy"
+    write_mcp_policy_pack(pack_dir)
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 22,
+            "method": "tools/call",
+            "params": {"name": "validate_policy_pack", "arguments": {"path": str(pack_dir)}},
+        },
+        repository=repository,
+    )
+
+    payload = mcp_json(response)
+    assert payload["status"] == "pass"
+    assert payload["policy"]["policy_id"] == "company.acme.agent_policy"
+
+
+def test_handle_mcp_enforce_intent_accepts_policy_pack_path(tmp_path):
+    pack_dir = tmp_path / "policy"
+    write_mcp_policy_pack(pack_dir)
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 23,
+            "method": "tools/call",
+            "params": {
+                "name": "enforce_intent",
+                "arguments": {
+                    "intent_id": "network.restart",
+                    "policy_pack_path": str(pack_dir),
+                    "actor_role": "admin",
+                    "parameters": {"service": "network"},
+                },
+            },
+        },
+        repository=repository,
+    )
+
+    payload = mcp_json(response)
+    assert payload["decision"] == "review"
+    assert payload["policy"]["policy_id"] == "company.acme.agent_policy"
+
+
+def test_handle_mcp_enforce_intent_blocks_invalid_policy_pack_parameters(tmp_path):
+    pack_dir = tmp_path / "policy"
+    write_mcp_policy_pack(pack_dir)
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 25,
+            "method": "tools/call",
+            "params": {
+                "name": "enforce_intent",
+                "arguments": {
+                    "intent_id": "network.restart",
+                    "policy_pack_path": str(pack_dir),
+                    "actor_role": "admin",
+                    "parameters": {"service": 123},
+                },
+            },
+        },
+        repository=repository,
+    )
+
+    payload = mcp_json(response)
+    assert payload["decision"] == "block"
+    assert payload["status"] == "invalid_parameters"
+
+
+def test_handle_mcp_enforce_intent_rejects_ambiguous_policy_sources(tmp_path):
+    pack_dir = tmp_path / "policy"
+    write_mcp_policy_pack(pack_dir)
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 24,
+            "method": "tools/call",
+            "params": {
+                "name": "enforce_intent",
+                "arguments": {
+                    "intent_id": "network.restart",
+                    "manifest": {"intents": []},
+                    "policy_pack_path": str(pack_dir),
+                },
+            },
+        },
+        repository=repository,
+    )
+
+    assert response["error"]["code"] == -32602
+    assert response["error"]["message"] == "enforce_intent requires exactly one of manifest or policy_pack_path"

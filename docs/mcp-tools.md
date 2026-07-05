@@ -127,6 +127,27 @@ Returns the same validation report as `omniglyph validate-domain-pack`:
 
 Use this before importing a company or personal Lexicon Pack.
 
+## Tool: `validate_policy_pack`
+
+Input:
+
+```json
+{"path":"examples/policy-packs/agent_intents"}
+```
+
+Returns the same validation report as `omniglyph validate-policy-pack`:
+
+```json
+{
+  "schema": "omniglyph.policy_pack:0.1",
+  "status": "pass",
+  "summary": {"intent_count": 3, "allow_count": 1, "review_count": 1, "block_count": 1},
+  "errors": []
+}
+```
+
+Use this before wiring a local agent Policy Pack into an MCP host. When `OMNIGLYPH_POLICY_PACK_ROOT` is configured, paths outside that root are rejected.
+
 ## Tool: `validate_output_terms`
 
 Input:
@@ -162,6 +183,12 @@ Input:
 {"terms":["FOB","HS 7604.99X"],"actor_id":"agent:quote"}
 ```
 
+Policy-mode input:
+
+```json
+{"terms":["FOB","HS 7604.99X"],"policy":{"unknown_action":"review"}}
+```
+
 Output:
 
 ```json
@@ -170,10 +197,29 @@ Output:
   "mode": "strict_source_grounding",
   "decision": "block",
   "status": "warn",
+  "severity": "high",
   "known": {"FOB": "trade:fob"},
   "unknown": ["HS 7604.99X"],
   "source_ids": ["..."],
   "limits": ["Unknown terms must be reviewed or removed before model output is trusted."],
+  "review_packet": {
+    "status": "needs_review",
+    "summary": {
+      "term_count": 1,
+      "group_count": 1,
+      "actions": ["block"],
+      "classes": ["unknown"]
+    },
+    "groups": [
+      {
+        "class": "unknown",
+        "action": "block",
+        "reason": "Term is not present in the local fact base.",
+        "suggested_host_action": "Block delivery until the term is reviewed, removed, or added to an approved source.",
+        "terms": [{"term": "HS 7604.99X", "canonical_id": null}]
+      }
+    ]
+  },
   "audit": {
     "schema": "omniglyph.audit:0.1",
     "actor": {"id": "agent:quote"},
@@ -182,7 +228,9 @@ Output:
 }
 ```
 
-Use this as the stricter Deterministic MCP Guardrail mode. `validate_output_terms` reports known and unknown terms; `enforce_grounded_output` turns that evidence into an allow/block decision.
+Use this as the stricter Deterministic MCP Guardrail mode. `validate_output_terms` reports known and unknown terms; `enforce_grounded_output` turns that evidence into an `allow`, `review`, or `block` decision. Optional policy keys are `unknown_action`, `unapproved_action`, and `secret_action`.
+
+The packet is derived from `details` and policy actions; MCP clients can use it to build review queues without parsing free text.
 
 ## Tool: `scan_code_symbols`
 
@@ -274,7 +322,7 @@ Set `include_lexicon_secrets` to include approved lexicon-pack entries marked `s
 
 ## Tool: `enforce_intent`
 
-Input:
+Inline manifest input:
 
 ```json
 {
@@ -293,6 +341,17 @@ Input:
 }
 ```
 
+Policy Pack input:
+
+```json
+{
+  "intent_id": "network.restart",
+  "actor_role": "admin",
+  "policy_pack_path": "examples/policy-packs/agent_intents",
+  "parameters": {"service": "network"}
+}
+```
+
 Returns an intent sandbox decision:
 
 ```json
@@ -305,7 +364,9 @@ Returns an intent sandbox decision:
 }
 ```
 
-OmniGlyph validates the manifest and returns evidence. It does not execute shell commands, call APIs, or route tasks.
+OmniGlyph validates exactly one policy source, either `manifest` or `policy_pack_path`, and returns evidence. It does not execute shell commands, call APIs, or route tasks.
+
+If `parameters` do not match `parameters_schema`, the tool returns a normal JSON payload with `decision: "block"` and `status: "invalid_parameters"` plus `parameter_findings`.
 
 ## Tool: `audit_explain`
 

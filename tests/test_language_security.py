@@ -1,3 +1,5 @@
+import json
+
 from fastapi.testclient import TestClient
 
 from omniglyph.api import create_app
@@ -17,7 +19,7 @@ def test_scan_language_input_blocks_hidden_prompt_injection():
     rule_ids = {finding["rule_id"] for finding in report["findings"]}
     assert "unicode-invisible-format" in rule_ids
     assert "prompt-injection-directive" in rule_ids
-    assert report["summary"]["finding_count"] == 2
+    assert report["summary"]["finding_count"] == 3  # 1 unicode + 2 prompt-injection patterns
 
 
 def test_scan_language_input_allows_clean_business_text():
@@ -43,6 +45,29 @@ def test_scan_output_dlp_redacts_api_key_and_secret_terms():
     assert "Alpha Factory" not in report["redacted_text"]
     assert report["redacted_text"].count("[REDACTED]") == 2
     assert {finding["rule_id"] for finding in report["findings"]} == {"dlp-api-key", "dlp-secret-term"}
+
+
+def test_scan_output_dlp_reports_offsets_against_original_text_after_redaction():
+    text = "Use sk-proj-abcdefghijklmnopqrstuvwxyz123456 before Alpha Factory."
+
+    report = scan_output_dlp(text, secret_terms=["Alpha Factory"], source_name="reply.txt")
+
+    secret_finding = next(finding for finding in report["findings"] if finding["rule_id"] == "dlp-secret-term")
+    assert text[secret_finding["start"]:secret_finding["end"]] == "Alpha Factory"
+
+
+def test_scan_output_dlp_findings_do_not_echo_sensitive_values():
+    text = "Use sk-proj-abcdefghijklmnopqrstuvwxyz123456 before Alpha Factory."
+
+    report = scan_output_dlp(text, secret_terms=["Alpha Factory"], source_name="reply.txt")
+
+    serialized_findings = json.dumps(report["findings"], ensure_ascii=False)
+    assert "sk-proj-abcdefghijklmnopqrstuvwxyz123456" not in serialized_findings
+    assert "Alpha Factory" not in serialized_findings
+    for finding in report["findings"]:
+        assert finding["match"] == "[REDACTED]"
+        assert finding["match_length"] == finding["end"] - finding["start"]
+        assert len(finding["match_sha256"]) == 64
 
 
 def test_enforce_intent_manifest_allows_role_approved_intent():
@@ -82,6 +107,83 @@ def test_enforce_intent_manifest_blocks_unknown_or_disallowed_intent():
     assert disallowed["decision"] == "block"
     assert disallowed["status"] == "forbidden"
     assert disallowed["limits"] == ["Actor role is not allowed to request this intent."]
+
+
+def test_enforce_intent_manifest_blocks_explicit_block_decision():
+    manifest = {
+        "intents": [
+            {
+                "intent_id": "system.delete_root",
+                "decision": "block",
+                "allowed_roles": ["admin"],
+                "requires_approval": False,
+            }
+        ]
+    }
+
+    result = enforce_intent_manifest("system.delete_root", manifest, actor_role="admin")
+
+    assert result["decision"] == "block"
+    assert result["status"] == "matched"
+    assert result["limits"] == ["Intent policy blocks this request."]
+
+
+def test_enforce_intent_manifest_includes_policy_metadata_when_present():
+    manifest = {
+        "policy": {"policy_id": "company.acme.agent_policy", "namespace": "private_acme", "version": "2026.07.05"},
+        "intents": [{"intent_id": "ticket.create", "decision": "allow", "allowed_roles": ["operator"]}],
+    }
+
+    result = enforce_intent_manifest("ticket.create", manifest, actor_role="operator")
+
+    assert result["decision"] == "allow"
+    assert result["policy"]["policy_id"] == "company.acme.agent_policy"
+
+
+def test_enforce_intent_manifest_blocks_invalid_parameters():
+    manifest = {
+        "intents": [
+            {
+                "intent_id": "network.restart",
+                "decision": "allow",
+                "allowed_roles": ["admin"],
+                "parameters_schema": {
+                    "type": "object",
+                    "required": ["service"],
+                    "properties": {"service": {"type": "string", "enum": ["network"]}},
+                },
+            }
+        ]
+    }
+
+    result = enforce_intent_manifest("network.restart", manifest, actor_role="admin", parameters={"service": 123})
+
+    assert result["decision"] == "block"
+    assert result["status"] == "invalid_parameters"
+    assert result["limits"] == ["Intent parameters do not match parameters_schema."]
+    assert result["parameter_findings"][0] == {"path": "$.service", "rule": "type", "message": "Expected string."}
+
+
+def test_enforce_intent_manifest_allows_valid_parameters():
+    manifest = {
+        "intents": [
+            {
+                "intent_id": "network.restart",
+                "decision": "allow",
+                "allowed_roles": ["admin"],
+                "parameters_schema": {
+                    "type": "object",
+                    "required": ["service"],
+                    "properties": {"service": {"type": "string", "enum": ["network"]}},
+                },
+            }
+        ]
+    }
+
+    result = enforce_intent_manifest("network.restart", manifest, actor_role="admin", parameters={"service": "network"})
+
+    assert result["decision"] == "allow"
+    assert "parameter_findings" not in result
 
 
 def test_language_security_api_exposes_input_output_and_intent_endpoints(tmp_path):
@@ -146,4 +248,4 @@ def test_mcp_exposes_language_security_tools(tmp_path):
         repository=repository,
     )
 
-    assert response["result"]["content"][0]["json"]["decision"] == "block"
+    assert json.loads(response["result"]["content"][0]["text"])["decision"] == "block"

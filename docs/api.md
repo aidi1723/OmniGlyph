@@ -259,6 +259,95 @@ Response:
 }
 ```
 
+## `POST /api/v1/policy/validate-pack`
+
+Validate a local Policy Pack directory containing `policy.json` and `intents.csv`.
+
+Request:
+
+```json
+{"path":"examples/policy-packs/agent_intents"}
+```
+
+Response excerpt:
+
+```json
+{
+  "schema": "omniglyph.policy_pack:0.1",
+  "status": "pass",
+  "policy": {
+    "policy_id": "company.example.agent_intents",
+    "namespace": "private_example",
+    "version": "2026.07.05"
+  },
+  "summary": {"intent_count": 3, "allow_count": 1, "review_count": 1, "block_count": 1},
+  "errors": []
+}
+```
+
+When `OMNIGLYPH_POLICY_PACK_ROOT` is set, API calls may only validate packs inside that root.
+
+## `POST /api/v1/language-security/enforce-intent`
+
+Validate an agent intent against either an inline manifest or a Policy Pack path.
+
+Inline manifest request:
+
+```json
+{
+  "intent_id": "network.restart",
+  "actor_role": "admin",
+  "manifest": {
+    "intents": [
+      {
+        "intent_id": "network.restart",
+        "allowed_roles": ["admin"],
+        "requires_approval": true
+      }
+    ]
+  }
+}
+```
+
+Policy Pack request:
+
+```json
+{
+  "intent_id": "network.restart",
+  "actor_role": "admin",
+  "policy_pack_path": "examples/policy-packs/agent_intents",
+  "parameters": {"service": "network"}
+}
+```
+
+Response excerpt:
+
+```json
+{
+  "schema": "omniglyph.intent_sandbox:0.1",
+  "mode": "deterministic_execution_sandbox",
+  "intent_id": "network.restart",
+  "decision": "review",
+  "status": "matched",
+  "limits": ["Intent requires approval before execution."]
+}
+```
+
+Requests must provide exactly one of `manifest` or `policy_pack_path`. OmniGlyph returns policy evidence only; it does not execute commands or call tools.
+
+If `parameters` do not match the intent `parameters_schema`, the endpoint still returns HTTP `200` with a blocking policy result:
+
+```json
+{
+  "decision": "block",
+  "status": "invalid_parameters",
+  "limits": ["Intent parameters do not match parameters_schema."],
+  "parameter_findings": [
+    {"path": "$.service", "rule": "type", "message": "Expected string."}
+  ]
+}
+```
+
 ## `POST /api/v1/lexicon/validate-pack`
 
 Validate an OmniGlyph Lexicon Pack directory before import.
@@ -317,14 +406,20 @@ Suggested agent behavior:
 
 ## `POST /api/v1/guardrail/enforce-output`
 
-Apply strict source-grounding policy to candidate output terms.
+Apply source-grounding policy to candidate output terms.
 
-This endpoint is the Deterministic MCP Guardrail API surface. It uses the same local lexical/domain fact base as `validate-output`, but returns an explicit `allow` or `block` decision.
+This endpoint is the Deterministic MCP Guardrail API surface. It uses the same local lexical/domain fact base as `validate-output`, but returns an explicit `allow`, `review`, or `block` decision. Without a policy object, it preserves strict default behavior and blocks unknown, unapproved, or secret terms.
 
 Request:
 
 ```json
 {"terms":["FOB","HS 7604.99X"],"actor_id":"agent:quote"}
+```
+
+Policy-mode request:
+
+```json
+{"terms":["FOB","HS 7604.99X"],"policy":{"unknown_action":"review"}}
 ```
 
 Response:
@@ -335,6 +430,7 @@ Response:
   "mode": "strict_source_grounding",
   "decision": "block",
   "status": "warn",
+  "severity": "high",
   "known": {
     "FOB": "trade:fob"
   },
@@ -343,6 +439,24 @@ Response:
   "limits": [
     "Unknown terms must be reviewed or removed before model output is trusted."
   ],
+  "review_packet": {
+    "status": "needs_review",
+    "summary": {
+      "term_count": 1,
+      "group_count": 1,
+      "actions": ["block"],
+      "classes": ["unknown"]
+    },
+    "groups": [
+      {
+        "class": "unknown",
+        "action": "block",
+        "reason": "Term is not present in the local fact base.",
+        "suggested_host_action": "Block delivery until the term is reviewed, removed, or added to an approved source.",
+        "terms": [{"term": "HS 7604.99X", "canonical_id": null}]
+      }
+    ]
+  },
   "audit": {
     "schema": "omniglyph.audit:0.1",
     "actor": {"id": "agent:quote"},
@@ -352,9 +466,12 @@ Response:
 }
 ```
 
+`review_packet` is omitted when every checked term is approved and non-secret.
+
 Suggested host behavior:
 
 - `allow`: deliver or continue the workflow.
+- `review`: route to human review or stricter regeneration.
 - `block`: stop delivery, route to review, or ask the model to rewrite using verified terms only.
 
 ## `POST /api/v1/language-security/scan-input`

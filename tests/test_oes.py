@@ -10,8 +10,8 @@ from omniglyph.oes import (
 
 def test_oes_protocol_constants_are_stable():
     assert OES_SCHEMA == "oes:0.1"
-    assert STATUS_VALUES == {"matched", "partial", "unknown", "ambiguous", "unsafe"}
-    assert RISK_LEVELS == {"none", "low", "medium", "high", "critical"}
+    assert {"matched", "partial", "unknown", "ambiguous", "unsafe"} == STATUS_VALUES
+    assert {"none", "low", "medium", "high", "critical"} == RISK_LEVELS
 
 
 def test_unknown_payload_keeps_missing_facts_explicit():

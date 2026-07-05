@@ -1,8 +1,10 @@
+import hashlib
 import re
 from typing import Any
 
 from omniglyph.code_linter import scan_text
 from omniglyph.oes import risk_level_for_findings
+from omniglyph.parameter_schema import validate_parameters
 
 LANGUAGE_SECURITY_SCHEMA = "omniglyph.language_security:0.1"
 INTENT_SANDBOX_SCHEMA = "omniglyph.intent_sandbox:0.1"
@@ -45,20 +47,17 @@ def scan_language_input(text: str, source_name: str = "<input>") -> dict:
 
 def scan_output_dlp(text: str, secret_terms: list[str] | None = None, source_name: str = "<output>") -> dict:
     findings = []
-    redacted_text = text
     for rule_id, pattern in DLP_PATTERNS:
-        for match in list(pattern.finditer(redacted_text)):
+        for match in list(pattern.finditer(text)):
             findings.append(_dlp_finding(rule_id, match.group(0), match.start(), match.end(), source_name))
-        redacted_text = pattern.sub("[REDACTED]", redacted_text)
     for term in secret_terms or []:
         if not term:
             continue
         pattern = re.compile(re.escape(term))
-        for match in list(pattern.finditer(redacted_text)):
+        for match in list(pattern.finditer(text)):
             findings.append(_dlp_finding("dlp-secret-term", match.group(0), match.start(), match.end(), source_name))
-        redacted_text = pattern.sub("[REDACTED]", redacted_text)
     report = _language_report("output", source_name, text, findings)
-    report["redacted_text"] = redacted_text
+    report["redacted_text"] = _redact_matches(text, findings)
     return report
 
 
@@ -69,24 +68,65 @@ def enforce_intent_manifest(
     parameters: dict[str, Any] | None = None,
 ) -> dict:
     intent = _find_intent(intent_id, manifest)
+    policy = manifest.get("policy")
     if intent is None:
-        return _intent_result(intent_id, "block", "unknown", None, ["Intent is not defined in the manifest."], parameters)
+        return _intent_result(
+            intent_id,
+            "block",
+            "unknown",
+            None,
+            ["Intent is not defined in the manifest."],
+            parameters,
+            policy,
+        )
+    if intent.get("decision") == "block":
+        return _intent_result(
+            intent_id,
+            "block",
+            "matched",
+            intent,
+            ["Intent policy blocks this request."],
+            parameters,
+            policy,
+        )
     allowed_roles = intent.get("allowed_roles") or []
     if allowed_roles and actor_role not in allowed_roles:
-        return _intent_result(intent_id, "block", "forbidden", intent, ["Actor role is not allowed to request this intent."], parameters)
+        return _intent_result(
+            intent_id,
+            "block",
+            "forbidden",
+            intent,
+            ["Actor role is not allowed to request this intent."],
+            parameters,
+            policy,
+        )
+    parameters_schema = intent.get("parameters_schema")
+    if isinstance(parameters_schema, dict) and parameters_schema:
+        parameter_findings = validate_parameters(parameters or {}, parameters_schema)
+        if parameter_findings:
+            return _intent_result(
+                intent_id,
+                "block",
+                "invalid_parameters",
+                intent,
+                ["Intent parameters do not match parameters_schema."],
+                parameters,
+                policy,
+                parameter_findings=parameter_findings,
+            )
     limits = []
     decision = "allow"
-    if intent.get("requires_approval"):
+    if intent.get("decision") == "review" or intent.get("requires_approval"):
         decision = "review"
         limits.append("Intent requires approval before execution.")
-    return _intent_result(intent_id, decision, "matched", intent, limits, parameters)
+    return _intent_result(intent_id, decision, "matched", intent, limits, parameters, policy)
 
 
 def _prompt_findings(text: str, source_name: str) -> list[dict]:
+    findings = []
     for pattern in PROMPT_INJECTION_PATTERNS:
-        match = pattern.search(text)
-        if match is not None:
-            return [
+        for match in pattern.finditer(text):
+            findings.append(
                 {
                     "rule_id": "prompt-injection-directive",
                     "severity": "high",
@@ -100,8 +140,8 @@ def _prompt_findings(text: str, source_name: str) -> list[dict]:
                     "auto_fixable": False,
                     "why_it_matters": "Instruction-override text can hijack an agent before tool or policy checks run.",
                 }
-            ]
-    return []
+            )
+    return findings
 
 
 def _dlp_finding(rule_id: str, value: str, start: int, end: int, source_name: str) -> dict:
@@ -110,7 +150,9 @@ def _dlp_finding(rule_id: str, value: str, start: int, end: int, source_name: st
         "severity": "high",
         "message": "Potential sensitive data in model output",
         "source": source_name,
-        "match": value,
+        "match": "[REDACTED]",
+        "match_length": len(value),
+        "match_sha256": hashlib.sha256(value.encode("utf-8")).hexdigest(),
         "start": start,
         "end": end,
         "source_id": DLP_SOURCE_ID,
@@ -120,8 +162,26 @@ def _dlp_finding(rule_id: str, value: str, start: int, end: int, source_name: st
     }
 
 
+def _redact_matches(text: str, findings: list[dict]) -> str:
+    spans = sorted(
+        ((finding["start"], finding["end"]) for finding in findings),
+        key=lambda span: (span[0], span[1]),
+    )
+    redacted_parts = []
+    cursor = 0
+    for start, end in spans:
+        if end <= cursor:
+            continue
+        if start > cursor:
+            redacted_parts.append(text[cursor:start])
+        redacted_parts.append("[REDACTED]")
+        cursor = max(cursor, end)
+    redacted_parts.append(text[cursor:])
+    return "".join(redacted_parts)
+
+
 def _language_report(surface: str, source_name: str, text: str, findings: list[dict]) -> dict:
-    rule_counts = {}
+    rule_counts: dict[str, int] = {}
     for finding in findings:
         rule_counts[finding["rule_id"]] = rule_counts.get(finding["rule_id"], 0) + 1
     decision = "allow" if not findings else "block"
@@ -161,8 +221,10 @@ def _intent_result(
     intent: dict | None,
     limits: list[str],
     parameters: dict[str, Any] | None,
+    policy: dict[str, Any] | None = None,
+    parameter_findings: list[dict[str, str]] | None = None,
 ) -> dict:
-    return {
+    result: dict[str, Any] = {
         "schema": INTENT_SANDBOX_SCHEMA,
         "mode": "deterministic_execution_sandbox",
         "intent_id": intent_id,
@@ -172,3 +234,8 @@ def _intent_result(
         "parameters": parameters or {},
         "limits": limits,
     }
+    if policy:
+        result["policy"] = policy
+    if parameter_findings:
+        result["parameter_findings"] = parameter_findings
+    return result

@@ -1,6 +1,5 @@
-from pathlib import Path
 
-from omniglyph.code_linter import format_text_report, scan_file, scan_text
+from omniglyph.code_linter import format_text_report, scan_file, scan_path, scan_text
 
 
 def test_scan_text_detects_zero_width_space():
@@ -90,3 +89,60 @@ def test_scan_file_reports_file_path(tmp_path):
     assert report["source"] == str(path)
     assert report["status"] == "warn"
     assert report["findings"][0]["line"] == 1
+
+
+def test_scan_path_skips_virtualenv_and_build_artifact_directories(tmp_path):
+    source_path = tmp_path / "src" / "app.py"
+    source_path.parent.mkdir()
+    source_path.write_text("value = 1\n", encoding="utf-8")
+    venv_path = tmp_path / ".venv" / "lib.py"
+    venv_path.parent.mkdir()
+    venv_path.write_text("v\u0430lue = 1\n", encoding="utf-8")
+    dist_path = tmp_path / "dist" / "bundle.py"
+    dist_path.parent.mkdir()
+    dist_path.write_text("v\u0430lue = 1\n", encoding="utf-8")
+
+    report = scan_path(tmp_path)
+
+    assert report["status"] == "pass"
+    assert report["files"] == [str(source_path)]
+
+
+def test_scan_path_reports_decode_errors_without_aborting(tmp_path):
+    source_path = tmp_path / "src" / "app.py"
+    source_path.parent.mkdir()
+    source_path.write_text("value = 1\n", encoding="utf-8")
+    bad_path = tmp_path / "src" / "bad.py"
+    bad_path.write_bytes(b"\xff\xfe\xfa")
+
+    report = scan_path(tmp_path)
+
+    assert report["status"] == "error"
+    assert report["summary"]["file_count"] == 1
+    assert report["summary"]["failed_count"] == 1
+    assert report["files"] == [str(source_path)]
+    assert report["failed_files"] == [
+        {
+            "source": str(bad_path),
+            "error_type": "UnicodeDecodeError",
+            "message": "file is not valid UTF-8 text",
+        }
+    ]
+
+
+def test_scan_path_reports_missing_path_as_error(tmp_path):
+    missing_path = tmp_path / "missing"
+
+    report = scan_path(missing_path)
+
+    assert report["status"] == "error"
+    assert report["summary"]["file_count"] == 0
+    assert report["summary"]["failed_count"] == 1
+    assert report["files"] == []
+    assert report["failed_files"] == [
+        {
+            "source": str(missing_path),
+            "error_type": "FileNotFoundError",
+            "message": "path does not exist",
+        }
+    ]

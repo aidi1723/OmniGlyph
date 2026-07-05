@@ -1,16 +1,18 @@
+from typing import Literal
+
 from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, Field
-from typing import Literal
 
 from omniglyph import __version__
 from omniglyph.audit import build_audit_event
 from omniglyph.code_linter import scan_text
 from omniglyph.config import settings
-from omniglyph.explanation import explain_code_security, explain_glyph, explain_term
+from omniglyph.explanation import explain_code_security, explain_for_audit, explain_glyph, explain_term
 from omniglyph.guardrail import enforce_grounded_output, validate_output_terms
 from omniglyph.language_security import enforce_intent_manifest, scan_language_input, scan_output_dlp
-from omniglyph.lexicon_pack import validate_lexicon_pack
+from omniglyph.lexicon_pack import ensure_allowed_pack_path, validate_lexicon_pack
 from omniglyph.normalization import compact_normalize, normalize_tokens
+from omniglyph.policy_pack import ensure_allowed_policy_pack_path, load_policy_pack, validate_policy_pack
 from omniglyph.repository import GlyphRepository
 
 
@@ -24,6 +26,7 @@ class GuardrailRequest(BaseModel):
 
 class GuardrailEnforceRequest(GuardrailRequest):
     actor_id: str | None = None
+    policy: dict | None = None
 
 
 class SecurityScanRequest(BaseModel):
@@ -45,12 +48,17 @@ class OutputDlpScanRequest(BaseModel):
 
 class IntentEnforceRequest(BaseModel):
     intent_id: str
-    manifest: dict
+    manifest: dict | None = None
+    policy_pack_path: str | None = None
     actor_role: str | None = None
     parameters: dict | None = None
 
 
 class LexiconValidatePackRequest(BaseModel):
+    path: str
+
+
+class PolicyValidatePackRequest(BaseModel):
     path: str
 
 
@@ -73,7 +81,15 @@ def create_app(repository: GlyphRepository | None = None) -> FastAPI:
 
     @app.get("/api/v1/health")
     def health() -> dict:
-        return {"status": "ok", "service": "omniglyph", "version": __version__}
+        return {
+            "status": "ok",
+            "service": "omniglyph",
+            "version": __version__,
+            "database": {
+                "path": str(glyph_repository.sqlite_path),
+                "exists": glyph_repository.sqlite_path.exists(),
+            },
+        }
 
     @app.get("/api/v1/glyph")
     def get_glyph(char: str = Query(...)) -> dict:
@@ -98,7 +114,13 @@ def create_app(repository: GlyphRepository | None = None) -> FastAPI:
 
     @app.post("/api/v1/lexicon/validate-pack")
     def validate_lexicon_pack_endpoint(request: LexiconValidatePackRequest) -> dict:
+        _validate_allowed_pack_path(request.path)
         return validate_lexicon_pack(request.path)
+
+    @app.post("/api/v1/policy/validate-pack")
+    def validate_policy_pack_endpoint(request: PolicyValidatePackRequest) -> dict:
+        _validate_allowed_policy_pack_path(request.path)
+        return validate_policy_pack(request.path)
 
     @app.get("/api/v1/explain/glyph")
     def explain_glyph_endpoint(char: str = Query(...)) -> dict:
@@ -131,11 +153,22 @@ def create_app(repository: GlyphRepository | None = None) -> FastAPI:
 
     @app.post("/api/v1/language-security/enforce-intent")
     def language_security_enforce_intent_endpoint(request: IntentEnforceRequest) -> dict:
-        return enforce_intent_manifest(request.intent_id, request.manifest, actor_role=request.actor_role, parameters=request.parameters)
+        if (request.manifest is None) == (request.policy_pack_path is None):
+            raise HTTPException(status_code=400, detail="provide exactly one of manifest or policy_pack_path")
+        manifest = request.manifest
+        if request.policy_pack_path is not None:
+            _validate_allowed_policy_pack_path(request.policy_pack_path)
+            manifest = load_policy_pack(request.policy_pack_path).to_manifest()
+        if manifest is None:
+            raise HTTPException(status_code=400, detail="provide exactly one of manifest or policy_pack_path")
+        return enforce_intent_manifest(request.intent_id, manifest, actor_role=request.actor_role, parameters=request.parameters)
 
     @app.post("/api/v1/audit/explain")
     def audit_explain_endpoint(request: AuditExplainRequest) -> dict:
-        result, action = _explain_for_audit(glyph_repository, request.kind, request.text, request.source_name)
+        try:
+            result, action = explain_for_audit(glyph_repository, request.kind, request.text, request.source_name or "<api-text>")
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
         return {"result": result, "audit": build_audit_event(request.actor_id, action, result)}
 
     @app.post("/api/v1/audit/security-scan")
@@ -157,23 +190,36 @@ def create_app(repository: GlyphRepository | None = None) -> FastAPI:
 
     @app.post("/api/v1/guardrail/enforce-output")
     def enforce_output(request: GuardrailEnforceRequest) -> dict:
-        return enforce_grounded_output(glyph_repository, request.terms, actor_id=request.actor_id)
+        return enforce_grounded_output(glyph_repository, request.terms, actor_id=request.actor_id, policy=request.policy)
 
     return app
 
 
-app = create_app()
+_app: FastAPI | None = None
 
 
-def _explain_for_audit(repository: GlyphRepository, kind: str, text: str, source_name: str | None) -> tuple[dict, str]:
-    if kind == "glyph":
-        if len(text) != 1:
-            raise HTTPException(status_code=400, detail="glyph audit text must contain exactly one Unicode character")
-        return explain_glyph(repository, text), "explain_glyph"
-    if kind == "term":
-        if not text.strip():
-            raise HTTPException(status_code=400, detail="term audit text must be non-empty")
-        return explain_term(repository, text), "explain_term"
-    if kind == "code":
-        return explain_code_security(text, source_name=source_name or "<api-text>"), "explain_code_security"
-    raise HTTPException(status_code=400, detail=f"unsupported audit kind: {kind}")
+def get_app() -> FastAPI:
+    """Lazy app singleton. Use this for programmatic access without side effects."""
+    global _app
+    if _app is None:
+        _app = create_app()
+    return _app
+
+
+# Module-level reference for uvicorn (`uvicorn omniglyph.api:app`).
+# Uvicorn needs a concrete ASGI app at import time.
+app: FastAPI = get_app()
+
+
+def _validate_allowed_pack_path(path: str) -> None:
+    try:
+        ensure_allowed_pack_path(path, settings.lexicon_pack_root)
+    except ValueError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+def _validate_allowed_policy_pack_path(path: str) -> None:
+    try:
+        ensure_allowed_policy_pack_path(path, settings.policy_pack_root)
+    except ValueError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc

@@ -1,16 +1,18 @@
 import argparse
 import json
-import sys
 from pathlib import Path
 
 from omniglyph import __version__
 from omniglyph.code_linter import format_json_report, format_text_report, scan_path
 from omniglyph.config import settings
+from omniglyph.guardrail import enforce_grounded_output
+from omniglyph.language_security import enforce_intent_manifest
 from omniglyph.lexicon_pack import entries_from_source, init_lexicon_pack, source_paths, validate_lexicon_pack
 from omniglyph.normalizer import parse_unicode_data
-from omniglyph.unihan import parse_unihan_data
+from omniglyph.policy_pack import init_policy_pack, load_policy_pack, validate_policy_pack
 from omniglyph.repository import GlyphRepository, SourceSnapshot
 from omniglyph.sources import download_source, register_local_source
+from omniglyph.unihan import parse_unihan_data
 
 UNICODE_LICENSE = "Unicode Terms of Use"
 UNIHAN_LICENSE = "Unicode Terms of Use"
@@ -166,6 +168,26 @@ def main() -> None:
     validate_pack = subcommands.add_parser("validate-domain-pack")
     validate_pack.add_argument("path", type=Path)
 
+    init_policy = subcommands.add_parser("init-policy-pack")
+    init_policy.add_argument("path", type=Path)
+    init_policy.add_argument("--namespace", required=True)
+    init_policy.add_argument("--policy-id", required=True)
+    init_policy.add_argument("--name", required=True)
+
+    validate_policy = subcommands.add_parser("validate-policy-pack")
+    validate_policy.add_argument("path", type=Path)
+
+    enforce_intent = subcommands.add_parser("enforce-intent")
+    enforce_intent.add_argument("intent_id")
+    enforce_intent.add_argument("--policy-pack", type=Path, required=True)
+    enforce_intent.add_argument("--actor-role")
+    enforce_intent.add_argument("--parameters", default="{}")
+
+    enforce_output = subcommands.add_parser("enforce-output")
+    enforce_output.add_argument("--term", action="append", required=True)
+    enforce_output.add_argument("--actor-id")
+    enforce_output.add_argument("--policy")
+
     lookup = subcommands.add_parser("lookup")
     lookup.add_argument("text")
 
@@ -202,20 +224,57 @@ def main() -> None:
         print(json.dumps(report, ensure_ascii=False, indent=2))
         if report["status"] != "pass":
             raise SystemExit(1)
+    elif args.command == "init-policy-pack":
+        init_policy_pack(args.path, namespace=args.namespace, policy_id=args.policy_id, name=args.name)
+        print(f"Created policy pack at {args.path}")
+    elif args.command == "validate-policy-pack":
+        report = validate_policy_pack(args.path)
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        if report["status"] != "pass":
+            raise SystemExit(1)
+    elif args.command == "enforce-intent":
+        try:
+            parameters = json.loads(args.parameters)
+        except json.JSONDecodeError as exc:
+            parser.error(f"--parameters must be a JSON object: {exc.msg}")
+        if not isinstance(parameters, dict):
+            parser.error("--parameters must be a JSON object")
+        manifest = load_policy_pack(args.policy_pack).to_manifest()
+        report = enforce_intent_manifest(
+            args.intent_id,
+            manifest,
+            actor_role=args.actor_role,
+            parameters=parameters,
+        )
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+    elif args.command == "enforce-output":
+        policy = None
+        if args.policy is not None:
+            try:
+                policy = json.loads(args.policy)
+            except json.JSONDecodeError as exc:
+                parser.error(f"--policy must be a JSON object: {exc.msg}")
+            if not isinstance(policy, dict):
+                parser.error("--policy must be a JSON object")
+        repository = GlyphRepository(settings.sqlite_path)
+        repository.initialize()
+        report = enforce_grounded_output(repository, args.term, actor_id=args.actor_id, policy=policy)
+        print(json.dumps(report, ensure_ascii=False, indent=2))
     elif args.command == "lookup":
         repository = GlyphRepository(settings.sqlite_path)
         repository.initialize()
-        if len(args.text) == 1:
-            print(repository.find_by_glyph(args.text))
-        else:
-            print(repository.find_term(args.text))
+        result = repository.find_by_glyph(args.text) if len(args.text) == 1 else repository.find_term(args.text)
+        if result is None:
+            print(json.dumps({"error": "not found", "text": args.text}, ensure_ascii=False))
+            raise SystemExit(1)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
     elif args.command == "scan-code":
         report = scan_path(args.path)
         if args.format == "json":
             print(format_json_report(report))
         else:
             print(format_text_report(report))
-        if args.fail_on == "warning" and report["status"] == "warn":
+        if args.fail_on == "warning" and report["status"] in {"warn", "error"}:
             raise SystemExit(1)
 
 

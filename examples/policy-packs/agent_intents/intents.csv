@@ -1,0 +1,4 @@
+intent_id,canonical_phrase,decision,risk_level,requires_approval,allowed_roles,audit_required,parameters_schema
+network.restart,restart network service,review,high,true,admin,true,"{""type"":""object"",""required"":[""service""],""properties"":{""service"":{""type"":""string"",""enum"":[""network"",""dns""]}}}"
+ticket.create,create support ticket,allow,low,false,admin;operator,true,"{}"
+system.delete_root,delete root filesystem,block,critical,false,,true,"{}"
