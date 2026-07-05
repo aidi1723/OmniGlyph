@@ -15,6 +15,7 @@
 - Add output guardrail policy modes so unknown, unapproved, and secret terms can be allowed, reviewed, or blocked while strict blocking remains the default.
 - Add guardrail review packets that group unknown, unapproved, and secret output terms into deterministic host-review evidence.
 - Harden guardrail review packets with unapproved and policy-allowed branch coverage plus shared action precedence.
+- Add `omniglyph enforce-output` for local JSON output guardrail enforcement with optional policy and audit evidence.
 
 ## 0.7.0-beta - Unreleased
 

@@ -386,6 +386,12 @@ Hosts can optionally pass an output policy such as `{"unknown_action":"review"}`
 
 When risky terms are present, `enforce_grounded_output` also returns a `review_packet` that groups unknown, unapproved, and secret terms into deterministic host-review evidence.
 
+CLI workflows can call the same enforcement path:
+
+```bash
+omniglyph enforce-output --term FOB --term "HS 7604.99X" --policy '{"unknown_action":"review"}'
+```
+
 This does not replace the language and symbol foundation. It is the enterprise boundary-control use case built on top of that foundation.
 
 ## Language Security Gateway
