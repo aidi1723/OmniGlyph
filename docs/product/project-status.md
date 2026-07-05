@@ -11,6 +11,10 @@ It is suitable for experimentation, local agent workflows, RAG preprocessing, co
 - Stage 3 Semantic Topology: planned.
 - Stage 4 Native Semantic Computation: planned.
 
+## Current Closeout Reference
+
+- v0.7 hardening closeout, maintenance log, verification evidence, and key paths: [`docs/product/v0.7-closeout.md`](v0.7-closeout.md).
+
 ## What Works Today
 
 - UnicodeData ingestion and glyph lookup.
