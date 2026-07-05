@@ -394,6 +394,7 @@ def handle_mcp_request(request: dict[str, Any], repository: GlyphRepository | No
                 except ValueError as exc:
                     return _error(request_id, -32602, str(exc))
                 manifest = load_policy_pack(policy_pack_path).to_manifest()
+            assert manifest is not None
             return _result(
                 request_id,
                 {

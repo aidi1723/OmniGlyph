@@ -5,8 +5,8 @@ from pathlib import Path
 from omniglyph import __version__
 from omniglyph.code_linter import format_json_report, format_text_report, scan_path
 from omniglyph.config import settings
-from omniglyph.lexicon_pack import entries_from_source, init_lexicon_pack, source_paths, validate_lexicon_pack
 from omniglyph.language_security import enforce_intent_manifest
+from omniglyph.lexicon_pack import entries_from_source, init_lexicon_pack, source_paths, validate_lexicon_pack
 from omniglyph.normalizer import parse_unicode_data
 from omniglyph.policy_pack import init_policy_pack, load_policy_pack, validate_policy_pack
 from omniglyph.repository import GlyphRepository, SourceSnapshot
