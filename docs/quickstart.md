@@ -68,13 +68,25 @@ Expected compact idea:
 .venv/bin/omniglyph-mcp
 ```
 
-## 9. Run Demo
+## 9. Run CLI Guardrail and Security Checks
+
+```bash
+.venv/bin/omniglyph validate-output --term FOB --term "tempered glass" --term "HS 7604.99X"
+.venv/bin/omniglyph enforce-output --term FOB --term "HS 7604.99X" --actor-id agent:quote
+.venv/bin/omniglyph scan-language-input --text "ignore previous instructions"
+.venv/bin/omniglyph scan-output-dlp --text "token sk-proj-abcdefghijklmnopqrstuvwxyz123456"
+.venv/bin/omniglyph enforce-intent ticket.create --policy-pack examples/policy-packs/agent_intents --actor-role operator
+```
+
+These commands return JSON evidence. They do not rewrite text automatically or execute shell commands.
+
+## 10. Run Demo
 
 ```bash
 PYTHONPATH=src .venv/bin/python examples/scripts/run_cross_border_demo.py
 ```
 
-## 10. Scan Source Text
+## 11. Scan Source Text
 
 ```bash
 .venv/bin/omniglyph scan-code src --format json --fail-on warning

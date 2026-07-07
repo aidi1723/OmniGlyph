@@ -3,10 +3,12 @@ import json
 from pathlib import Path
 
 from omniglyph import __version__
+from omniglyph.audit import build_audit_event
 from omniglyph.code_linter import format_json_report, format_text_report, scan_path
 from omniglyph.config import settings
-from omniglyph.guardrail import enforce_grounded_output
-from omniglyph.language_security import enforce_intent_manifest
+from omniglyph.explanation import explain_for_audit
+from omniglyph.guardrail import enforce_grounded_output, validate_output_terms
+from omniglyph.language_security import enforce_intent_manifest, scan_language_input, scan_output_dlp
 from omniglyph.lexicon_pack import entries_from_source, init_lexicon_pack, source_paths, validate_lexicon_pack
 from omniglyph.normalizer import parse_unicode_data
 from omniglyph.policy_pack import init_policy_pack, load_policy_pack, validate_policy_pack
@@ -188,6 +190,25 @@ def main() -> None:
     enforce_output.add_argument("--actor-id")
     enforce_output.add_argument("--policy")
 
+    validate_output = subcommands.add_parser("validate-output")
+    validate_output.add_argument("--term", action="append", required=True)
+
+    scan_language_input_parser = subcommands.add_parser("scan-language-input")
+    scan_language_input_parser.add_argument("--text", required=True)
+    scan_language_input_parser.add_argument("--source-name", default="<cli-input>")
+
+    scan_output_dlp_parser = subcommands.add_parser("scan-output-dlp")
+    scan_output_dlp_parser.add_argument("--text", required=True)
+    scan_output_dlp_parser.add_argument("--secret-term", action="append", default=[])
+    scan_output_dlp_parser.add_argument("--include-lexicon-secrets", action="store_true")
+    scan_output_dlp_parser.add_argument("--source-name", default="<cli-output>")
+
+    audit_explain = subcommands.add_parser("audit-explain")
+    audit_explain.add_argument("--actor-id", required=True)
+    audit_explain.add_argument("--kind", choices=["glyph", "term", "code"], required=True)
+    audit_explain.add_argument("--text", required=True)
+    audit_explain.add_argument("--source-name", default="<cli-text>")
+
     lookup = subcommands.add_parser("lookup")
     lookup.add_argument("text")
 
@@ -260,14 +281,35 @@ def main() -> None:
         repository.initialize()
         report = enforce_grounded_output(repository, args.term, actor_id=args.actor_id, policy=policy)
         print(json.dumps(report, ensure_ascii=False, indent=2))
+    elif args.command == "validate-output":
+        repository = GlyphRepository(settings.sqlite_path)
+        repository.initialize()
+        report = validate_output_terms(repository, args.term)
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+    elif args.command == "scan-language-input":
+        report = scan_language_input(args.text, source_name=args.source_name)
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+    elif args.command == "scan-output-dlp":
+        secret_terms = list(args.secret_term)
+        if args.include_lexicon_secrets:
+            repository = GlyphRepository(settings.sqlite_path)
+            repository.initialize()
+            secret_terms.extend(repository.list_secret_terms())
+        report = scan_output_dlp(args.text, secret_terms=secret_terms, source_name=args.source_name)
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+    elif args.command == "audit-explain":
+        repository = GlyphRepository(settings.sqlite_path)
+        repository.initialize()
+        result, action = explain_for_audit(repository, args.kind, args.text, args.source_name)
+        print(json.dumps({"result": result, "audit": build_audit_event(args.actor_id, action, result)}, ensure_ascii=False, indent=2))
     elif args.command == "lookup":
         repository = GlyphRepository(settings.sqlite_path)
         repository.initialize()
-        result = repository.find_by_glyph(args.text) if len(args.text) == 1 else repository.find_term(args.text)
-        if result is None:
+        lookup_result = repository.find_by_glyph(args.text) if len(args.text) == 1 else repository.find_term(args.text)
+        if lookup_result is None:
             print(json.dumps({"error": "not found", "text": args.text}, ensure_ascii=False))
             raise SystemExit(1)
-        print(json.dumps(result, ensure_ascii=False, indent=2))
+        print(json.dumps(lookup_result, ensure_ascii=False, indent=2))
     elif args.command == "scan-code":
         report = scan_path(args.path)
         if args.format == "json":
