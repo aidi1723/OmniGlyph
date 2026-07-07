@@ -121,6 +121,8 @@ The source branch is now versioned as `0.8.0b0` and exposes the v0.8 MCP tool se
 
 Current source MCP tools: `lookup_glyph`, `lookup_term`, `explain_glyph`, `explain_term`, `explain_code_security`, `normalize_tokens`, `list_namespaces`, `validate_lexicon_pack`, `validate_policy_pack`, `validate_output_terms`, `enforce_grounded_output`, `scan_unicode_security`, `scan_language_input`, `scan_output_dlp`, `enforce_intent`, and `audit_explain`. The legacy `scan_code_symbols` tool name remains accepted as a backward-compatible alias.
 
+Latest source readiness record: `main` includes commit `831ab902071448b843617e8b03fdf24e32966775`, with local release-gate verification passing before package publication. TestPyPI, PyPI, and MCP Registry publication remain separate approval steps.
+
 ## Why It Exists
 
 Large language models are probabilistic engines. They are powerful, but they can hallucinate when facing obscure scripts, multilingual abbreviations, domain-specific symbols, malformed OCR, or specialized industrial terminology.
@@ -431,7 +433,7 @@ The current `v0.8.0-beta` source candidate has been verified locally with:
 | Unihan_Readings import | `291,227` properties |
 | Unihan_DictionaryLikeData import | `156,251` properties |
 | Total verified Unihan properties | `447,478` properties |
-| Local test suite | `184 passed` |
+| Local test suite | `189 passed` |
 | N100 Linux test suite | Previously verified on beta branch |
 | Docker build/run/healthcheck | Previously verified on N100 |
 | SQLite lookup benchmark for `铝` | P95 about `0.17ms` over 1,000 lookups |

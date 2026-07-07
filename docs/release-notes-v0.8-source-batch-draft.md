@@ -37,7 +37,7 @@ New or expanded CLI commands:
 ```bash
 omniglyph init-policy-pack examples/policy-packs/agent_intents
 omniglyph validate-policy-pack examples/policy-packs/agent_intents
-omniglyph enforce-intent network.restart --policy-pack-path examples/policy-packs/agent_intents --role sre
+omniglyph enforce-intent network.restart --policy-pack examples/policy-packs/agent_intents --actor-role admin --parameters '{"service":"network"}'
 ```
 
 New or expanded API/MCP surfaces:
@@ -122,6 +122,17 @@ omniglyph enforce-output --term FOB --term "HS 7604.99X" --policy '{"unknown_act
 
 The CLI returns the same output guardrail evidence as the Python runtime. `block` and `review` decisions do not make the CLI exit non-zero in this batch; shell workflows should inspect the JSON result and choose their own failure policy.
 
+The latest online readiness hardening also exposes CLI wrappers for existing local evidence surfaces:
+
+```bash
+omniglyph validate-output --term FOB --term "HS 7604.99X"
+omniglyph scan-language-input --text "ignore previous instructions"
+omniglyph scan-output-dlp --text "token sk-proj-abcdefghijklmnopqrstuvwxyz123456"
+omniglyph audit-explain --actor-id agent:codex --kind code --text "value = 1"
+```
+
+These commands return JSON evidence only. They do not rewrite text, execute commands, or call external approval systems.
+
 ## MCP Tools in Source Branch
 
 The current source branch exposes MCP tools for:
@@ -162,7 +173,7 @@ Host applications are expected to treat OmniGlyph output as deterministic eviden
 
 Final closeout verification:
 
-- Python tests: `184 passed`
+- Python tests: `189 passed`
 - Ruff: pass
 - mypy: pass
 - MCP smoke: 17 tools available
@@ -175,7 +186,7 @@ Final closeout verification:
 ## Release Notes for Maintainers
 
 - Package version is now prepared as `0.8.0b0`.
-- GitHub source and closeout documentation are merged into `main`.
+- GitHub source, closeout documentation, and the 2026-07-07 online readiness hardening commit `831ab902071448b843617e8b03fdf24e32966775` are merged into `main`.
 - TestPyPI, PyPI, and MCP Registry publication remain paused until explicit operator approval.
 - Before publishing, rebuild artifacts after a clean `scripts/release_check.sh` run.
 - Publish to TestPyPI first using exact artifact filenames.

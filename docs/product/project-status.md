@@ -17,6 +17,7 @@ It is suitable for experimentation, local agent workflows, RAG preprocessing, co
 - v0.8.0b0 release-prep handoff, verification evidence, GitHub closeout statement, and publication boundary: [`docs/product/v0.8.0b0-release-prep.md`](v0.8.0b0-release-prep.md).
 - v0.8 maintenance log and maintainer path index: [`docs/product/v0.8-maintenance-log.md`](v0.8-maintenance-log.md).
 - v0.8 publish path checklists: [`docs/ecosystem/pypi-publish.md`](../ecosystem/pypi-publish.md) and [`docs/ecosystem/mcp-registry-submission.md`](../ecosystem/mcp-registry-submission.md).
+- Latest online readiness review: [`docs/superpowers/reviews/2026-07-07-release-readiness-review.md`](../superpowers/reviews/2026-07-07-release-readiness-review.md).
 - v0.7 hardening closeout remains available at [`docs/product/v0.7-closeout.md`](v0.7-closeout.md).
 
 ## What Works Today
@@ -46,7 +47,7 @@ It is suitable for experimentation, local agent workflows, RAG preprocessing, co
   - `audit_explain`
 - Code-symbol linting for zero-width characters, Bidi controls, unexpected controls, source-backed confusables, fullwidth/halfwidth forms, NFKC changes, and cross-script homoglyph risks.
 - Software-development domain pack example under `examples/domain-packs/software_development.csv`.
-- Strict source-grounding enforcement for checked output terms through deterministic `allow` / `block` decision evidence.
+- Strict source-grounding enforcement for checked output terms through deterministic `allow` / `review` / `block` decision evidence and grouped review packets.
 - Language Security Gateway checks for prompt-injection input, outbound DLP redaction, and manifest-based intent sandbox decisions.
 - Approved `sensitivity=secret` lexicon entries can feed output DLP redaction when requested by the host.
 - Structured audit events that report actor, action, input, source IDs, findings, and unknown limits.
@@ -75,7 +76,7 @@ OmniGlyph is not yet ideal for:
 ## Known Limitations
 
 - Community adoption is still early.
-- Current output guardrail supports known/unknown validation and strict source-grounding decisions for checked terms, but not full policy orchestration.
+- Current output guardrail supports known/unknown validation, policy modes, and review evidence for checked terms, but not persistent queues, automatic rewrites, or external approval integrations.
 - Current Language Security Gateway is a deterministic checkpoint layer, not a complete prompt-injection, DLP, IAM, or OS sandboxing product.
 - Homoglyph detection is rule-based with a minimal confusables map; full Unicode confusables data ingestion is planned.
 - OmniGlyph Explanation Standard v0.1 has runtime wrappers for glyph, term, and code-security explanations; broader CLDR and concept graph integrations are still planned.

@@ -33,7 +33,7 @@ Note: the current source branch is prepared for v0.8 metadata. Do not submit the
 
 OmniGlyph `0.8.0b0` is prepared but not published to PyPI yet.
 
-GitHub source and closeout documentation are merged into `main`. MCP Registry submission remains paused until the `0.8.0b0` package is published and smoke-tested from PyPI.
+GitHub source, closeout documentation, and the latest online readiness hardening commit `831ab902071448b843617e8b03fdf24e32966775` are merged into `main`. MCP Registry submission remains paused until the `0.8.0b0` package is published and smoke-tested from PyPI.
 
 Previous release `0.6.0b0` was published to PyPI on 2026-04-25:
 
@@ -50,7 +50,7 @@ Previous release `0.6.0b0` was published to PyPI on 2026-04-25:
 - [x] Local wheel can be installed by a fresh virtual environment.
 - [ ] Published package can be installed by a fresh user with `pip install omniglyph==0.8.0b0`.
 - [x] `omniglyph-mcp` starts without repository-local assumptions.
-- [ ] `tools/list` returns all seventeen tools.
+- [x] Local `tools/list` smoke test returns all seventeen tools.
 - [x] README links to Claude Desktop, Claude Code, server card, and safety docs.
 - [x] `docs/security/mcp-safety.md` explains read-only boundaries.
 - [ ] Release page exists for the submitted version.

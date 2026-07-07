@@ -32,4 +32,4 @@ No blocking issues found.
 
 - Final PyPI upload requires explicit approval.
 - MCP Registry package metadata submission requires explicit approval.
-- Do not force-push over `origin/main`; only push a fast-forward commit based on the remote v0.8 baseline.
+- Online repository update used a fast-forward push to `origin/main`; future updates should continue to avoid force-pushing over `main`.
