@@ -397,8 +397,6 @@ def handle_mcp_request(request: object, repository: GlyphRepository | None = Non
                 return _error(request_id, -32602, "enforce_intent requires intent_id")
             if (manifest is None) == (policy_pack_path is None):
                 return _error(request_id, -32602, "enforce_intent requires exactly one of manifest or policy_pack_path")
-            if manifest is not None and not isinstance(manifest, dict):
-                return _error(request_id, -32602, "enforce_intent manifest must be an object")
             if policy_pack_path is not None and (not isinstance(policy_pack_path, str) or not policy_pack_path.strip()):
                 return _error(request_id, -32602, "enforce_intent policy_pack_path must be a string")
             if actor_role is not None and (not isinstance(actor_role, str) or not actor_role.strip()):

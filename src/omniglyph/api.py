@@ -48,7 +48,7 @@ class OutputDlpScanRequest(BaseModel):
 
 class IntentEnforceRequest(BaseModel):
     intent_id: str
-    manifest: dict | None = None
+    manifest: object | None = None
     policy_pack_path: str | None = None
     actor_role: str | None = None
     parameters: dict | None = None

@@ -413,6 +413,19 @@ def test_language_security_enforce_intent_blocks_invalid_inline_manifest(tmp_pat
     assert response.json()["status"] == "invalid_manifest"
 
 
+def test_language_security_enforce_intent_blocks_non_object_inline_manifest(tmp_path):
+    client = TestClient(create_app(GlyphRepository(tmp_path / "test.sqlite3")))
+
+    response = client.post(
+        "/api/v1/language-security/enforce-intent",
+        json={"intent_id": "network.restart", "manifest": []},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["decision"] == "block"
+    assert response.json()["status"] == "invalid_manifest"
+
+
 def test_policy_pack_endpoint_rejects_paths_outside_configured_root(tmp_path, monkeypatch):
     pack_root = tmp_path / "policy-packs"
     outside_pack = tmp_path / "outside-policy"

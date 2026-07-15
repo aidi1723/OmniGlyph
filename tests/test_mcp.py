@@ -608,6 +608,28 @@ def test_handle_mcp_enforce_intent_blocks_invalid_inline_manifest(tmp_path):
     assert payload["status"] == "invalid_manifest"
 
 
+def test_handle_mcp_enforce_intent_blocks_non_object_inline_manifest(tmp_path):
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 28,
+            "method": "tools/call",
+            "params": {
+                "name": "enforce_intent",
+                "arguments": {"intent_id": "network.restart", "manifest": []},
+            },
+        },
+        repository=repository,
+    )
+
+    payload = mcp_json(response)
+    assert payload["decision"] == "block"
+    assert payload["status"] == "invalid_manifest"
+
+
 def test_handle_mcp_rejects_non_object_request():
     response = handle_mcp_request([])
 
