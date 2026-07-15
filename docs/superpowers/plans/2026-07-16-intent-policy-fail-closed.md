@@ -202,7 +202,7 @@ git commit -m "fix: surface invalid intent policies consistently"
 - Modify: `src/omniglyph/language_security.py`
 - Test: `tests/test_language_security.py`
 
-- [ ] **Step 1: Add failing array and object decision cases**
+- [x] **Step 1: Add failing array and object decision cases**
 
 Extend `test_enforce_intent_manifest_blocks_invalid_manifests` with both JSON
 container types so the test proves enum validation never hashes arbitrary input.
@@ -212,14 +212,14 @@ container types so the test proves enum validation never hashes arbitrary input.
 ({"intents": [{"intent_id": "x", "decision": {}}]}, "$.intents[0].decision"),
 ```
 
-- [ ] **Step 2: Run the focused test and verify the expected error**
+- [x] **Step 2: Run the focused test and verify the expected error**
 
 Run: `.venv/bin/python -m pytest tests/test_language_security.py -k invalid_manifests -v`
 
 Expected: both new cases error with `TypeError: unhashable type` before an
 `invalid_manifest` result can be returned.
 
-- [ ] **Step 3: Type-check decision before enum membership**
+- [x] **Step 3: Type-check decision before enum membership**
 
 ```python
 decision = intent.get("decision")
@@ -235,7 +235,7 @@ if "decision" in intent and (
     )
 ```
 
-- [ ] **Step 4: Run focused and static checks**
+- [x] **Step 4: Run focused and static checks**
 
 Run: `.venv/bin/python -m pytest tests/test_language_security.py -v`
 
@@ -243,7 +243,7 @@ Run: `.venv/bin/python -m ruff check src/omniglyph/language_security.py tests/te
 
 Expected: all commands pass with no exception cases.
 
-- [ ] **Step 5: Commit decision type hardening**
+- [x] **Step 5: Commit decision type hardening**
 
 ```bash
 git add src/omniglyph/language_security.py tests/test_language_security.py
@@ -258,7 +258,7 @@ git commit -m "fix: reject non-string intent decisions"
 - Test: `tests/test_api.py`
 - Test: `tests/test_mcp.py`
 
-- [ ] **Step 1: Add failing snapshot and malformed-CSV regressions**
+- [x] **Step 1: Add failing snapshot and malformed-CSV regressions**
 
 Monkeypatch `_validate_intents()` so the source file changes immediately after the
 validated rows are returned. The loader must still return the original `review`
@@ -303,14 +303,14 @@ def test_policy_pack_rejects_rows_with_extra_columns(tmp_path):
         load_policy_pack(pack_dir)
 ```
 
-- [ ] **Step 2: Run focused tests and verify both root causes**
+- [x] **Step 2: Run focused tests and verify both root causes**
 
 Run: `.venv/bin/python -m pytest tests/test_policy_pack.py tests/test_api.py tests/test_mcp.py -k 'validated_snapshot or extra_columns or invalid_pack' -v`
 
 Expected: the snapshot test returns the replacement `allow` decision, while the
 extra-column cases raise `AttributeError` or surface adapter internal errors.
 
-- [ ] **Step 3: Introduce one internal Policy Pack inspection result**
+- [x] **Step 3: Introduce one internal Policy Pack inspection result**
 
 Add `_inspect_policy_pack()` and make both public functions consume its returned
 metadata, intents, and errors. Preserve the existing report shape and its rule that
@@ -381,7 +381,7 @@ if None in row:
     continue
 ```
 
-- [ ] **Step 4: Run Policy Pack and adapter suites plus static checks**
+- [x] **Step 4: Run Policy Pack and adapter suites plus static checks**
 
 Run: `.venv/bin/python -m pytest tests/test_policy_pack.py tests/test_api.py tests/test_mcp.py -v`
 
@@ -390,7 +390,7 @@ Run: `.venv/bin/python -m ruff check src/omniglyph/policy_pack.py tests/test_pol
 Expected: all commands pass; invalid CSV uses the existing CLI `2`, API `400`, and
 MCP `-32602` paths.
 
-- [ ] **Step 5: Commit snapshot and CSV hardening**
+- [x] **Step 5: Commit snapshot and CSV hardening**
 
 ```bash
 git add src/omniglyph/policy_pack.py tests/test_policy_pack.py tests/test_api.py tests/test_mcp.py
@@ -405,7 +405,7 @@ git commit -m "fix: load validated policy pack snapshots"
 - Test: `tests/test_api.py`
 - Test: `tests/test_mcp.py`
 
-- [ ] **Step 1: Add failing top-level array regressions**
+- [x] **Step 1: Add failing top-level array regressions**
 
 ```python
 def test_language_security_enforce_intent_blocks_non_object_inline_manifest(tmp_path):
@@ -439,13 +439,13 @@ def test_handle_mcp_enforce_intent_blocks_non_object_inline_manifest(tmp_path):
     assert payload["status"] == "invalid_manifest"
 ```
 
-- [ ] **Step 2: Run focused tests and verify adapter rejection**
+- [x] **Step 2: Run focused tests and verify adapter rejection**
 
 Run: `.venv/bin/python -m pytest tests/test_api.py tests/test_mcp.py -k non_object_inline_manifest -v`
 
 Expected: API returns validation status `422`; MCP returns JSON-RPC `-32602`.
 
-- [ ] **Step 3: Widen only the manifest transport boundary**
+- [x] **Step 3: Widen only the manifest transport boundary**
 
 Change `IntentEnforceRequest.manifest` to `object | None` and remove the MCP branch
 that requires `manifest` to be a dictionary. Keep the exactly-one-of check and all
@@ -461,7 +461,7 @@ class IntentEnforceRequest(BaseModel):
     parameters: dict | None = None
 ```
 
-- [ ] **Step 4: Run adapter, full test, and static checks**
+- [x] **Step 4: Run adapter, full test, and static checks**
 
 Run: `.venv/bin/python -m pytest tests/test_api.py tests/test_mcp.py -v`
 
@@ -469,13 +469,25 @@ Run: `.venv/bin/python -m pytest -q`
 
 Run: `.venv/bin/python -m ruff check src/omniglyph/api.py src/omniglyph/mcp_server.py tests/test_api.py tests/test_mcp.py && .venv/bin/python -m mypy src`
 
-Expected: 227 tests pass; Ruff and mypy report no errors.
+Expected after independent review follow-up: 229 tests pass; Ruff and mypy report no errors.
 
-- [ ] **Step 5: Commit transport-boundary semantics**
+- [x] **Step 5: Commit transport-boundary semantics**
 
 ```bash
 git add src/omniglyph/api.py src/omniglyph/mcp_server.py tests/test_api.py tests/test_mcp.py
 git commit -m "fix: validate all inline manifest values"
+```
+
+- [x] **Step 6: Distinguish an explicit null manifest from a missing field**
+
+Independent review found that `manifest: null` still took the missing-source error
+path. Add API and MCP regressions requiring blocked `invalid_manifest` evidence,
+then use Pydantic `model_fields_set` and MCP dictionary key presence for the
+exactly-one-of check. Commit the reviewed follow-up separately.
+
+```bash
+git add src/omniglyph/api.py src/omniglyph/mcp_server.py tests/test_api.py tests/test_mcp.py
+git commit -m "fix: distinguish null inline manifests"
 ```
 
 ### Task 7: Document, Verify, and Close the Second Stage
@@ -486,13 +498,13 @@ git commit -m "fix: validate all inline manifest values"
 - Modify: `docs/product/project-status.md`
 - Create: `docs/superpowers/reviews/2026-07-16-intent-policy-fail-closed-closeout.md`
 
-- [ ] **Step 1: Update runtime documentation**
+- [x] **Step 1: Update runtime documentation**
 
 State that enforcement validates Policy Packs automatically, malformed inline
 manifests return blocked `invalid_manifest` evidence, and transport-specific
 invalid-pack errors are CLI exit 2, HTTP 400, and MCP `-32602`.
 
-- [ ] **Step 2: Run the full release gate and privacy scan**
+- [x] **Step 2: Run the full release gate and privacy scan**
 
 Run: `PATH=.venv/bin:$PATH bash scripts/release_check.sh`
 
@@ -501,13 +513,13 @@ Run: `bash scripts/privacy-scan.sh`
 Expected: tests, Ruff, mypy, diff check, seventeen-tool MCP smoke, build, Twine,
 artifact audit, clean-wheel smoke, demo, and privacy scan all pass.
 
-- [ ] **Step 3: Write and link the closeout report**
+- [x] **Step 3: Write and link the closeout report**
 
 Record root-cause reproductions, resolved paths, exact verification output,
 compatibility, remaining risks, Safe-Agent router misclassification, and the local
 publication boundary. Link it from `docs/product/project-status.md`.
 
-- [ ] **Step 4: Run final document and branch checks**
+- [x] **Step 4: Run final document and branch checks**
 
 Run: `rg -n 'T[B]D|T[O]DO|F[I]XME|P[L]ACEHOLDER|待[定]' docs/superpowers/reviews/2026-07-16-intent-policy-fail-closed-closeout.md`
 
@@ -515,7 +527,7 @@ Run: `git diff --check && git status --short`
 
 Expected: no placeholder or whitespace findings; only intended documentation remains.
 
-- [ ] **Step 5: Commit the second-stage closeout**
+- [x] **Step 5: Commit the second-stage closeout**
 
 ```bash
 git add docs/specs/policy-pack-standard.md docs/architecture/language-security-gateway.md docs/product/project-status.md docs/superpowers/reviews/2026-07-16-intent-policy-fail-closed-closeout.md

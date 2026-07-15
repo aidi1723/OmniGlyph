@@ -76,6 +76,15 @@ Unsupported keywords such as `$ref`, `oneOf`, `anyOf`, `pattern`, and `format` a
 
 Policy Packs are converted into the same manifest shape used by `enforce_intent`.
 
+Enforcement validates a Policy Pack automatically before loading it. Invalid
+metadata, rows, decisions, risk levels, booleans, parameter schemas, or duplicate
+`intent_id` values cannot authorize an action. Callers do not need to run a
+separate validation command to obtain this fail-closed behavior.
+
+Validation and loading use the same parsed snapshot; the loader does not reopen a
+pack after validation. CSV values beyond the declared header are invalid instead
+of being ignored.
+
 Decision precedence:
 
 1. Unknown intent returns `block`.
@@ -86,6 +95,13 @@ Decision precedence:
 6. Otherwise the intent returns `allow`.
 
 OmniGlyph never executes commands. It returns deterministic evidence for a host app, MCP client, policy gateway, or human reviewer.
+
+Inline manifests are also validated before intent matching. Invalid structure or
+field types return `decision: "block"` with `status: "invalid_manifest"` and
+path-based `manifest_findings`. For compatibility, a valid inline intent may omit
+`decision`; the historical approval and default-allow precedence still applies.
+API and MCP pass every JSON manifest value, including a top-level array or scalar,
+and an explicit `null`, through this same core validation boundary.
 
 Invalid parameter response excerpt:
 
@@ -120,6 +136,9 @@ Enforce:
 omniglyph enforce-intent network.restart --policy-pack my-policy --actor-role admin --parameters '{"service":"network"}'
 ```
 
+Invalid Policy Packs produce an argparse usage error and exit code `2` without a
+Python traceback.
+
 ## API and MCP
 
 API:
@@ -133,3 +152,7 @@ MCP:
 - `enforce_intent` with either `manifest` or `policy_pack_path`
 
 When `OMNIGLYPH_POLICY_PACK_ROOT` is set, API and MCP only accept pack paths inside that root.
+
+Policy-path enforcement returns HTTP `400` from the API or JSON-RPC `-32602` from
+MCP when the pack is invalid. Invalid inline manifests return normal guardrail
+evidence with `decision: "block"` and `status: "invalid_manifest"`.
