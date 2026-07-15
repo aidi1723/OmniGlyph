@@ -1,6 +1,7 @@
 import json
 from io import StringIO
 
+import omniglyph.mcp_server as mcp_module
 from omniglyph import __version__
 from omniglyph.domain_pack import parse_domain_pack
 from omniglyph.mcp_server import build_tools_list, handle_mcp_request, serve_stdio
@@ -558,6 +559,57 @@ def test_handle_mcp_enforce_intent_rejects_ambiguous_policy_sources(tmp_path):
     assert response["error"]["message"] == "enforce_intent requires exactly one of manifest or policy_pack_path"
 
 
+def test_handle_mcp_enforce_intent_rejects_invalid_pack(tmp_path):
+    pack_dir = tmp_path / "policy"
+    write_mcp_policy_pack(pack_dir)
+    intents_path = pack_dir / "intents.csv"
+    intents_path.write_text(
+        intents_path.read_text(encoding="utf-8")
+        + 'network.restart,duplicate restart,allow,low,false,admin,true,"{}"\n',
+        encoding="utf-8",
+    )
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 26,
+            "method": "tools/call",
+            "params": {
+                "name": "enforce_intent",
+                "arguments": {"intent_id": "network.restart", "policy_pack_path": str(pack_dir)},
+            },
+        },
+        repository=repository,
+    )
+
+    assert response["error"]["code"] == -32602
+    assert response["error"]["message"].startswith("invalid policy pack:")
+
+
+def test_handle_mcp_enforce_intent_blocks_invalid_inline_manifest(tmp_path):
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 27,
+            "method": "tools/call",
+            "params": {
+                "name": "enforce_intent",
+                "arguments": {"intent_id": "network.restart", "manifest": {"intents": [1]}},
+            },
+        },
+        repository=repository,
+    )
+
+    payload = mcp_json(response)
+    assert payload["decision"] == "block"
+    assert payload["status"] == "invalid_manifest"
+
+
 def test_handle_mcp_rejects_non_object_request():
     response = handle_mcp_request([])
 
@@ -603,19 +655,20 @@ def test_handle_mcp_rejects_non_object_tool_arguments():
     assert response["error"] == {"code": -32602, "message": "tool arguments must be an object"}
 
 
-def test_serve_stdio_continues_after_internal_error_and_preserves_request_id():
+def test_serve_stdio_continues_after_internal_error_and_preserves_request_id(monkeypatch):
+    original_handler = mcp_module.handle_mcp_request
+    call_count = 0
+
+    def fail_once(request):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            raise RuntimeError("internal detail")
+        return original_handler(request)
+
+    monkeypatch.setattr(mcp_module, "handle_mcp_request", fail_once)
     input_stream = StringIO(
-        json.dumps(
-            {
-                "jsonrpc": "2.0",
-                "id": 35,
-                "method": "tools/call",
-                "params": {
-                    "name": "enforce_intent",
-                    "arguments": {"intent_id": "network.restart", "manifest": {"intents": [1]}},
-                },
-            }
-        )
+        json.dumps({"jsonrpc": "2.0", "id": 35, "method": "tools/list"})
         + "\n"
         + json.dumps({"jsonrpc": "2.0", "id": 36, "method": "tools/list"})
         + "\n"

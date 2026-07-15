@@ -382,6 +382,39 @@ def test_language_security_enforce_intent_rejects_ambiguous_policy_sources(tmp_p
     assert response.json()["detail"] == "provide exactly one of manifest or policy_pack_path"
 
 
+def test_language_security_enforce_intent_returns_400_for_invalid_pack(tmp_path):
+    pack_dir = tmp_path / "policy"
+    write_api_policy_pack(pack_dir)
+    intents_path = pack_dir / "intents.csv"
+    intents_path.write_text(
+        intents_path.read_text(encoding="utf-8")
+        + 'network.restart,duplicate restart,allow,low,false,admin,true,"{}"\n',
+        encoding="utf-8",
+    )
+    client = TestClient(create_app(GlyphRepository(tmp_path / "test.sqlite3")))
+
+    response = client.post(
+        "/api/v1/language-security/enforce-intent",
+        json={"intent_id": "network.restart", "policy_pack_path": str(pack_dir), "actor_role": "admin"},
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"].startswith("invalid policy pack:")
+
+
+def test_language_security_enforce_intent_blocks_invalid_inline_manifest(tmp_path):
+    client = TestClient(create_app(GlyphRepository(tmp_path / "test.sqlite3")))
+
+    response = client.post(
+        "/api/v1/language-security/enforce-intent",
+        json={"intent_id": "network.restart", "manifest": {"intents": [1]}, "actor_role": "admin"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["decision"] == "block"
+    assert response.json()["status"] == "invalid_manifest"
+
+
 def test_policy_pack_endpoint_rejects_paths_outside_configured_root(tmp_path, monkeypatch):
     pack_root = tmp_path / "policy-packs"
     outside_pack = tmp_path / "outside-policy"

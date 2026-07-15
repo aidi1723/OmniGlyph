@@ -408,9 +408,9 @@ def handle_mcp_request(request: object, repository: GlyphRepository | None = Non
             if policy_pack_path is not None:
                 try:
                     ensure_allowed_policy_pack_path(policy_pack_path, settings.policy_pack_root)
+                    manifest = load_policy_pack(policy_pack_path).to_manifest()
                 except ValueError as exc:
                     return _error(request_id, -32602, str(exc))
-                manifest = load_policy_pack(policy_pack_path).to_manifest()
             assert manifest is not None
             return _result(
                 request_id,

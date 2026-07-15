@@ -227,3 +227,35 @@ def test_cli_enforce_policy_pack_reports_invalid_parameters(tmp_path):
     payload = json.loads(result.stdout)
     assert payload["decision"] == "block"
     assert payload["status"] == "invalid_parameters"
+
+
+def test_cli_enforce_intent_reports_invalid_pack_without_traceback(tmp_path):
+    target = tmp_path / "cli-policy"
+    write_policy_pack(target)
+    intents_path = target / "intents.csv"
+    intents_path.write_text(
+        intents_path.read_text(encoding="utf-8")
+        + 'ticket.create,duplicate ticket intent,allow,low,false,admin,true,"{}"\n',
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "omniglyph.cli",
+            "enforce-intent",
+            "ticket.create",
+            "--policy-pack",
+            str(target),
+            "--actor-role",
+            "admin",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 2
+    assert "invalid policy pack:" in result.stderr
+    assert "Traceback" not in result.stderr

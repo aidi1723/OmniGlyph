@@ -158,7 +158,10 @@ def create_app(repository: GlyphRepository | None = None) -> FastAPI:
         manifest = request.manifest
         if request.policy_pack_path is not None:
             _validate_allowed_policy_pack_path(request.policy_pack_path)
-            manifest = load_policy_pack(request.policy_pack_path).to_manifest()
+            try:
+                manifest = load_policy_pack(request.policy_pack_path).to_manifest()
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
         if manifest is None:
             raise HTTPException(status_code=400, detail="provide exactly one of manifest or policy_pack_path")
         return enforce_intent_manifest(request.intent_id, manifest, actor_role=request.actor_role, parameters=request.parameters)

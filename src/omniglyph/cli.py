@@ -259,7 +259,10 @@ def main() -> None:
             parser.error(f"--parameters must be a JSON object: {exc.msg}")
         if not isinstance(parameters, dict):
             parser.error("--parameters must be a JSON object")
-        manifest = load_policy_pack(args.policy_pack).to_manifest()
+        try:
+            manifest = load_policy_pack(args.policy_pack).to_manifest()
+        except ValueError as exc:
+            parser.error(str(exc))
         report = enforce_intent_manifest(
             args.intent_id,
             manifest,
