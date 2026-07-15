@@ -83,31 +83,23 @@ def init_policy_pack(path: Path | str, namespace: str, policy_id: str, name: str
 
 
 def load_policy_pack(path: Path | str) -> PolicyPack:
-    pack_dir = Path(path)
-    report = validate_policy_pack(pack_dir)
-    if report["status"] != "pass":
-        raise ValueError("invalid policy pack: " + "; ".join(report["errors"]))
-    metadata = _read_metadata(pack_dir)
-    intents = _read_intents(pack_dir)
+    metadata, intents, errors = _inspect_policy_pack(Path(path))
+    if errors:
+        raise ValueError("invalid policy pack: " + "; ".join(errors))
     return PolicyPack(metadata=metadata, intents=intents)
 
 
 def validate_policy_pack(path: Path | str) -> dict:
-    pack_dir = Path(path)
-    errors = []
-    metadata: dict[str, Any] = {}
-    intents: list[dict[str, Any]] = []
-    if not pack_dir.exists():
-        errors.append(f"policy pack directory not found: {pack_dir}")
-    elif not pack_dir.is_dir():
-        errors.append(f"policy pack path must be a directory: {pack_dir}")
-    if not errors:
-        metadata, metadata_errors = _validate_metadata(pack_dir)
-        errors.extend(metadata_errors)
-        intents, intent_errors = _validate_intents(pack_dir)
-        errors.extend(intent_errors)
-    if errors:
-        intents = []
+    metadata, intents, errors = _inspect_policy_pack(Path(path))
+    summary_intents = [] if errors else intents
+    return _policy_pack_report(metadata, summary_intents, errors)
+
+
+def _policy_pack_report(
+    metadata: dict[str, Any],
+    intents: list[dict[str, Any]],
+    errors: list[str],
+) -> dict:
     return {
         "schema": POLICY_PACK_SCHEMA,
         "status": "pass" if not errors else "fail",
@@ -128,6 +120,22 @@ def validate_policy_pack(path: Path | str) -> dict:
     }
 
 
+def _inspect_policy_pack(pack_dir: Path) -> tuple[dict[str, Any], list[dict[str, Any]], list[str]]:
+    errors: list[str] = []
+    metadata: dict[str, Any] = {}
+    intents: list[dict[str, Any]] = []
+    if not pack_dir.exists():
+        errors.append(f"policy pack directory not found: {pack_dir}")
+    elif not pack_dir.is_dir():
+        errors.append(f"policy pack path must be a directory: {pack_dir}")
+    if not errors:
+        metadata, metadata_errors = _validate_metadata(pack_dir)
+        errors.extend(metadata_errors)
+        intents, intent_errors = _validate_intents(pack_dir)
+        errors.extend(intent_errors)
+    return metadata, intents, errors
+
+
 def ensure_allowed_policy_pack_path(path: str, root: Path | None) -> None:
     if root is None:
         return
@@ -135,23 +143,6 @@ def ensure_allowed_policy_pack_path(path: str, root: Path | None) -> None:
     allowed_root = root.resolve()
     if pack_path != allowed_root and allowed_root not in pack_path.parents:
         raise ValueError("policy pack path is outside OMNIGLYPH_POLICY_PACK_ROOT")
-
-
-def _read_metadata(pack_dir: Path) -> dict[str, Any]:
-    metadata = json.loads((pack_dir / POLICY_FILENAME).read_text(encoding="utf-8"))
-    if not isinstance(metadata, dict):
-        raise ValueError(f"{POLICY_FILENAME}: metadata must be a JSON object")
-    return metadata
-
-
-def _read_intents(pack_dir: Path) -> list[dict[str, Any]]:
-    with (pack_dir / INTENTS_FILENAME).open("r", encoding="utf-8", newline="") as file:
-        reader = csv.DictReader(file)
-        return [
-            _parse_intent_row(row)
-            for row in reader
-            if any((value or "").strip() for value in row.values())
-        ]
 
 
 def _validate_metadata(pack_dir: Path) -> tuple[dict[str, Any], list[str]]:
@@ -190,6 +181,9 @@ def _validate_intents(pack_dir: Path) -> tuple[list[dict[str, Any]], list[str]]:
         for field in missing:
             errors.append(f"{INTENTS_FILENAME}: missing required column {field}")
         for row_number, row in enumerate(reader, 2):
+            if None in row:
+                errors.append(f"{INTENTS_FILENAME} row {row_number}: unexpected extra column values")
+                continue
             if not any((value or "").strip() for value in row.values()):
                 continue
             for field in REQUIRED_INTENT_FIELDS:
@@ -234,17 +228,6 @@ def _validate_intent_row(row: dict[str, str | None], row_number: int) -> tuple[d
         return {}, errors
     assert parameters_schema is not None
     return _intent_payload(row, decision, risk_level, bool(requires_approval), bool(audit_required), parameters_schema), []
-
-
-def _parse_intent_row(row: dict[str, str | None]) -> dict[str, Any]:
-    decision = (row.get("decision") or "").strip()
-    risk_level = (row.get("risk_level") or "").strip()
-    requires_approval = _parse_bool((row.get("requires_approval") or "").strip())
-    audit_required = _parse_bool((row.get("audit_required") or "").strip())
-    parameters_schema = _parse_json_object(row.get("parameters_schema") or "{}")
-    if requires_approval is None or audit_required is None or parameters_schema is None:
-        raise ValueError(f"{INTENTS_FILENAME}: invalid intent row")
-    return _intent_payload(row, decision, risk_level, requires_approval, audit_required, parameters_schema)
 
 
 def _intent_payload(

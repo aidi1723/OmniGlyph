@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+import omniglyph.policy_pack as policy_pack_module
 from omniglyph.policy_pack import (
     ensure_allowed_policy_pack_path,
     init_policy_pack,
@@ -68,6 +69,25 @@ def test_load_policy_pack_converts_rows_to_manifest(tmp_path):
     assert manifest["intents"][0]["parameters_schema"]["required"] == ["service"]
 
 
+def test_load_policy_pack_uses_the_validated_snapshot(tmp_path, monkeypatch):
+    pack_dir = tmp_path / "policy"
+    write_policy_pack(pack_dir)
+    original_validate_intents = policy_pack_module._validate_intents
+
+    def validate_then_replace(path):
+        intents, errors = original_validate_intents(path)
+        intents_path = path / "intents.csv"
+        text = intents_path.read_text(encoding="utf-8")
+        intents_path.write_text(text.replace("review,high", "allow,high"), encoding="utf-8")
+        return intents, errors
+
+    monkeypatch.setattr(policy_pack_module, "_validate_intents", validate_then_replace)
+
+    pack = load_policy_pack(pack_dir)
+
+    assert pack.intents[0]["decision"] == "review"
+
+
 def test_validate_policy_pack_reports_invalid_rows(tmp_path):
     pack_dir = tmp_path / "bad-policy"
     pack_dir.mkdir()
@@ -119,6 +139,22 @@ def test_validate_policy_pack_rejects_duplicate_intent_ids(tmp_path):
     assert report["status"] == "fail"
     assert "intents.csv row 5: duplicate intent_id ticket.create (first defined at row 3)" in report["errors"]
     with pytest.raises(ValueError, match="invalid policy pack:.*duplicate intent_id ticket.create"):
+        load_policy_pack(pack_dir)
+
+
+def test_policy_pack_rejects_rows_with_extra_columns(tmp_path):
+    pack_dir = tmp_path / "policy"
+    write_policy_pack(pack_dir)
+    intents_path = pack_dir / "intents.csv"
+    lines = intents_path.read_text(encoding="utf-8").splitlines()
+    lines[1] += ",unexpected"
+    intents_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    report = validate_policy_pack(pack_dir)
+
+    assert report["status"] == "fail"
+    assert "intents.csv row 2: unexpected extra column values" in report["errors"]
+    with pytest.raises(ValueError, match="invalid policy pack:.*unexpected extra column values"):
         load_policy_pack(pack_dir)
 
 
@@ -233,11 +269,9 @@ def test_cli_enforce_intent_reports_invalid_pack_without_traceback(tmp_path):
     target = tmp_path / "cli-policy"
     write_policy_pack(target)
     intents_path = target / "intents.csv"
-    intents_path.write_text(
-        intents_path.read_text(encoding="utf-8")
-        + 'ticket.create,duplicate ticket intent,allow,low,false,admin,true,"{}"\n',
-        encoding="utf-8",
-    )
+    lines = intents_path.read_text(encoding="utf-8").splitlines()
+    lines[1] += ",unexpected"
+    intents_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     result = subprocess.run(
         [

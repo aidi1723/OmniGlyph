@@ -563,11 +563,9 @@ def test_handle_mcp_enforce_intent_rejects_invalid_pack(tmp_path):
     pack_dir = tmp_path / "policy"
     write_mcp_policy_pack(pack_dir)
     intents_path = pack_dir / "intents.csv"
-    intents_path.write_text(
-        intents_path.read_text(encoding="utf-8")
-        + 'network.restart,duplicate restart,allow,low,false,admin,true,"{}"\n',
-        encoding="utf-8",
-    )
+    lines = intents_path.read_text(encoding="utf-8").splitlines()
+    lines[1] += ",unexpected"
+    intents_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     repository = GlyphRepository(tmp_path / "test.sqlite3")
     repository.initialize()
 
