@@ -539,7 +539,7 @@ git commit -m "docs: close fail-closed intent policy hardening"
 **Files:**
 - Verify only.
 
-- [ ] **Step 1: Run fresh tests and static checks**
+- [x] **Step 1: Run fresh tests and static checks**
 
 Run: `.venv/bin/python -m pytest -q`
 
@@ -547,13 +547,13 @@ Run: `.venv/bin/python -m ruff check . && .venv/bin/python -m mypy src`
 
 Expected: all commands pass with no failures.
 
-- [ ] **Step 2: Inspect the branch diff and status**
+- [x] **Step 2: Inspect the branch diff and status**
 
 Run: `git diff main...HEAD --check && git diff main...HEAD --stat && git status --short`
 
 Expected: only the approved fail-closed implementation, tests, specs, and closeout
 records differ from `main`; working tree is clean.
 
-- [ ] **Step 3: Keep the branch local**
+- [x] **Step 3: Keep the branch local**
 
 Do not merge, push, tag, publish, or deploy without a separate user instruction.
