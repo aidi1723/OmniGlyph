@@ -205,6 +205,35 @@ def test_repository_repeated_unihan_import_is_idempotent(tmp_path):
     assert count == 1
 
 
+def test_repository_property_identity_preserves_field_boundaries(tmp_path):
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+    source_id = repository.add_source_snapshot(
+        SourceSnapshot(
+            "Private Domain Pack",
+            "file://private",
+            "fixture",
+            "sha-property-boundaries",
+            "private",
+            "private.csv",
+        )
+    )
+    repository.insert_glyph_records(
+        [GlyphRecord("A", "U+0041", "LATIN CAPITAL LETTER A")],
+        source_id,
+    )
+
+    repository.insert_property("A", "private", "trade:code", "value", source_id, 1.0)
+    repository.insert_property("A", "private:trade", "code", "value", source_id, 1.0)
+
+    record = repository.find_by_glyph("A")
+
+    assert record is not None
+    identities = {(item["namespace"], item["name"]) for item in record["properties"]}
+    assert ("private", "trade:code") in identities
+    assert ("private:trade", "code") in identities
+
+
 def test_repository_unicode_import_fills_name_after_unihan_import(tmp_path):
     repository = GlyphRepository(tmp_path / "test.sqlite3")
     repository.initialize()

@@ -475,6 +475,11 @@ class GlyphRepository:
         confidence: float,
         language: str | None = None,
     ) -> None:
+        property_identity = json.dumps(
+            [glyph_uid, namespace, name, value, language, source_id],
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
         connection.execute(
             """
             INSERT OR IGNORE INTO glyph_property (
@@ -486,7 +491,7 @@ class GlyphRepository:
                 str(
                     uuid.uuid5(
                         uuid.NAMESPACE_URL,
-                        f"omniglyph:glyph-property:{glyph_uid}:{namespace}:{name}:{value}:{language or ''}:{source_id}",
+                        f"omniglyph:glyph-property:{property_identity}",
                     )
                 ),
                 glyph_uid,
