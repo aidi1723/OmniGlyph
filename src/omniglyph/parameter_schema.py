@@ -6,65 +6,118 @@ ALLOWED_PARAMETER_TYPES = {"object", "string", "number", "integer", "boolean", "
 
 
 def validate_parameter_schema(schema: object, path: str = "$") -> list[Finding]:
-    if not isinstance(schema, dict):
-        return [_finding(path, "type", "Parameter schema must be an object.")]
-
     findings: list[Finding] = []
-    expected_type = schema.get("type")
-    if "type" in schema and (
-        not isinstance(expected_type, str) or expected_type not in ALLOWED_PARAMETER_TYPES
-    ):
-        findings.append(
-            _finding(
-                f"{path}.type",
-                "type",
-                "Schema type must be one of array, boolean, integer, number, object, string.",
-            )
-        )
+    ancestors: set[int] = set()
+    stack: list[tuple[str, Any, str]] = [("enter", schema, path)]
 
-    required = schema.get("required")
-    if "required" in schema:
-        if not isinstance(required, list):
-            findings.append(_finding(f"{path}.required", "type", "required must be a list."))
-        else:
-            for index, field in enumerate(required):
-                if not isinstance(field, str) or not field.strip():
+    while stack:
+        event, value, current_path = stack.pop()
+        if event == "exit":
+            ancestors.remove(id(value))
+            continue
+
+        if event == "property":
+            field, field_schema = value
+            if not isinstance(field, str) or not field.strip():
+                findings.append(
+                    _finding(
+                        f"{current_path}.properties",
+                        "type",
+                        "Property name must be a non-empty string.",
+                    )
+                )
+            else:
+                stack.append(("enter", field_schema, f"{current_path}.properties.{field}"))
+            continue
+
+        if event == "after_properties":
+            if "enum" in value and not isinstance(value.get("enum"), list):
+                findings.append(_finding(f"{current_path}.enum", "type", "enum must be a list."))
+
+            for keyword in ("minLength", "maxLength"):
+                if keyword in value and not _is_non_negative_integer(value.get(keyword)):
                     findings.append(
                         _finding(
-                            f"{path}.required[{index}]",
+                            f"{current_path}.{keyword}",
                             "type",
-                            "Required field name must be a non-empty string.",
+                            f"{keyword} must be a non-negative integer.",
                         )
                     )
 
-    properties = schema.get("properties")
-    if "properties" in schema:
-        if not isinstance(properties, dict):
-            findings.append(_finding(f"{path}.properties", "type", "properties must be an object."))
-        else:
-            for field, field_schema in properties.items():
-                if not isinstance(field, str) or not field.strip():
+            for keyword in ("minimum", "maximum"):
+                if keyword in value and not _is_finite_number(value.get(keyword)):
                     findings.append(
-                        _finding(f"{path}.properties", "type", "Property name must be a non-empty string.")
+                        _finding(
+                            f"{current_path}.{keyword}",
+                            "type",
+                            f"{keyword} must be a finite number.",
+                        )
                     )
-                    continue
-                findings.extend(validate_parameter_schema(field_schema, f"{path}.properties.{field}"))
 
-    if "enum" in schema and not isinstance(schema.get("enum"), list):
-        findings.append(_finding(f"{path}.enum", "type", "enum must be a list."))
+            if "items" in value:
+                stack.append(("enter", value.get("items"), f"{current_path}.items"))
+            continue
 
-    for keyword in ("minLength", "maxLength"):
-        if keyword in schema and not _is_non_negative_integer(schema.get(keyword)):
+        if not isinstance(value, dict):
+            findings.append(_finding(current_path, "type", "Parameter schema must be an object."))
+            continue
+
+        if id(value) in ancestors:
             findings.append(
-                _finding(f"{path}.{keyword}", "type", f"{keyword} must be a non-negative integer.")
+                _finding(
+                    current_path,
+                    "cycle",
+                    "Parameter schema must not contain cycles.",
+                )
+            )
+            continue
+
+        ancestors.add(id(value))
+        expected_type = value.get("type")
+        if "type" in value and (
+            not isinstance(expected_type, str) or expected_type not in ALLOWED_PARAMETER_TYPES
+        ):
+            findings.append(
+                _finding(
+                    f"{current_path}.type",
+                    "type",
+                    "Schema type must be one of array, boolean, integer, number, object, string.",
+                )
             )
 
-    for keyword in ("minimum", "maximum"):
-        if keyword in schema and not _is_finite_number(schema.get(keyword)):
-            findings.append(_finding(f"{path}.{keyword}", "type", f"{keyword} must be a finite number."))
+        required = value.get("required")
+        if "required" in value:
+            if not isinstance(required, list):
+                findings.append(
+                    _finding(f"{current_path}.required", "type", "required must be a list.")
+                )
+            else:
+                for index, field in enumerate(required):
+                    if not isinstance(field, str) or not field.strip():
+                        findings.append(
+                            _finding(
+                                f"{current_path}.required[{index}]",
+                                "type",
+                                "Required field name must be a non-empty string.",
+                            )
+                        )
 
-    if "items" in schema:
-        findings.extend(validate_parameter_schema(schema.get("items"), f"{path}.items"))
+        stack.append(("exit", value, current_path))
+        stack.append(("after_properties", value, current_path))
+        properties = value.get("properties")
+        if "properties" in value:
+            if not isinstance(properties, dict):
+                findings.append(
+                    _finding(
+                        f"{current_path}.properties",
+                        "type",
+                        "properties must be an object.",
+                    )
+                )
+            else:
+                for field, field_schema in reversed(properties.items()):
+                    stack.append(("property", (field, field_schema), current_path))
+
     return findings
 
 

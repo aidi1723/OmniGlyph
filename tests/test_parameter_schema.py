@@ -4,30 +4,152 @@ from omniglyph.parameter_schema import validate_parameter_schema, validate_param
 
 
 @pytest.mark.parametrize(
-    ("schema", "expected_path"),
+    ("schema", "expected"),
     [
-        ([], "$"),
-        ({"type": []}, "$.type"),
-        ({"type": "date"}, "$.type"),
-        ({"required": "service"}, "$.required"),
-        ({"required": [" "]}, "$.required[0]"),
-        ({"properties": []}, "$.properties"),
-        ({"properties": {"": {}}}, "$.properties"),
-        ({"properties": {"service": []}}, "$.properties.service"),
-        ({"enum": "safe"}, "$.enum"),
-        ({"minLength": True}, "$.minLength"),
-        ({"minLength": -1}, "$.minLength"),
-        ({"maxLength": "8"}, "$.maxLength"),
-        ({"minimum": True}, "$.minimum"),
-        ({"minimum": float("nan")}, "$.minimum"),
-        ({"maximum": "10"}, "$.maximum"),
-        ({"items": []}, "$.items"),
+        ([], {"path": "$", "rule": "type", "message": "Parameter schema must be an object."}),
+        (
+            {"type": []},
+            {
+                "path": "$.type",
+                "rule": "type",
+                "message": "Schema type must be one of array, boolean, integer, number, object, string.",
+            },
+        ),
+        (
+            {"type": "date"},
+            {
+                "path": "$.type",
+                "rule": "type",
+                "message": "Schema type must be one of array, boolean, integer, number, object, string.",
+            },
+        ),
+        (
+            {"required": "service"},
+            {"path": "$.required", "rule": "type", "message": "required must be a list."},
+        ),
+        (
+            {"required": [" "]},
+            {
+                "path": "$.required[0]",
+                "rule": "type",
+                "message": "Required field name must be a non-empty string.",
+            },
+        ),
+        (
+            {"properties": []},
+            {"path": "$.properties", "rule": "type", "message": "properties must be an object."},
+        ),
+        (
+            {"properties": {"": {}}},
+            {
+                "path": "$.properties",
+                "rule": "type",
+                "message": "Property name must be a non-empty string.",
+            },
+        ),
+        (
+            {"properties": {"service": []}},
+            {
+                "path": "$.properties.service",
+                "rule": "type",
+                "message": "Parameter schema must be an object.",
+            },
+        ),
+        (
+            {"enum": "safe"},
+            {"path": "$.enum", "rule": "type", "message": "enum must be a list."},
+        ),
+        (
+            {"minLength": True},
+            {
+                "path": "$.minLength",
+                "rule": "type",
+                "message": "minLength must be a non-negative integer.",
+            },
+        ),
+        (
+            {"minLength": -1},
+            {
+                "path": "$.minLength",
+                "rule": "type",
+                "message": "minLength must be a non-negative integer.",
+            },
+        ),
+        (
+            {"maxLength": "8"},
+            {
+                "path": "$.maxLength",
+                "rule": "type",
+                "message": "maxLength must be a non-negative integer.",
+            },
+        ),
+        (
+            {"minimum": True},
+            {"path": "$.minimum", "rule": "type", "message": "minimum must be a finite number."},
+        ),
+        (
+            {"minimum": float("nan")},
+            {"path": "$.minimum", "rule": "type", "message": "minimum must be a finite number."},
+        ),
+        (
+            {"minimum": float("-inf")},
+            {"path": "$.minimum", "rule": "type", "message": "minimum must be a finite number."},
+        ),
+        (
+            {"maximum": "10"},
+            {"path": "$.maximum", "rule": "type", "message": "maximum must be a finite number."},
+        ),
+        (
+            {"maximum": float("inf")},
+            {"path": "$.maximum", "rule": "type", "message": "maximum must be a finite number."},
+        ),
+        (
+            {"items": []},
+            {"path": "$.items", "rule": "type", "message": "Parameter schema must be an object."},
+        ),
     ],
 )
-def test_validate_parameter_schema_reports_invalid_definitions(schema, expected_path):
+def test_validate_parameter_schema_reports_invalid_definitions(schema, expected):
     findings = validate_parameter_schema(schema)
 
-    assert expected_path in [finding["path"] for finding in findings]
+    assert findings == [expected]
+
+
+def test_validate_parameter_schema_reports_properties_cycle():
+    schema = {}
+    schema["properties"] = {"loop": schema}
+
+    assert validate_parameter_schema(schema) == [
+        {
+            "path": "$.properties.loop",
+            "rule": "cycle",
+            "message": "Parameter schema must not contain cycles.",
+        }
+    ]
+
+
+def test_validate_parameter_schema_reports_items_cycle():
+    schema = {}
+    schema["items"] = schema
+
+    assert validate_parameter_schema(schema) == [
+        {
+            "path": "$.items",
+            "rule": "cycle",
+            "message": "Parameter schema must not contain cycles.",
+        }
+    ]
+
+
+def test_validate_parameter_schema_accepts_deep_acyclic_definition():
+    schema = {}
+    current = schema
+    for _ in range(1500):
+        nested = {}
+        current["items"] = nested
+        current = nested
+
+    assert validate_parameter_schema(schema) == []
 
 
 def test_validate_parameter_schema_accepts_valid_nested_definition():
