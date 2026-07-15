@@ -211,6 +211,8 @@ def test_enforce_intent_manifest_allows_valid_parameters():
         ({"intents": [{"intent_id": ""}]}, "$.intents[0].intent_id"),
         ({"intents": [{"intent_id": "x"}, {"intent_id": "x"}]}, "$.intents[1].intent_id"),
         ({"intents": [{"intent_id": "x", "decision": "sometimes"}]}, "$.intents[0].decision"),
+        ({"intents": [{"intent_id": "x", "decision": []}]}, "$.intents[0].decision"),
+        ({"intents": [{"intent_id": "x", "decision": {}}]}, "$.intents[0].decision"),
         ({"intents": [{"intent_id": "x", "requires_approval": "true"}]}, "$.intents[0].requires_approval"),
         ({"intents": [{"intent_id": "x", "allowed_roles": "admin"}]}, "$.intents[0].allowed_roles"),
         ({"intents": [{"intent_id": "x", "allowed_roles": ["admin", ""]}]}, "$.intents[0].allowed_roles[1]"),

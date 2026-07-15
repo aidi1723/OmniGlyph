@@ -165,7 +165,10 @@ def validate_intent_manifest(manifest: object) -> list[dict[str, str]]:
         else:
             seen_intents.add(intent_id)
 
-        if "decision" in intent and intent.get("decision") not in ALLOWED_INTENT_DECISIONS:
+        decision = intent.get("decision")
+        if "decision" in intent and (
+            not isinstance(decision, str) or decision not in ALLOWED_INTENT_DECISIONS
+        ):
             findings.append(
                 _manifest_finding(
                     f"{path}.decision",
