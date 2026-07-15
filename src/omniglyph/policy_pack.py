@@ -178,6 +178,7 @@ def _validate_intents(pack_dir: Path) -> tuple[list[dict[str, Any]], list[str]]:
         return [], [f"{INTENTS_FILENAME} is required"]
     errors = []
     intents = []
+    intent_rows: dict[str, int] = {}
     with intents_path.open("r", encoding="utf-8", newline="") as file:
         reader = csv.DictReader(file)
         if reader.fieldnames is None:
@@ -194,7 +195,16 @@ def _validate_intents(pack_dir: Path) -> tuple[list[dict[str, Any]], list[str]]:
             parsed, row_errors = _validate_intent_row(row, row_number)
             errors.extend(row_errors)
             if not row_errors:
-                intents.append(parsed)
+                intent_id = parsed["intent_id"]
+                first_row = intent_rows.get(intent_id)
+                if first_row is not None:
+                    errors.append(
+                        f"{INTENTS_FILENAME} row {row_number}: duplicate intent_id {intent_id} "
+                        f"(first defined at row {first_row})"
+                    )
+                else:
+                    intent_rows[intent_id] = row_number
+                    intents.append(parsed)
     return intents, errors
 
 

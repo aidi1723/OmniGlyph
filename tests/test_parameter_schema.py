@@ -56,3 +56,12 @@ def test_validate_parameters_ignores_unknown_schema_keywords():
     findings = validate_parameters({"service": "NETWORK"}, schema)
 
     assert findings == []
+
+
+def test_validate_parameters_distinguishes_boolean_and_numeric_enum_values():
+    schema = {"type": "object", "properties": {"level": {"enum": [1]}}}
+
+    assert validate_parameters({"level": True}, schema) == [
+        {"path": "$.level", "rule": "enum", "message": "Value is not in the allowed enum."}
+    ]
+    assert validate_parameters({"level": 1.0}, schema) == []

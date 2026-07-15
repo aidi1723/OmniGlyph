@@ -102,6 +102,22 @@ def test_validate_policy_pack_reports_invalid_rows(tmp_path):
     assert "intents.csv row 2: parameters_schema must be a JSON object" in report["errors"]
 
 
+def test_validate_policy_pack_rejects_duplicate_intent_ids(tmp_path):
+    pack_dir = tmp_path / "policy"
+    write_policy_pack(pack_dir)
+    intents_path = pack_dir / "intents.csv"
+    intents_path.write_text(
+        intents_path.read_text(encoding="utf-8")
+        + 'ticket.create,duplicate ticket intent,allow,low,false,admin,true,"{}"\n',
+        encoding="utf-8",
+    )
+
+    report = validate_policy_pack(pack_dir)
+
+    assert report["status"] == "fail"
+    assert "intents.csv row 5: duplicate intent_id ticket.create (first defined at row 3)" in report["errors"]
+
+
 def test_init_policy_pack_creates_valid_template(tmp_path):
     target = tmp_path / "starter"
 

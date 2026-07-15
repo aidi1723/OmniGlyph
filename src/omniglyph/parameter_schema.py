@@ -16,7 +16,7 @@ def _validate_value(value: object, schema: dict[str, object], path: str) -> list
         return [_finding(path, "type", f"Expected {expected_type}.")]
 
     enum_values = schema.get("enum")
-    if isinstance(enum_values, list) and value not in enum_values:
+    if isinstance(enum_values, list) and not any(_json_values_equal(value, candidate) for candidate in enum_values):
         findings.append(_finding(path, "enum", "Value is not in the allowed enum."))
 
     if isinstance(value, dict):
@@ -96,6 +96,25 @@ def _matches_type(value: object, expected_type: str) -> bool:
 
 def _is_number(value: object) -> bool:
     return isinstance(value, int | float) and not isinstance(value, bool)
+
+
+def _json_values_equal(left: object, right: object) -> bool:
+    if isinstance(left, bool) or isinstance(right, bool):
+        return isinstance(left, bool) and isinstance(right, bool) and left == right
+    if _is_number(left) or _is_number(right):
+        return _is_number(left) and _is_number(right) and left == right
+    if type(left) is not type(right):
+        return False
+    if isinstance(left, list) and isinstance(right, list):
+        return len(left) == len(right) and all(
+            _json_values_equal(left_item, right_item)
+            for left_item, right_item in zip(left, right, strict=True)
+        )
+    if isinstance(left, dict) and isinstance(right, dict):
+        return left.keys() == right.keys() and all(
+            _json_values_equal(left[key], right[key]) for key in left
+        )
+    return left == right
 
 
 def _format_number(value: object) -> str:
