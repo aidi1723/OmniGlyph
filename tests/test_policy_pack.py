@@ -100,6 +100,8 @@ def test_validate_policy_pack_reports_invalid_rows(tmp_path):
     assert "intents.csv row 2: risk_level must be one of critical, high, low, medium" in report["errors"]
     assert "intents.csv row 2: requires_approval must be a boolean string" in report["errors"]
     assert "intents.csv row 2: parameters_schema must be a JSON object" in report["errors"]
+    with pytest.raises(ValueError, match="^invalid policy pack:"):
+        load_policy_pack(pack_dir)
 
 
 def test_validate_policy_pack_rejects_duplicate_intent_ids(tmp_path):
@@ -116,6 +118,8 @@ def test_validate_policy_pack_rejects_duplicate_intent_ids(tmp_path):
 
     assert report["status"] == "fail"
     assert "intents.csv row 5: duplicate intent_id ticket.create (first defined at row 3)" in report["errors"]
+    with pytest.raises(ValueError, match="invalid policy pack:.*duplicate intent_id ticket.create"):
+        load_policy_pack(pack_dir)
 
 
 def test_init_policy_pack_creates_valid_template(tmp_path):

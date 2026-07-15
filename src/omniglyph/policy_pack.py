@@ -84,6 +84,9 @@ def init_policy_pack(path: Path | str, namespace: str, policy_id: str, name: str
 
 def load_policy_pack(path: Path | str) -> PolicyPack:
     pack_dir = Path(path)
+    report = validate_policy_pack(pack_dir)
+    if report["status"] != "pass":
+        raise ValueError("invalid policy pack: " + "; ".join(report["errors"]))
     metadata = _read_metadata(pack_dir)
     intents = _read_intents(pack_dir)
     return PolicyPack(metadata=metadata, intents=intents)
