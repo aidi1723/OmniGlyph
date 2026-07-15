@@ -1,9 +1,78 @@
+import math
 from typing import Any
 
 Finding = dict[str, str]
+ALLOWED_PARAMETER_TYPES = {"object", "string", "number", "integer", "boolean", "array"}
 
 
-def validate_parameters(parameters: object, schema: dict[str, object]) -> list[Finding]:
+def validate_parameter_schema(schema: object, path: str = "$") -> list[Finding]:
+    if not isinstance(schema, dict):
+        return [_finding(path, "type", "Parameter schema must be an object.")]
+
+    findings: list[Finding] = []
+    expected_type = schema.get("type")
+    if "type" in schema and (
+        not isinstance(expected_type, str) or expected_type not in ALLOWED_PARAMETER_TYPES
+    ):
+        findings.append(
+            _finding(
+                f"{path}.type",
+                "type",
+                "Schema type must be one of array, boolean, integer, number, object, string.",
+            )
+        )
+
+    required = schema.get("required")
+    if "required" in schema:
+        if not isinstance(required, list):
+            findings.append(_finding(f"{path}.required", "type", "required must be a list."))
+        else:
+            for index, field in enumerate(required):
+                if not isinstance(field, str) or not field.strip():
+                    findings.append(
+                        _finding(
+                            f"{path}.required[{index}]",
+                            "type",
+                            "Required field name must be a non-empty string.",
+                        )
+                    )
+
+    properties = schema.get("properties")
+    if "properties" in schema:
+        if not isinstance(properties, dict):
+            findings.append(_finding(f"{path}.properties", "type", "properties must be an object."))
+        else:
+            for field, field_schema in properties.items():
+                if not isinstance(field, str) or not field.strip():
+                    findings.append(
+                        _finding(f"{path}.properties", "type", "Property name must be a non-empty string.")
+                    )
+                    continue
+                findings.extend(validate_parameter_schema(field_schema, f"{path}.properties.{field}"))
+
+    if "enum" in schema and not isinstance(schema.get("enum"), list):
+        findings.append(_finding(f"{path}.enum", "type", "enum must be a list."))
+
+    for keyword in ("minLength", "maxLength"):
+        if keyword in schema and not _is_non_negative_integer(schema.get(keyword)):
+            findings.append(
+                _finding(f"{path}.{keyword}", "type", f"{keyword} must be a non-negative integer.")
+            )
+
+    for keyword in ("minimum", "maximum"):
+        if keyword in schema and not _is_finite_number(schema.get(keyword)):
+            findings.append(_finding(f"{path}.{keyword}", "type", f"{keyword} must be a finite number."))
+
+    if "items" in schema:
+        findings.extend(validate_parameter_schema(schema.get("items"), f"{path}.items"))
+    return findings
+
+
+def validate_parameters(parameters: object, schema: object) -> list[Finding]:
+    schema_findings = validate_parameter_schema(schema, "$.schema")
+    if schema_findings:
+        return schema_findings
+    assert isinstance(schema, dict)
     if not schema:
         return []
     return _validate_value(parameters, schema, "$")
@@ -92,6 +161,16 @@ def _matches_type(value: object, expected_type: str) -> bool:
     if expected_type == "array":
         return isinstance(value, list)
     return True
+
+
+def _is_non_negative_integer(value: object) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value >= 0
+
+
+def _is_finite_number(value: object) -> bool:
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        return False
+    return not isinstance(value, float) or math.isfinite(value)
 
 
 def _is_number(value: object) -> bool:
