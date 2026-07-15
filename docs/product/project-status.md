@@ -13,6 +13,7 @@ It is suitable for experimentation, local agent workflows, RAG preprocessing, co
 
 ## Current Closeout Reference
 
+- Latest project-wide release-safety hardening and verification closeout: [`docs/superpowers/reviews/2026-07-16-project-release-safety-closeout.md`](../superpowers/reviews/2026-07-16-project-release-safety-closeout.md).
 - v0.8 source-batch closeout and key paths: [`docs/product/v0.8-closeout.md`](v0.8-closeout.md).
 - v0.8.0b0 release-prep handoff, verification evidence, GitHub closeout statement, and publication boundary: [`docs/product/v0.8.0b0-release-prep.md`](v0.8.0b0-release-prep.md).
 - v0.8 maintenance log and maintainer path index: [`docs/product/v0.8-maintenance-log.md`](v0.8-maintenance-log.md).
