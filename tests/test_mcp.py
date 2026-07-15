@@ -1,8 +1,9 @@
 import json
+from io import StringIO
 
 from omniglyph import __version__
 from omniglyph.domain_pack import parse_domain_pack
-from omniglyph.mcp_server import build_tools_list, handle_mcp_request
+from omniglyph.mcp_server import build_tools_list, handle_mcp_request, serve_stdio
 from omniglyph.normalizer import GlyphRecord
 from omniglyph.repository import GlyphRepository, SourceSnapshot
 from omniglyph.unihan import parse_unihan_data
@@ -555,3 +556,79 @@ def test_handle_mcp_enforce_intent_rejects_ambiguous_policy_sources(tmp_path):
 
     assert response["error"]["code"] == -32602
     assert response["error"]["message"] == "enforce_intent requires exactly one of manifest or policy_pack_path"
+
+
+def test_handle_mcp_rejects_non_object_request():
+    response = handle_mcp_request([])
+
+    assert response == {
+        "jsonrpc": "2.0",
+        "id": None,
+        "error": {"code": -32600, "message": "Invalid Request"},
+    }
+
+
+def test_handle_mcp_rejects_invalid_jsonrpc_version():
+    response = handle_mcp_request({"jsonrpc": "1.0", "id": 31, "method": "tools/list"})
+
+    assert response["id"] == 31
+    assert response["error"] == {"code": -32600, "message": "Invalid Request"}
+
+
+def test_handle_mcp_rejects_non_string_method():
+    response = handle_mcp_request({"jsonrpc": "2.0", "id": 32, "method": 42})
+
+    assert response["id"] == 32
+    assert response["error"] == {"code": -32600, "message": "Invalid Request"}
+
+
+def test_handle_mcp_rejects_non_object_params():
+    response = handle_mcp_request({"jsonrpc": "2.0", "id": 33, "method": "tools/call", "params": []})
+
+    assert response["id"] == 33
+    assert response["error"] == {"code": -32602, "message": "params must be an object"}
+
+
+def test_handle_mcp_rejects_non_object_tool_arguments():
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 34,
+            "method": "tools/call",
+            "params": {"name": "lookup_glyph", "arguments": []},
+        }
+    )
+
+    assert response["id"] == 34
+    assert response["error"] == {"code": -32602, "message": "tool arguments must be an object"}
+
+
+def test_serve_stdio_continues_after_internal_error_and_preserves_request_id():
+    input_stream = StringIO(
+        json.dumps(
+            {
+                "jsonrpc": "2.0",
+                "id": 35,
+                "method": "tools/call",
+                "params": {
+                    "name": "enforce_intent",
+                    "arguments": {"intent_id": "network.restart", "manifest": {"intents": [1]}},
+                },
+            }
+        )
+        + "\n"
+        + json.dumps({"jsonrpc": "2.0", "id": 36, "method": "tools/list"})
+        + "\n"
+    )
+    output_stream = StringIO()
+
+    serve_stdio(input_stream, output_stream)
+
+    responses = [json.loads(line) for line in output_stream.getvalue().splitlines()]
+    assert responses[0] == {
+        "jsonrpc": "2.0",
+        "id": 35,
+        "error": {"code": -32603, "message": "Internal error"},
+    }
+    assert responses[1]["id"] == 36
+    assert responses[1]["result"]["tools"][0]["name"] == "lookup_glyph"

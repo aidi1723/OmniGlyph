@@ -213,9 +213,17 @@ def build_tools_list() -> list[dict[str, Any]]:
     ]
 
 
-def handle_mcp_request(request: dict[str, Any], repository: GlyphRepository | None = None) -> dict[str, Any] | None:
-    method = request.get("method")
+def handle_mcp_request(request: object, repository: GlyphRepository | None = None) -> dict[str, Any] | None:
+    if not isinstance(request, dict):
+        return _error(None, -32600, "Invalid Request")
     request_id = request.get("id")
+    method = request.get("method")
+    if request.get("jsonrpc") != JSONRPC_VERSION or not isinstance(method, str):
+        return _error(request_id, -32600, "Invalid Request")
+    raw_params = request.get("params")
+    if raw_params is not None and not isinstance(raw_params, dict):
+        return _error(request_id, -32602, "params must be an object")
+    params = raw_params or {}
     glyph_repository = repository or GlyphRepository(settings.sqlite_path)
 
     if method == "initialize":
@@ -235,9 +243,11 @@ def handle_mcp_request(request: dict[str, Any], repository: GlyphRepository | No
         return _result(request_id, {"tools": build_tools_list()})
 
     if method == "tools/call":
-        params = request.get("params") or {}
         tool_name = params.get("name")
-        arguments = params.get("arguments") or {}
+        raw_arguments = params.get("arguments")
+        if raw_arguments is not None and not isinstance(raw_arguments, dict):
+            return _error(request_id, -32602, "tool arguments must be an object")
+        arguments = raw_arguments or {}
         if tool_name == "lookup_glyph":
             char = arguments.get("char")
             if not isinstance(char, str) or len(char) != 1:
@@ -438,13 +448,16 @@ def serve_stdio(input_stream: TextIO = sys.stdin, output_stream: TextIO = sys.st
     for line in input_stream:
         if not line.strip():
             continue
+        request_id = None
         try:
             request = json.loads(line)
+            if isinstance(request, dict):
+                request_id = request.get("id")
             response = handle_mcp_request(request)
         except json.JSONDecodeError as exc:
             response = _error(None, -32700, f"Parse error: {exc.msg}")
-        except Exception as exc:  # pragma: no cover - defensive stdio server boundary
-            response = _error(None, -32603, f"Internal error: {exc}")
+        except Exception:  # pragma: no cover - defensive stdio server boundary
+            response = _error(request_id, -32603, "Internal error")
         if response is not None:
             output_stream.write(json.dumps(response, ensure_ascii=False) + "\n")
             output_stream.flush()
