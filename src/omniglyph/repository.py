@@ -85,6 +85,7 @@ class GlyphRepository:
                         general_category, script, block, created_at, updated_at
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(glyph) DO UPDATE SET
+                        name = COALESCE(glyph_node.name, excluded.name),
                         updated_at = excluded.updated_at
                     """,
                     (
@@ -443,7 +444,12 @@ class GlyphRepository:
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                str(uuid.uuid4()),
+                str(
+                    uuid.uuid5(
+                        uuid.NAMESPACE_URL,
+                        f"omniglyph:glyph-property:{glyph_uid}:{namespace}:{name}:{value}:{language or ''}:{source_id}",
+                    )
+                ),
                 glyph_uid,
                 namespace,
                 name,

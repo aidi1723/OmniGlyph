@@ -1,7 +1,9 @@
 import threading
+from pathlib import Path
 
 from omniglyph.normalizer import GlyphRecord
 from omniglyph.repository import GlyphRepository, SourceSnapshot
+from omniglyph.unihan import parse_unihan_data
 
 
 def test_repository_inserts_source_snapshot_and_finds_glyph(tmp_path):
@@ -175,3 +177,62 @@ def test_repository_reuses_connections_per_thread(tmp_path):
 
     assert repository.connect() is main_connection
     assert worker_connections[0] is not main_connection
+
+
+def test_repository_repeated_unihan_import_is_idempotent(tmp_path):
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+    source_id = repository.add_source_snapshot(
+        SourceSnapshot(
+            "Unihan Database",
+            "file://unihan",
+            "fixture",
+            "sha-unihan-idempotent",
+            "Unicode Terms of Use",
+            "Unihan.txt",
+        )
+    )
+    properties = list(parse_unihan_data(Path("tests/fixtures/Unihan.sample.txt")))[:1]
+
+    repository.insert_unihan_properties(properties, source_id)
+    repository.insert_unihan_properties(properties, source_id)
+
+    with repository.connect() as connection:
+        count = connection.execute("SELECT COUNT(*) FROM glyph_property").fetchone()[0]
+    assert count == 1
+
+
+def test_repository_unicode_import_fills_name_after_unihan_import(tmp_path):
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+    unihan_source = repository.add_source_snapshot(
+        SourceSnapshot(
+            "Unihan Database",
+            "file://unihan",
+            "fixture",
+            "sha-unihan-order",
+            "Unicode Terms of Use",
+            "Unihan.txt",
+        )
+    )
+    unicode_source = repository.add_source_snapshot(
+        SourceSnapshot(
+            "Unicode Character Database",
+            "file://unicode",
+            "fixture",
+            "sha-unicode-order",
+            "Unicode Terms of Use",
+            "UnicodeData.txt",
+        )
+    )
+    properties = list(parse_unihan_data(Path("tests/fixtures/Unihan.sample.txt")))[:1]
+    repository.insert_unihan_properties(properties, unihan_source)
+    repository.insert_glyph_records(
+        [GlyphRecord("铝", "U+94DD", "CJK UNIFIED IDEOGRAPH-94DD")],
+        unicode_source,
+    )
+
+    record = repository.find_by_glyph("铝")
+
+    assert record is not None
+    assert record["unicode"]["name"] == "CJK UNIFIED IDEOGRAPH-94DD"
