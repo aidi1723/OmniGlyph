@@ -153,7 +153,9 @@ def create_app(repository: GlyphRepository | None = None) -> FastAPI:
 
     @app.post("/api/v1/language-security/enforce-intent")
     def language_security_enforce_intent_endpoint(request: IntentEnforceRequest) -> dict:
-        if (request.manifest is None) == (request.policy_pack_path is None):
+        manifest_provided = "manifest" in request.model_fields_set
+        policy_pack_provided = request.policy_pack_path is not None
+        if manifest_provided == policy_pack_provided:
             raise HTTPException(status_code=400, detail="provide exactly one of manifest or policy_pack_path")
         manifest = request.manifest
         if request.policy_pack_path is not None:
@@ -162,8 +164,6 @@ def create_app(repository: GlyphRepository | None = None) -> FastAPI:
                 manifest = load_policy_pack(request.policy_pack_path).to_manifest()
             except ValueError as exc:
                 raise HTTPException(status_code=400, detail=str(exc)) from exc
-        if manifest is None:
-            raise HTTPException(status_code=400, detail="provide exactly one of manifest or policy_pack_path")
         return enforce_intent_manifest(request.intent_id, manifest, actor_role=request.actor_role, parameters=request.parameters)
 
     @app.post("/api/v1/audit/explain")

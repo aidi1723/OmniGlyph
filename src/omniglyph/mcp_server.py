@@ -389,13 +389,15 @@ def handle_mcp_request(request: object, repository: GlyphRepository | None = Non
 
         if tool_name == "enforce_intent":
             intent_id = arguments.get("intent_id")
+            manifest_provided = "manifest" in arguments
             manifest = arguments.get("manifest")
             policy_pack_path = arguments.get("policy_pack_path")
+            policy_pack_provided = policy_pack_path is not None
             actor_role = arguments.get("actor_role")
             parameters = arguments.get("parameters")
             if not isinstance(intent_id, str) or not intent_id.strip():
                 return _error(request_id, -32602, "enforce_intent requires intent_id")
-            if (manifest is None) == (policy_pack_path is None):
+            if manifest_provided == policy_pack_provided:
                 return _error(request_id, -32602, "enforce_intent requires exactly one of manifest or policy_pack_path")
             if policy_pack_path is not None and (not isinstance(policy_pack_path, str) or not policy_pack_path.strip()):
                 return _error(request_id, -32602, "enforce_intent policy_pack_path must be a string")
@@ -409,7 +411,6 @@ def handle_mcp_request(request: object, repository: GlyphRepository | None = Non
                     manifest = load_policy_pack(policy_pack_path).to_manifest()
                 except ValueError as exc:
                     return _error(request_id, -32602, str(exc))
-            assert manifest is not None
             return _result(
                 request_id,
                 {
