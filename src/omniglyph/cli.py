@@ -120,18 +120,17 @@ def ingest_domain_pack(
     )
     repository = GlyphRepository(settings.sqlite_path)
     repository.initialize()
-    if replace_namespace:
-        repository.delete_lexical_namespace(source_namespace)
-    source_id = repository.add_source_snapshot(
-        SourceSnapshot(
-            source_name=source_name,
-            source_url=artifact.source_url,
-            source_version=artifact.source_version,
-            sha256=artifact.sha256,
-            license=artifact.license,
-            local_path=str(artifact.path),
-        )
+    source = SourceSnapshot(
+        source_name=source_name,
+        source_url=artifact.source_url,
+        source_version=artifact.source_version,
+        sha256=artifact.sha256,
+        license=artifact.license,
+        local_path=str(artifact.path),
     )
+    if replace_namespace:
+        return repository.replace_lexical_namespace(source_namespace, entries, source)
+    source_id = repository.add_source_snapshot(source)
     return repository.insert_lexical_entries(entries, source_id=source_id)
 
 

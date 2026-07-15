@@ -51,27 +51,8 @@ class GlyphRepository:
             connection.executescript(INDEX_SQL)
 
     def add_source_snapshot(self, source: SourceSnapshot) -> str:
-        source_id = str(uuid.uuid5(uuid.NAMESPACE_URL, f"omniglyph:source:{source.source_name}:{source.source_version}:{source.sha256}"))
         with self.connect() as connection:
-            connection.execute(
-                """
-                INSERT OR IGNORE INTO source_snapshot (
-                    id, source_name, source_url, source_version, retrieved_at,
-                    sha256, license, local_path
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    source_id,
-                    source.source_name,
-                    source.source_url,
-                    source.source_version,
-                    datetime.now(timezone.utc).isoformat(),
-                    source.sha256,
-                    source.license,
-                    source.local_path,
-                ),
-            )
-        return source_id
+            return self._add_source_snapshot_with_connection(connection, source)
 
     def insert_glyph_records(self, records: list[GlyphRecord], source_id: str) -> None:
         with self.connect() as connection:
@@ -172,66 +153,124 @@ class GlyphRepository:
 
 
     def insert_lexical_entries(self, entries, source_id: str, confidence: float = 1.0) -> int:
-        inserted = 0
         with self.connect() as connection:
-            for entry in entries:
-                entry_id = str(uuid.uuid5(uuid.NAMESPACE_URL, f"omniglyph:lexical:{entry.namespace}:{entry.canonical_id}:{entry.term}:{source_id}"))
-                now = datetime.now(timezone.utc).isoformat()
-                connection.execute(
-                    """
-                    INSERT OR IGNORE INTO lexical_entry (
-                        id, namespace, term, normalized_term, canonical_id, entry_type,
-                        language, definition, traits, source_id, confidence, created_at
-                        , sensitivity, review_status, pack_id, pack_version
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        entry_id,
-                        entry.namespace,
-                        entry.term,
-                        self._normalize_text(entry.term),
-                        entry.canonical_id,
-                        entry.entry_type,
-                        entry.language,
-                        entry.definition,
-                        json.dumps(entry.traits, ensure_ascii=False, sort_keys=True),
-                        source_id,
-                        confidence,
-                        now,
-                        entry.sensitivity,
-                        entry.review_status,
-                        entry.pack_id,
-                        entry.pack_version,
-                    ),
-                )
-                for alias in entry.aliases:
-                    connection.execute(
-                        """
-                        INSERT OR IGNORE INTO lexical_alias (
-                            id, lexical_entry_id, alias, normalized_alias, source_id, created_at
-                        ) VALUES (?, ?, ?, ?, ?, ?)
-                        """,
-                        (
-                            str(uuid.uuid5(uuid.NAMESPACE_URL, f"omniglyph:alias:{entry_id}:{alias}:{source_id}")),
-                            entry_id,
-                            alias,
-                            self._normalize_text(alias),
-                            source_id,
-                            now,
-                        ),
-                    )
-                inserted += 1
-        return inserted
+            return self._insert_lexical_entries_with_connection(connection, entries, source_id, confidence)
 
     def delete_lexical_namespace(self, namespace: str) -> int:
         with self.connect() as connection:
-            rows = connection.execute("SELECT id FROM lexical_entry WHERE namespace = ?", (namespace,)).fetchall()
-            entry_ids = [row["id"] for row in rows]
-            if not entry_ids:
-                return 0
-            connection.executemany("DELETE FROM lexical_alias WHERE lexical_entry_id = ?", [(entry_id,) for entry_id in entry_ids])
-            connection.execute("DELETE FROM lexical_entry WHERE namespace = ?", (namespace,))
-            return len(entry_ids)
+            return self._delete_lexical_namespace_with_connection(connection, namespace)
+
+    def replace_lexical_namespace(self, namespace: str, entries, source: SourceSnapshot) -> int:
+        with self.connect() as connection:
+            self._delete_lexical_namespace_with_connection(connection, namespace)
+            source_id = self._add_source_snapshot_with_connection(connection, source)
+            return self._insert_lexical_entries_with_connection(connection, entries, source_id)
+
+    def _add_source_snapshot_with_connection(
+        self,
+        connection: sqlite3.Connection,
+        source: SourceSnapshot,
+    ) -> str:
+        source_id = str(
+            uuid.uuid5(
+                uuid.NAMESPACE_URL,
+                f"omniglyph:source:{source.source_name}:{source.source_version}:{source.sha256}",
+            )
+        )
+        connection.execute(
+            """
+            INSERT OR IGNORE INTO source_snapshot (
+                id, source_name, source_url, source_version, retrieved_at,
+                sha256, license, local_path
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                source_id,
+                source.source_name,
+                source.source_url,
+                source.source_version,
+                datetime.now(timezone.utc).isoformat(),
+                source.sha256,
+                source.license,
+                source.local_path,
+            ),
+        )
+        return source_id
+
+    def _insert_lexical_entries_with_connection(
+        self,
+        connection: sqlite3.Connection,
+        entries,
+        source_id: str,
+        confidence: float = 1.0,
+    ) -> int:
+        inserted = 0
+        for entry in entries:
+            entry_id = str(
+                uuid.uuid5(
+                    uuid.NAMESPACE_URL,
+                    f"omniglyph:lexical:{entry.namespace}:{entry.canonical_id}:{entry.term}:{source_id}",
+                )
+            )
+            now = datetime.now(timezone.utc).isoformat()
+            connection.execute(
+                """
+                INSERT OR IGNORE INTO lexical_entry (
+                    id, namespace, term, normalized_term, canonical_id, entry_type,
+                    language, definition, traits, source_id, confidence, created_at,
+                    sensitivity, review_status, pack_id, pack_version
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    entry_id,
+                    entry.namespace,
+                    entry.term,
+                    self._normalize_text(entry.term),
+                    entry.canonical_id,
+                    entry.entry_type,
+                    entry.language,
+                    entry.definition,
+                    json.dumps(entry.traits, ensure_ascii=False, sort_keys=True),
+                    source_id,
+                    confidence,
+                    now,
+                    entry.sensitivity,
+                    entry.review_status,
+                    entry.pack_id,
+                    entry.pack_version,
+                ),
+            )
+            for alias in entry.aliases:
+                connection.execute(
+                    """
+                    INSERT OR IGNORE INTO lexical_alias (
+                        id, lexical_entry_id, alias, normalized_alias, source_id, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        str(uuid.uuid5(uuid.NAMESPACE_URL, f"omniglyph:alias:{entry_id}:{alias}:{source_id}")),
+                        entry_id,
+                        alias,
+                        self._normalize_text(alias),
+                        source_id,
+                        now,
+                    ),
+                )
+            inserted += 1
+        return inserted
+
+    def _delete_lexical_namespace_with_connection(
+        self,
+        connection: sqlite3.Connection,
+        namespace: str,
+    ) -> int:
+        rows = connection.execute("SELECT id FROM lexical_entry WHERE namespace = ?", (namespace,)).fetchall()
+        entry_ids = [row["id"] for row in rows]
+        if not entry_ids:
+            return 0
+        connection.executemany("DELETE FROM lexical_alias WHERE lexical_entry_id = ?", [(entry_id,) for entry_id in entry_ids])
+        connection.execute("DELETE FROM lexical_entry WHERE namespace = ?", (namespace,))
+        return len(entry_ids)
 
     def find_term(self, text: str) -> dict | None:
         normalized = self._normalize_text(text)

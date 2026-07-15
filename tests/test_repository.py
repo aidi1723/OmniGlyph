@@ -1,6 +1,9 @@
 import threading
 from pathlib import Path
 
+import pytest
+
+from omniglyph.domain_pack import DomainEntry
 from omniglyph.normalizer import GlyphRecord
 from omniglyph.repository import GlyphRepository, SourceSnapshot
 from omniglyph.unihan import parse_unihan_data
@@ -236,3 +239,42 @@ def test_repository_unicode_import_fills_name_after_unihan_import(tmp_path):
 
     assert record is not None
     assert record["unicode"]["name"] == "CJK UNIFIED IDEOGRAPH-94DD"
+
+
+def test_repository_namespace_replacement_rolls_back_on_insert_failure(tmp_path):
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+    old_source = SourceSnapshot("Old Pack", "file://old", "1", "sha-old", "private", "old.csv")
+    old_source_id = repository.add_source_snapshot(old_source)
+    old_entry = DomainEntry(
+        term="FOB",
+        canonical_id="trade:fob",
+        entry_type="trade_term",
+        language="en",
+        aliases=[],
+        definition=None,
+        traits={},
+        namespace="private_trade",
+    )
+    repository.insert_lexical_entries([old_entry], old_source_id)
+    invalid_entry = DomainEntry(
+        term="CIF",
+        canonical_id="trade:cif",
+        entry_type="trade_term",
+        language="en",
+        aliases=[],
+        definition=None,
+        traits={"bad": object()},
+        namespace="private_trade",
+    )
+
+    with pytest.raises(TypeError):
+        repository.replace_lexical_namespace(
+            "private_trade",
+            [invalid_entry],
+            SourceSnapshot("New Pack", "file://new", "2", "sha-new", "private", "new.csv"),
+        )
+
+    assert repository.find_term("FOB") is not None
+    with repository.connect() as connection:
+        assert connection.execute("SELECT COUNT(*) FROM source_snapshot").fetchone()[0] == 1
