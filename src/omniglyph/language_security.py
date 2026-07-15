@@ -163,10 +163,7 @@ def _dlp_finding(rule_id: str, value: str, start: int, end: int, source_name: st
 
 
 def _redact_matches(text: str, findings: list[dict]) -> str:
-    spans = sorted(
-        ((finding["start"], finding["end"]) for finding in findings),
-        key=lambda span: (span[0], span[1]),
-    )
+    spans = _coalesce_spans(findings)
     redacted_parts = []
     cursor = 0
     for start, end in spans:
@@ -178,6 +175,21 @@ def _redact_matches(text: str, findings: list[dict]) -> str:
         cursor = max(cursor, end)
     redacted_parts.append(text[cursor:])
     return "".join(redacted_parts)
+
+
+def _coalesce_spans(findings: list[dict]) -> list[tuple[int, int]]:
+    spans = sorted(
+        ((finding["start"], finding["end"]) for finding in findings),
+        key=lambda span: (span[0], span[1]),
+    )
+    merged: list[tuple[int, int]] = []
+    for start, end in spans:
+        if merged and start <= merged[-1][1]:
+            previous_start, previous_end = merged[-1]
+            merged[-1] = (previous_start, max(previous_end, end))
+        else:
+            merged.append((start, end))
+    return merged
 
 
 def _language_report(surface: str, source_name: str, text: str, findings: list[dict]) -> dict:

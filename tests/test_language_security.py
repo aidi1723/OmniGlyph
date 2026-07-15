@@ -1,5 +1,6 @@
 import json
 
+import pytest
 from fastapi.testclient import TestClient
 
 from omniglyph.api import create_app
@@ -68,6 +69,20 @@ def test_scan_output_dlp_findings_do_not_echo_sensitive_values():
         assert finding["match"] == "[REDACTED]"
         assert finding["match_length"] == finding["end"] - finding["start"]
         assert len(finding["match_sha256"]) == 64
+
+
+@pytest.mark.parametrize(
+    ("text", "terms"),
+    [
+        ("alphabeta", ["alpha", "phabeta"]),
+        ("alphabeta", ["alpha", "beta"]),
+    ],
+)
+def test_scan_output_dlp_coalesces_overlapping_or_adjacent_redactions(text, terms):
+    report = scan_output_dlp(text, secret_terms=terms)
+
+    assert report["summary"]["finding_count"] == 2
+    assert report["redacted_text"] == "[REDACTED]"
 
 
 def test_enforce_intent_manifest_allows_role_approved_intent():
