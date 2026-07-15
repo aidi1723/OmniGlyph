@@ -6,19 +6,29 @@
 - Target: post-`0.8.0b0` local hardening branch
 - Scope: inline intent manifest and Policy Pack execution validation
 - Compatibility: preserve valid Python, CLI, API, and MCP intent-enforcement behavior
+- Review revision: close validation-snapshot, malformed-CSV, and adapter type gaps
 
 ## Context
 
-Policy Pack validation and Policy Pack loading currently use separate paths.
-`validate_policy_pack()` detects invalid decisions, risk levels, booleans, schemas,
-and duplicate intent IDs, while `load_policy_pack()` parses rows directly without
-calling that validator. CLI, API, and MCP enforcement load packs directly, so an
-operator can execute an invalid pack without first validating it.
+Before the first implementation pass, Policy Pack validation and loading used
+separate paths. `validate_policy_pack()` detected invalid decisions, risk levels,
+booleans, schemas, and duplicate intent IDs, while `load_policy_pack()` parsed rows
+directly without calling that validator. CLI, API, and MCP enforcement loaded packs
+directly, so an operator could execute an invalid pack without first validating it.
 
 Inline manifests have a related fail-open boundary. Unknown decisions fall through
 to `allow`, a string `allowed_roles` value is treated as a membership container,
 and non-object intent entries raise runtime exceptions. These behaviors conflict
 with the documented deterministic guardrail model.
+
+Implementation review found four remaining boundary gaps after the first pass:
+
+- `load_policy_pack()` validated files and then reopened them, allowing the loaded
+  authorization data to differ from the validated snapshot;
+- an array or object `decision` raised `TypeError` during set membership;
+- CSV rows with fields beyond the header caused `AttributeError` inside validation;
+- API and MCP rejected a top-level non-object manifest before core fail-closed
+  validation could return deterministic blocked evidence.
 
 ## Goals
 
@@ -27,6 +37,7 @@ with the documented deterministic guardrail model.
 3. Make Policy Pack loading enforce the same validation already exposed to users.
 4. Return deterministic errors instead of tracebacks or HTTP 500 responses.
 5. Cover Python, CLI, API, and MCP behavior with regression tests.
+6. Build a loaded Policy Pack only from the exact parsed objects that passed validation.
 
 ## Non-Goals
 
@@ -60,6 +71,9 @@ Unknown fields remain ignored for backward compatibility. An omitted `decision`
 continues to mean the historical default path: `review` when approval is required,
 otherwise `allow`.
 
+Decision validation must check the value type before enum membership so arbitrary
+JSON values, including arrays and objects, produce a finding instead of an exception.
+
 `enforce_intent_manifest()` validates the complete manifest before matching an
 intent. Any finding returns:
 
@@ -72,14 +86,19 @@ intent. Any finding returns:
 }
 ```
 
-The function must not raise for malformed caller data.
+The function must not raise for malformed JSON-compatible caller data.
 
 ### 2. Strict Policy Pack Loading
 
-`load_policy_pack()` will call `validate_policy_pack()` before reading runtime
-metadata and intents. A failed report raises `ValueError` with a stable
-`invalid policy pack:` prefix and the report's validation errors. Valid pack return
-types and manifest output remain unchanged.
+Policy Pack inspection reads and parses each source file once. The public
+`validate_policy_pack()` report and `load_policy_pack()` both use the same internal
+inspection result; the loader constructs `PolicyPack` directly from the metadata
+and intents in that validated snapshot. It must not reopen the files after a pass.
+
+A failed inspection raises `ValueError` from `load_policy_pack()` with a stable
+`invalid policy pack:` prefix and the report's validation errors. CSV rows with
+values beyond the declared header are validation failures, not parser exceptions.
+Valid pack return types and manifest output remain unchanged.
 
 This closes the gap for invalid decisions, risk levels, boolean fields, schemas,
 missing columns, malformed JSON, and duplicate intent IDs without duplicating rules.
@@ -91,9 +110,10 @@ missing columns, malformed JSON, and duplicate intent IDs without duplicating ru
   and do not print a traceback.
 - API policy-path enforcement: return HTTP 400 with the stable validation message.
 - MCP policy-path enforcement: return JSON-RPC `-32602` with the stable validation message.
-- Inline API/MCP enforcement: return the deterministic blocked
-  `invalid_manifest` result because malformed policy evidence is a guardrail
-  decision, not a transport failure.
+- Inline API/MCP enforcement: accept any JSON manifest value at the transport model
+  boundary and return the deterministic blocked `invalid_manifest` result for
+  invalid values because malformed policy evidence is a guardrail decision, not a
+  transport failure. The exactly-one-of manifest/policy-path rule remains unchanged.
 
 ### 4. Documentation
 
@@ -106,6 +126,9 @@ compatibility, and remaining risks.
 
 - Validation collects all deterministic manifest findings in input order.
 - Invalid manifest content never reaches `_find_intent()`.
+- Non-string decisions never reach set membership or decision evaluation.
+- Policy Pack loading never reparses a successfully inspected file snapshot.
+- Structurally malformed CSV is reported through the same stable invalid-pack path.
 - Policy Pack parse and validation details may identify filenames, rows, and fields,
   but must not include secrets or a Python traceback.
 - Valid unknown intent IDs keep the existing `block` / `unknown` response.
@@ -123,6 +146,10 @@ compatibility, and remaining risks.
 8. API invalid-pack enforcement returns HTTP 400.
 9. MCP invalid-pack enforcement returns `-32602`.
 10. API and MCP malformed inline manifests return blocked `invalid_manifest` evidence.
+11. A Policy Pack changed after inspection cannot replace the validated runtime snapshot.
+12. Non-string decisions return blocked findings without exceptions.
+13. CSV rows with extra columns fail validation and loading without tracebacks.
+14. API and MCP top-level array manifests return blocked `invalid_manifest` evidence.
 
 Each behavior starts with a focused failing regression test. After focused tests,
 run the full test suite, Ruff, mypy, privacy scan, MCP smoke, package build, Twine,
@@ -130,8 +157,12 @@ artifact audit, clean-wheel smoke, and demo verification.
 
 ## Acceptance Criteria
 
-- No malformed manifest or invalid Policy Pack can produce `allow` or `review`.
+- No manifest that violates the listed validation rules, and no invalid Policy Pack,
+  can produce `allow` or `review`.
 - No malformed intent entry can raise through Python, API, or MCP boundaries.
+- Loader output is constructed from the same parsed metadata and intents that passed
+  validation, with no post-validation file read.
+- Malformed CSV structure is a deterministic validation error at every entry point.
 - Valid existing intent tests remain unchanged and pass.
 - All four enforcement entry types have regression coverage.
 - Public command names, routes, MCP tool names, and valid response behavior remain stable.
