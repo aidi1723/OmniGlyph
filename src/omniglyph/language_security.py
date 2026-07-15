@@ -10,6 +10,7 @@ LANGUAGE_SECURITY_SCHEMA = "omniglyph.language_security:0.1"
 INTENT_SANDBOX_SCHEMA = "omniglyph.intent_sandbox:0.1"
 PROMPT_SECURITY_SOURCE_ID = "source:omniglyph:prompt-injection-pack:0.1"
 DLP_SOURCE_ID = "source:omniglyph:dlp-pack:0.1"
+ALLOWED_INTENT_DECISIONS = {"allow", "review", "block"}
 
 PROMPT_INJECTION_PATTERNS = [
     re.compile(r"\bignore\s+(all\s+)?(previous|prior|above)\s+instructions?\b", re.IGNORECASE),
@@ -63,12 +64,25 @@ def scan_output_dlp(text: str, secret_terms: list[str] | None = None, source_nam
 
 def enforce_intent_manifest(
     intent_id: str,
-    manifest: dict[str, Any],
+    manifest: object,
     actor_role: str | None = None,
     parameters: dict[str, Any] | None = None,
 ) -> dict:
+    manifest_findings = validate_intent_manifest(manifest)
+    policy = manifest.get("policy") if isinstance(manifest, dict) and isinstance(manifest.get("policy"), dict) else None
+    if manifest_findings:
+        return _intent_result(
+            intent_id,
+            "block",
+            "invalid_manifest",
+            None,
+            ["Intent manifest is invalid and cannot authorize actions."],
+            parameters,
+            policy,
+            manifest_findings=manifest_findings,
+        )
+    assert isinstance(manifest, dict)
     intent = _find_intent(intent_id, manifest)
-    policy = manifest.get("policy")
     if intent is None:
         return _intent_result(
             intent_id,
@@ -120,6 +134,83 @@ def enforce_intent_manifest(
         decision = "review"
         limits.append("Intent requires approval before execution.")
     return _intent_result(intent_id, decision, "matched", intent, limits, parameters, policy)
+
+
+def validate_intent_manifest(manifest: object) -> list[dict[str, str]]:
+    if not isinstance(manifest, dict):
+        return [_manifest_finding("$", "type", "Intent manifest must be an object.")]
+
+    findings = []
+    policy = manifest.get("policy")
+    if "policy" in manifest and not isinstance(policy, dict):
+        findings.append(_manifest_finding("$.policy", "type", "Policy metadata must be an object."))
+
+    intents = manifest.get("intents")
+    if not isinstance(intents, list):
+        findings.append(_manifest_finding("$.intents", "type", "Intents must be a list."))
+        return findings
+
+    seen_intents: set[str] = set()
+    for index, intent in enumerate(intents):
+        path = f"$.intents[{index}]"
+        if not isinstance(intent, dict):
+            findings.append(_manifest_finding(path, "type", "Intent must be an object."))
+            continue
+
+        intent_id = intent.get("intent_id")
+        if not isinstance(intent_id, str) or not intent_id.strip():
+            findings.append(_manifest_finding(f"{path}.intent_id", "required", "Intent ID must be a non-empty string."))
+        elif intent_id in seen_intents:
+            findings.append(_manifest_finding(f"{path}.intent_id", "unique", "Intent ID must be unique."))
+        else:
+            seen_intents.add(intent_id)
+
+        if "decision" in intent and intent.get("decision") not in ALLOWED_INTENT_DECISIONS:
+            findings.append(
+                _manifest_finding(
+                    f"{path}.decision",
+                    "enum",
+                    "Decision must be one of allow, block, review.",
+                )
+            )
+
+        if "requires_approval" in intent and not isinstance(intent.get("requires_approval"), bool):
+            findings.append(
+                _manifest_finding(
+                    f"{path}.requires_approval",
+                    "type",
+                    "requires_approval must be a boolean.",
+                )
+            )
+
+        allowed_roles = intent.get("allowed_roles")
+        if "allowed_roles" in intent:
+            if not isinstance(allowed_roles, list):
+                findings.append(_manifest_finding(f"{path}.allowed_roles", "type", "allowed_roles must be a list."))
+            else:
+                for role_index, role in enumerate(allowed_roles):
+                    if not isinstance(role, str) or not role.strip():
+                        findings.append(
+                            _manifest_finding(
+                                f"{path}.allowed_roles[{role_index}]",
+                                "type",
+                                "Role must be a non-empty string.",
+                            )
+                        )
+
+        if "parameters_schema" in intent and not isinstance(intent.get("parameters_schema"), dict):
+            findings.append(
+                _manifest_finding(
+                    f"{path}.parameters_schema",
+                    "type",
+                    "parameters_schema must be an object.",
+                )
+            )
+    return findings
+
+
+def _manifest_finding(path: str, rule: str, message: str) -> dict[str, str]:
+    return {"path": path, "rule": rule, "message": message}
 
 
 def _prompt_findings(text: str, source_name: str) -> list[dict]:
@@ -235,6 +326,7 @@ def _intent_result(
     parameters: dict[str, Any] | None,
     policy: dict[str, Any] | None = None,
     parameter_findings: list[dict[str, str]] | None = None,
+    manifest_findings: list[dict[str, str]] | None = None,
 ) -> dict:
     result: dict[str, Any] = {
         "schema": INTENT_SANDBOX_SCHEMA,
@@ -250,4 +342,6 @@ def _intent_result(
         result["policy"] = policy
     if parameter_findings:
         result["parameter_findings"] = parameter_findings
+    if manifest_findings:
+        result["manifest_findings"] = manifest_findings
     return result

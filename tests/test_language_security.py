@@ -201,6 +201,31 @@ def test_enforce_intent_manifest_allows_valid_parameters():
     assert "parameter_findings" not in result
 
 
+@pytest.mark.parametrize(
+    ("manifest", "expected_path"),
+    [
+        ([], "$"),
+        ({"policy": [], "intents": []}, "$.policy"),
+        ({"intents": "not-a-list"}, "$.intents"),
+        ({"intents": [1]}, "$.intents[0]"),
+        ({"intents": [{"intent_id": ""}]}, "$.intents[0].intent_id"),
+        ({"intents": [{"intent_id": "x"}, {"intent_id": "x"}]}, "$.intents[1].intent_id"),
+        ({"intents": [{"intent_id": "x", "decision": "sometimes"}]}, "$.intents[0].decision"),
+        ({"intents": [{"intent_id": "x", "requires_approval": "true"}]}, "$.intents[0].requires_approval"),
+        ({"intents": [{"intent_id": "x", "allowed_roles": "admin"}]}, "$.intents[0].allowed_roles"),
+        ({"intents": [{"intent_id": "x", "allowed_roles": ["admin", ""]}]}, "$.intents[0].allowed_roles[1]"),
+        ({"intents": [{"intent_id": "x", "parameters_schema": []}]}, "$.intents[0].parameters_schema"),
+    ],
+)
+def test_enforce_intent_manifest_blocks_invalid_manifests(manifest, expected_path):
+    result = enforce_intent_manifest("x", manifest, actor_role="admin")
+
+    assert result["decision"] == "block"
+    assert result["status"] == "invalid_manifest"
+    assert result["limits"] == ["Intent manifest is invalid and cannot authorize actions."]
+    assert expected_path in {finding["path"] for finding in result["manifest_findings"]}
+
+
 def test_language_security_api_exposes_input_output_and_intent_endpoints(tmp_path):
     repository = GlyphRepository(tmp_path / "test.sqlite3")
     client = TestClient(create_app(repository))
