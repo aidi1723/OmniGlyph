@@ -342,6 +342,26 @@ def test_language_security_enforce_intent_can_load_policy_pack_path(tmp_path):
     assert payload["policy"]["policy_id"] == "company.acme.agent_policy"
 
 
+def test_language_security_enforce_intent_rejects_invalid_parameter_schema_pack(tmp_path):
+    pack_dir = tmp_path / "policy"
+    write_api_policy_pack(pack_dir)
+    intents_path = pack_dir / "intents.csv"
+    text = intents_path.read_text(encoding="utf-8")
+    intents_path.write_text(
+        text.replace('""required"":[""service""]', '""required"":""service""'),
+        encoding="utf-8",
+    )
+    client = TestClient(create_app(GlyphRepository(tmp_path / "test.sqlite3")))
+
+    response = client.post(
+        "/api/v1/language-security/enforce-intent",
+        json={"intent_id": "network.restart", "policy_pack_path": str(pack_dir)},
+    )
+
+    assert response.status_code == 400
+    assert "parameters_schema.required" in response.json()["detail"]
+
+
 def test_language_security_enforce_intent_blocks_invalid_policy_pack_parameters(tmp_path):
     pack_dir = tmp_path / "policy"
     write_api_policy_pack(pack_dir)

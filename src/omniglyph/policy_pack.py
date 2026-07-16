@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from omniglyph.parameter_schema import validate_parameter_schema
+
 POLICY_PACK_SCHEMA = "omniglyph.policy_pack:0.1"
 POLICY_FILENAME = "policy.json"
 INTENTS_FILENAME = "intents.csv"
@@ -224,6 +226,13 @@ def _validate_intent_row(row: dict[str, str | None], row_number: int) -> tuple[d
     parameters_schema = _parse_json_object(row.get("parameters_schema") or "{}")
     if parameters_schema is None:
         errors.append(f"{INTENTS_FILENAME} row {row_number}: parameters_schema must be a JSON object")
+    else:
+        for finding in validate_parameter_schema(parameters_schema):
+            schema_path = finding["path"][1:]
+            errors.append(
+                f"{INTENTS_FILENAME} row {row_number}: "
+                f"parameters_schema{schema_path}: {finding['message']}"
+            )
     if errors:
         return {}, errors
     assert parameters_schema is not None

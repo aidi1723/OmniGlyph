@@ -265,6 +265,59 @@ def test_cli_enforce_policy_pack_reports_invalid_parameters(tmp_path):
     assert payload["status"] == "invalid_parameters"
 
 
+def test_policy_pack_rejects_invalid_parameter_schema_keywords(tmp_path):
+    pack_dir = tmp_path / "policy"
+    write_policy_pack(pack_dir)
+    intents_path = pack_dir / "intents.csv"
+    text = intents_path.read_text(encoding="utf-8")
+    intents_path.write_text(
+        text.replace('""required"":[""service""]', '""required"":""service""'),
+        encoding="utf-8",
+    )
+
+    report = validate_policy_pack(pack_dir)
+
+    assert report["status"] == "fail"
+    assert (
+        "intents.csv row 2: parameters_schema.required: required must be a list."
+        in report["errors"]
+    )
+    with pytest.raises(ValueError, match="invalid policy pack:.*parameters_schema.required"):
+        load_policy_pack(pack_dir)
+
+
+def test_cli_enforce_intent_rejects_invalid_parameter_schema(tmp_path):
+    pack_dir = tmp_path / "policy"
+    write_policy_pack(pack_dir)
+    intents_path = pack_dir / "intents.csv"
+    text = intents_path.read_text(encoding="utf-8")
+    intents_path.write_text(
+        text.replace('""required"":[""service""]', '""required"":""service""'),
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "omniglyph.cli",
+            "enforce-intent",
+            "network.restart",
+            "--policy-pack",
+            str(pack_dir),
+            "--actor-role",
+            "admin",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 2
+    assert "parameters_schema.required" in result.stderr
+    assert "Traceback" not in result.stderr
+
+
 def test_cli_enforce_intent_reports_invalid_pack_without_traceback(tmp_path):
     target = tmp_path / "cli-policy"
     write_policy_pack(target)

@@ -532,6 +532,38 @@ def test_handle_mcp_enforce_intent_blocks_invalid_policy_pack_parameters(tmp_pat
     assert payload["status"] == "invalid_parameters"
 
 
+def test_handle_mcp_enforce_intent_rejects_invalid_parameter_schema_pack(tmp_path):
+    pack_dir = tmp_path / "policy"
+    write_mcp_policy_pack(pack_dir)
+    intents_path = pack_dir / "intents.csv"
+    text = intents_path.read_text(encoding="utf-8")
+    intents_path.write_text(
+        text.replace('""required"":[""service""]', '""required"":""service""'),
+        encoding="utf-8",
+    )
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    repository.initialize()
+
+    response = handle_mcp_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 32,
+            "method": "tools/call",
+            "params": {
+                "name": "enforce_intent",
+                "arguments": {
+                    "intent_id": "network.restart",
+                    "policy_pack_path": str(pack_dir),
+                },
+            },
+        },
+        repository=repository,
+    )
+
+    assert response["error"]["code"] == -32602
+    assert "parameters_schema.required" in response["error"]["message"]
+
+
 def test_handle_mcp_enforce_intent_rejects_ambiguous_policy_sources(tmp_path):
     pack_dir = tmp_path / "policy"
     write_mcp_policy_pack(pack_dir)
