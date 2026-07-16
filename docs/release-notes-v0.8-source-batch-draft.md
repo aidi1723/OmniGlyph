@@ -82,6 +82,22 @@ Invalid parameters return a blocking policy result:
 
 Unsupported schema keywords are ignored. OmniGlyph does not execute expressions, mutate parameters, inject defaults, or coerce types.
 
+### Intent policy and parameter-schema fail-closed hardening (2026-07-16)
+
+Source-branch hardening after the original v0.8 batch:
+
+- Invalid inline manifests return `decision: "block"` / `status: "invalid_manifest"` with path-based findings instead of allowing or raising.
+- Policy Pack enforcement always validates before load, using one shared parsed snapshot (invalid packs → CLI exit `2`, API `400`, MCP `-32602`).
+- Documented `parameters_schema` keywords are meta-validated before value checks. Malformed keyword values fail closed at direct Python evaluation, inline manifest, and Policy Pack row boundaries.
+- Schema and value evaluation use iterative traversal so deep or cyclic definitions return findings rather than `RecursionError`.
+- Unknown keywords remain ignored at every nesting level.
+
+Evidence and handoff:
+
+- `docs/superpowers/reviews/2026-07-16-intent-policy-fail-closed-closeout.md`
+- `docs/superpowers/reviews/2026-07-16-parameter-schema-fail-closed-closeout.md`
+- Latest local release gate observed on the hardening branch: `263 passed`
+
 ### Output guardrail policy modes
 
 v0.8.2 adds policy modes to `enforce_grounded_output` so host systems can choose how to handle:
@@ -171,7 +187,7 @@ Host applications are expected to treat OmniGlyph output as deterministic eviden
 
 ## Verification
 
-Final closeout verification:
+Historical source-batch / online readiness verification (merged `main` baseline):
 
 - Python tests: `189 passed`
 - Ruff: pass
@@ -183,10 +199,21 @@ Final closeout verification:
 - Clean wheel install with CLI/MCP smoke: pass
 - Cross-border demo check: pass
 
+Latest fail-closed hardening verification (feature branch `codex/parameter-schema-fail-closed`, 2026-07-16):
+
+- Python tests: `263 passed`
+- Ruff: pass
+- mypy: pass
+- MCP smoke: 17 tools available
+- Package build: `omniglyph-0.8.0b0.tar.gz` and `omniglyph-0.8.0b0-py3-none-any.whl`
+- Twine / artifact audit / wheel smoke / demo: pass
+- Tracked-file privacy scan: pass (no local path / PII patterns in published tree)
+
 ## Release Notes for Maintainers
 
 - Package version is now prepared as `0.8.0b0`.
 - GitHub source, closeout documentation, and the 2026-07-07 online readiness hardening commit `831ab902071448b843617e8b03fdf24e32966775` are merged into `main`.
+- Intent-policy and parameter-schema fail-closed hardening ship on feature branch `codex/parameter-schema-fail-closed` until explicitly merged.
 - TestPyPI, PyPI, and MCP Registry publication remain paused until explicit operator approval.
 - Before publishing, rebuild artifacts after a clean `scripts/release_check.sh` run.
 - Publish to TestPyPI first using exact artifact filenames.

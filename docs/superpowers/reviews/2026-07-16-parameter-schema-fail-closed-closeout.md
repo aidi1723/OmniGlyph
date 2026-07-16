@@ -143,6 +143,26 @@ contain absolute paths and are not published.
 递归风险以失败测试先行后修复。Safe-Agent router 若将 hardening 误分类为
 website/UI 工作流，应忽略；本仓库无 Web UI 发布路径。
 
-**本阶段仅在本地分支 `codex/parameter-schema-fail-closed` 完成。**
-未 push、未 merge main、未打 tag、未发布 TestPyPI/PyPI/MCP Registry，也未部署
-或修改外部系统。
+### 文档对齐（收尾补充）
+
+与本阶段实现一致的用户/维护文档已同步：
+
+- `docs/specs/policy-pack-standard.md` / `docs/architecture/language-security-gateway.md`
+  （实现期已更新）
+- `docs/product/project-status.md`（链接本 closeout）
+- `docs/product/v0.8-maintenance-log.md`
+- `docs/product/v0.8-closeout.md`（标注 post source-batch hardening）
+- `docs/release-notes-v0.8-source-batch-draft.md`
+- `CHANGELOG.md`（`Unreleased` fail-closed 条目）
+
+### GitHub 发布边界
+
+- **推送范围**：feature 分支 `codex/parameter-schema-fail-closed` →
+  `origin`（`https://github.com/aidi1723/OmniGlyph.git`）。
+- **不在本阶段执行**：merge 到 `main`、force-push、打 tag、TestPyPI/PyPI/
+  MCP Registry 上传、部署或修改外部系统。
+- **隐私门禁**：推送前对 `git ls-files` 跟踪树扫描本地绝对路径、本机主机名、
+  个人邮箱与其它私有工作区路径模式；缓存目录（`.venv`、`.ruff_cache`、
+  `.uv-cache` 等）不纳入发布树。
+- **公开可接受标识**：GitHub 账号 `aidi1723`、项目公开名「万象文枢」/
+  OmniGlyph 属于仓库既有公开标识，不作为隐私命中。

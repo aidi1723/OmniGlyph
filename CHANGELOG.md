@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Security / Fail-closed hardening (2026-07-16)
+
+- Fail closed on invalid inline intent manifests: return `decision=block` / `status=invalid_manifest` with path-based findings instead of allowing or raising.
+- Validate Policy Packs on the enforcement load path using one shared parsed snapshot so invalid packs cannot authorize actions (CLI exit `2`, API HTTP `400`, MCP `-32602`).
+- Meta-validate documented `parameters_schema` keywords before parameter value checks; malformed keyword values fail closed across direct Python evaluation, inline manifests, and Policy Pack rows.
+- Evaluate nested parameter schemas and values iteratively so deep or cyclic definitions return findings instead of `RecursionError`.
+- Document the fail-closed behavior in `docs/specs/policy-pack-standard.md` and `docs/architecture/language-security-gateway.md`; closeout reports under `docs/superpowers/reviews/`.
+
 ## 0.8.0-beta - 2026-07-05
 
 ### Improvements

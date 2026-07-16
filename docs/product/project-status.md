@@ -80,7 +80,7 @@ OmniGlyph is not yet ideal for:
 
 - Community adoption is still early.
 - Current output guardrail supports known/unknown validation, policy modes, and review evidence for checked terms, but not persistent queues, automatic rewrites, or external approval integrations.
-- Current Language Security Gateway is a deterministic checkpoint layer, not a complete prompt-injection, DLP, IAM, or OS sandboxing product.
+- Current Language Security Gateway is a deterministic checkpoint layer, not a complete prompt-injection, DLP, IAM, or OS sandboxing product. Intent Policy Packs and `parameters_schema` fail closed on invalid policy definitions, but still use a documented lightweight schema subset rather than full JSON Schema.
 - Homoglyph detection is rule-based with a minimal confusables map; full Unicode confusables data ingestion is planned.
 - OmniGlyph Explanation Standard v0.1 has runtime wrappers for glyph, term, and code-security explanations; broader CLDR and concept graph integrations are still planned.
 - No automatic source-code mutation or rewrite is performed.

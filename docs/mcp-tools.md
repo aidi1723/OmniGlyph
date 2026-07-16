@@ -366,6 +366,8 @@ Returns an intent sandbox decision:
 
 OmniGlyph validates exactly one policy source, either `manifest` or `policy_pack_path`, and returns evidence. It does not execute shell commands, call APIs, or route tasks.
 
+Invalid Policy Packs fail closed as JSON-RPC `-32602` (`invalid policy pack: ...`). Invalid inline manifests return a normal tool result with `decision: "block"`, `status: "invalid_manifest"`, and path-based `manifest_findings` (including malformed documented `parameters_schema` keywords).
+
 If `parameters` do not match `parameters_schema`, the tool returns a normal JSON payload with `decision: "block"` and `status: "invalid_parameters"` plus `parameter_findings`.
 
 ## Tool: `audit_explain`

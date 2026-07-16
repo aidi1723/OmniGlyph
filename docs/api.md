@@ -335,6 +335,8 @@ Response excerpt:
 
 Requests must provide exactly one of `manifest` or `policy_pack_path`. OmniGlyph returns policy evidence only; it does not execute commands or call tools.
 
+Invalid Policy Packs fail closed with HTTP `400` (`invalid policy pack: ...`). Invalid inline manifests return HTTP `200` with `decision: "block"`, `status: "invalid_manifest"`, and path-based `manifest_findings` (including malformed documented `parameters_schema` keywords).
+
 If `parameters` do not match the intent `parameters_schema`, the endpoint still returns HTTP `200` with a blocking policy result:
 
 ```json

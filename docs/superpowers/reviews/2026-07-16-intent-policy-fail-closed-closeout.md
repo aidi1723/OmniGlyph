@@ -154,5 +154,8 @@ Safe-Agent router 将本阶段误分类为 `website-build-launch`。本项目没
 `systematic-debugging`，设计与实施使用 `brainstorming`、`writing-plans`、
 `executing-plans`、`test-driven-development` 和 `verification-before-completion`。
 
-本阶段仅在本地 `codex/intent-fail-closed` 分支完成。未推送、未合并、未创建标签、
-未发布 TestPyPI/PyPI/MCP Registry，也未部署或修改任何外部系统。
+本阶段最初在本地 `codex/intent-fail-closed` 分支完成。后续已并入
+`codex/parameter-schema-fail-closed` 继续第三阶段（parameter-schema fail-closed）。
+GitHub 发布以 feature 分支推送为界：不 merge `main`、不打 tag、不发布
+TestPyPI/PyPI/MCP Registry，也不部署或修改外部系统。隐私扫描与发布边界见
+`docs/superpowers/reviews/2026-07-16-parameter-schema-fail-closed-closeout.md`。
