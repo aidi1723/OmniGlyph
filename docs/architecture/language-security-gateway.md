@@ -79,14 +79,21 @@ agent_intents/
   intents.csv
 ```
 
-Policy Packs can be inspected with `validate-policy-pack`, API `POST /api/v1/policy/validate-pack`, or MCP `validate_policy_pack`. Runtime `enforce_intent` also validates a Policy Pack automatically before loading it, so skipping the separate inspection step cannot bypass invalid rows or duplicate intent IDs. Validation and loading share one parsed snapshot, and CSV values beyond the declared header are rejected. Invalid packs fail as CLI exit `2`, API HTTP `400`, or MCP JSON-RPC `-32602`.
+Policy Packs can be inspected with `validate-policy-pack`, API `POST /api/v1/policy/validate-pack`, or MCP `validate_policy_pack`. Runtime `enforce_intent` also validates a Policy Pack automatically before loading it, so skipping the separate inspection step cannot bypass invalid rows, duplicate intent IDs, or malformed `parameters_schema` keywords. Validation and loading share one parsed snapshot, and CSV values beyond the declared header are rejected. Invalid packs fail as CLI exit `2`, API HTTP `400`, or MCP JSON-RPC `-32602`.
 
 Inline manifests remain supported for compatibility and are validated at the core
 enforcement boundary. Invalid structures, decisions, approval flags, role lists,
-parameter schema containers, or duplicate IDs return deterministic
-`decision: "block"` / `status: "invalid_manifest"` evidence instead of raising or
-falling through to allow. API and MCP route every JSON manifest value, including
-top-level non-object values and an explicit `null`, through this core boundary.
+parameter schema containers, malformed supported parameter-schema keywords, or
+duplicate IDs return deterministic `decision: "block"` /
+`status: "invalid_manifest"` evidence instead of raising or falling through to
+allow. API and MCP route every JSON manifest value, including top-level non-object
+values and an explicit `null`, through this core boundary.
+
+Parameter-schema meta-validation is shared across direct Python evaluation, inline
+manifests, and Policy Packs. Documented keywords are checked recursively with
+stable finding paths; unknown keywords stay ignored. Schema meta-validation and
+runtime value evaluation both traverse nested structures iteratively so deep or
+cyclic inputs fail closed with findings rather than exceptions.
 
 When `OMNIGLYPH_POLICY_PACK_ROOT` is configured, API and MCP reject Policy Pack paths outside that directory.
 

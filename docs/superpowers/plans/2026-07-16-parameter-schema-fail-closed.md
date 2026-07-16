@@ -31,7 +31,7 @@
 - Modify: `src/omniglyph/parameter_schema.py`
 - Test: `tests/test_parameter_schema.py`
 
-- [ ] **Step 1: Add failing meta-schema tests**
+- [x] **Step 1: Add failing meta-schema tests**
 
 Add imports for `validate_parameter_schema` and `pytest`, then add sixteen malformed
 cases. The expected path proves recursive errors identify the schema definition,
@@ -93,13 +93,13 @@ def test_validate_parameters_fails_closed_on_invalid_schema():
     ]
 ```
 
-- [ ] **Step 2: Run focused tests and verify expected failures**
+- [x] **Step 2: Run focused tests and verify expected failures**
 
 Run: `.venv/bin/python -m pytest tests/test_parameter_schema.py -k 'parameter_schema or invalid_schema' -v`
 
 Expected: collection fails because `validate_parameter_schema` does not exist.
 
-- [ ] **Step 3: Implement the recursive validator and defensive evaluator**
+- [x] **Step 3: Implement the recursive validator and defensive evaluator**
 
 Add `math`, the allowed type set, helper predicates, and the validator. Process
 keywords in the fixed order shown here and ignore every unknown key.
@@ -199,7 +199,7 @@ def validate_parameters(parameters: object, schema: object) -> list[Finding]:
     return _validate_value(parameters, schema, "$")
 ```
 
-- [ ] **Step 4: Run parameter-schema tests and static checks**
+- [x] **Step 4: Run parameter-schema tests and static checks**
 
 Run: `.venv/bin/python -m pytest tests/test_parameter_schema.py -v`
 
@@ -207,7 +207,7 @@ Run: `.venv/bin/python -m ruff check src/omniglyph/parameter_schema.py tests/tes
 
 Expected: 25 parameter-schema tests pass; Ruff and mypy report no errors.
 
-- [ ] **Step 5: Commit the meta-validator**
+- [x] **Step 5: Commit the meta-validator**
 
 ```bash
 git add src/omniglyph/parameter_schema.py tests/test_parameter_schema.py
@@ -222,7 +222,7 @@ git commit -m "fix: validate parameter schema definitions"
 - Test: `tests/test_api.py`
 - Test: `tests/test_mcp.py`
 
-- [ ] **Step 1: Add failing inline regressions**
+- [x] **Step 1: Add failing inline regressions**
 
 Extend the core invalid-manifest matrix with a malformed nested schema:
 
@@ -281,14 +281,14 @@ def test_handle_mcp_enforce_intent_blocks_invalid_inline_parameter_schema(tmp_pa
     assert payload["status"] == "invalid_manifest"
 ```
 
-- [ ] **Step 2: Run focused tests and verify fail-open behavior**
+- [x] **Step 2: Run focused tests and verify fail-open behavior**
 
 Run: `.venv/bin/python -m pytest tests/test_language_security.py tests/test_api.py tests/test_mcp.py -k 'invalid_manifests or invalid_inline_parameter_schema' -v`
 
 Expected: the new core, API, and MCP cases return `allow / matched` or omit the
 expected schema finding.
 
-- [ ] **Step 3: Integrate the meta-validator with manifest validation**
+- [x] **Step 3: Integrate the meta-validator with manifest validation**
 
 Import `validate_parameter_schema`. Preserve the existing non-object message, and
 extend findings only when the container is an object.
@@ -313,7 +313,7 @@ if "parameters_schema" in intent:
         )
 ```
 
-- [ ] **Step 4: Run core and adapter suites plus static checks**
+- [x] **Step 4: Run core and adapter suites plus static checks**
 
 Run: `.venv/bin/python -m pytest tests/test_language_security.py tests/test_api.py tests/test_mcp.py -v`
 
@@ -322,7 +322,7 @@ Run: `.venv/bin/python -m ruff check src/omniglyph/language_security.py tests/te
 Expected: all commands pass and malformed inline schemas return
 `block / invalid_manifest`.
 
-- [ ] **Step 5: Commit inline schema enforcement**
+- [x] **Step 5: Commit inline schema enforcement**
 
 ```bash
 git add src/omniglyph/language_security.py tests/test_language_security.py tests/test_api.py tests/test_mcp.py
@@ -337,7 +337,7 @@ git commit -m "fix: reject invalid inline parameter schemas"
 - Test: `tests/test_api.py`
 - Test: `tests/test_mcp.py`
 
-- [ ] **Step 1: Add failing Policy Pack and adapter regressions**
+- [x] **Step 1: Add failing Policy Pack and adapter regressions**
 
 For each existing pack helper, replace the valid required list in the first row
 with a malformed required string:
@@ -461,14 +461,14 @@ def test_handle_mcp_enforce_intent_rejects_invalid_parameter_schema_pack(tmp_pat
     assert "parameters_schema.required" in response["error"]["message"]
 ```
 
-- [ ] **Step 2: Run focused tests and verify invalid packs pass or execute**
+- [x] **Step 2: Run focused tests and verify invalid packs pass or execute**
 
 Run: `.venv/bin/python -m pytest tests/test_policy_pack.py tests/test_api.py tests/test_mcp.py -k invalid_parameter_schema -v`
 
 Expected: validation reports `pass`, the loader succeeds, CLI exits `0`, API returns
 `200`, and MCP returns a normal tool result.
 
-- [ ] **Step 3: Integrate schema findings into Policy Pack row errors**
+- [x] **Step 3: Integrate schema findings into Policy Pack row errors**
 
 Import `validate_parameter_schema` and append each path-based finding after JSON
 object parsing:
@@ -492,7 +492,7 @@ else:
 Keep the existing `if errors: return {}, errors` branch after schema findings so no
 invalid row reaches `_intent_payload()`.
 
-- [ ] **Step 4: Run Policy Pack and adapter suites plus static checks**
+- [x] **Step 4: Run Policy Pack and adapter suites plus static checks**
 
 Run: `.venv/bin/python -m pytest tests/test_policy_pack.py tests/test_api.py tests/test_mcp.py -v`
 
@@ -501,7 +501,7 @@ Run: `.venv/bin/python -m ruff check src/omniglyph/policy_pack.py tests/test_pol
 Expected: all commands pass; malformed schemas use CLI `2`, API `400`, and MCP
 `-32602` without tracebacks or internal errors.
 
-- [ ] **Step 5: Commit Policy Pack schema enforcement**
+- [x] **Step 5: Commit Policy Pack schema enforcement**
 
 ```bash
 git add src/omniglyph/policy_pack.py tests/test_policy_pack.py tests/test_api.py tests/test_mcp.py
@@ -516,19 +516,19 @@ git commit -m "fix: reject invalid policy pack parameter schemas"
 - Modify: `docs/product/project-status.md`
 - Create: `docs/superpowers/reviews/2026-07-16-parameter-schema-fail-closed-closeout.md`
 
-- [ ] **Step 1: Update runtime documentation**
+- [x] **Step 1: Update runtime documentation**
 
 Document the supported-keyword meta-validation rules, stable schema finding paths,
 unknown-keyword compatibility, direct Python defense, and unchanged CLI/API/MCP
 error semantics.
 
-- [ ] **Step 2: Request independent code review**
+- [x] **Step 2: Request independent code review**
 
 Review the implementation from this plan's base commit through the current head
 against `docs/superpowers/specs/2026-07-16-parameter-schema-fail-closed-design.md`.
 Fix every Critical or Important finding with a focused failing test before closeout.
 
-- [ ] **Step 3: Run the complete release gate and privacy scan**
+- [x] **Step 3: Run the complete release gate and privacy scan**
 
 Run: `PATH=.venv/bin:$PATH bash scripts/release_check.sh`
 
@@ -537,13 +537,13 @@ Run: `bash scripts/privacy-scan.sh`
 Expected: at least 254 tests, Ruff, mypy, diff check, seventeen-tool MCP smoke, build, Twine,
 artifact audit, clean-wheel smoke, demo, and privacy scan all pass.
 
-- [ ] **Step 4: Write and link the closeout report**
+- [x] **Step 4: Write and link the closeout report**
 
 Record reproductions, root cause, changes, commits, test coverage, exact verification
 output, compatibility, remaining risks, Safe-Agent router misclassification, and the
 local publication boundary. Link it from `docs/product/project-status.md`.
 
-- [ ] **Step 5: Run final document and branch checks**
+- [x] **Step 5: Run final document and branch checks**
 
 Run: `rg -n 'T[B]D|T[O]DO|F[I]XME|P[L]ACEHOLDER|待[定]' docs/superpowers/reviews/2026-07-16-parameter-schema-fail-closed-closeout.md`
 
@@ -552,7 +552,7 @@ Run: `git diff --check && git status --short`
 Expected: no placeholder or whitespace findings; only intended closeout documents
 remain.
 
-- [ ] **Step 6: Commit the third-stage closeout**
+- [x] **Step 6: Commit the third-stage closeout**
 
 ```bash
 git add docs/specs/policy-pack-standard.md docs/architecture/language-security-gateway.md docs/product/project-status.md docs/superpowers/plans/2026-07-16-parameter-schema-fail-closed.md docs/superpowers/reviews/2026-07-16-parameter-schema-fail-closed-closeout.md
@@ -564,7 +564,7 @@ git commit -m "docs: close parameter schema fail-closed hardening"
 **Files:**
 - Verify only.
 
-- [ ] **Step 1: Run fresh tests and static checks**
+- [x] **Step 1: Run fresh tests and static checks**
 
 Run: `.venv/bin/python -m pytest -q`
 
@@ -572,13 +572,13 @@ Run: `.venv/bin/python -m ruff check . && .venv/bin/python -m mypy src`
 
 Expected: at least 254 tests pass; Ruff and mypy report no errors.
 
-- [ ] **Step 2: Inspect the branch diff and status**
+- [x] **Step 2: Inspect the branch diff and status**
 
 Run: `git diff codex/intent-fail-closed...HEAD --check && git diff codex/intent-fail-closed...HEAD --stat && git status --short`
 
 Expected: only the approved third-stage code, tests, specs, plan, and closeout differ
 from the completed second-stage branch; the working tree is clean.
 
-- [ ] **Step 3: Keep the branch local**
+- [x] **Step 3: Keep the branch local**
 
 Do not merge, push, tag, publish, or deploy without a separate user instruction.

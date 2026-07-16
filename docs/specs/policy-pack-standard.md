@@ -72,14 +72,38 @@ Supported `parameters_schema` keywords:
 
 Unsupported keywords such as `$ref`, `oneOf`, `anyOf`, `pattern`, and `format` are ignored in v0.8.1. OmniGlyph does not execute expressions, mutate parameters, inject defaults, or coerce types.
 
+Supported keyword values are meta-validated before any parameter value is checked.
+Malformed documented keywords fail closed with stable path-based findings rather
+than being skipped. Validity rules:
+
+- `type` must be a string and one of the six allowed values above.
+- `required` must be a list of non-empty (non-whitespace) strings.
+- `properties` must be an object whose keys are non-empty strings and whose values
+  are objects that are recursively validated.
+- `enum` must be a list (empty lists remain valid and match no runtime value).
+- `minLength` / `maxLength` must be non-negative integers (booleans rejected).
+- `minimum` / `maximum` must be finite numbers (booleans, NaN, and ±inf rejected).
+- `items` must be an object schema that is recursively validated.
+- Nested `properties` / `items` graphs must be acyclic.
+
+Unknown keywords remain ignored at every nesting level. OmniGlyph does not add
+cross-keyword semantic rules (for example requiring `type: object` when
+`properties` is present).
+
+Direct Python `validate_parameters()` also fails closed on invalid schemas and
+returns schema findings under paths rooted at `$.schema` before value evaluation.
+Both schema meta-validation and value evaluation use iterative traversal so deep
+or cyclic definitions return findings instead of raising.
+
 ## Runtime Behavior
 
 Policy Packs are converted into the same manifest shape used by `enforce_intent`.
 
 Enforcement validates a Policy Pack automatically before loading it. Invalid
-metadata, rows, decisions, risk levels, booleans, parameter schemas, or duplicate
-`intent_id` values cannot authorize an action. Callers do not need to run a
-separate validation command to obtain this fail-closed behavior.
+metadata, rows, decisions, risk levels, booleans, parameter schemas (including
+malformed supported keywords), or duplicate `intent_id` values cannot authorize
+an action. Callers do not need to run a separate validation command to obtain this
+fail-closed behavior.
 
 Validation and loading use the same parsed snapshot; the loader does not reopen a
 pack after validation. CSV values beyond the declared header are invalid instead
@@ -96,12 +120,19 @@ Decision precedence:
 
 OmniGlyph never executes commands. It returns deterministic evidence for a host app, MCP client, policy gateway, or human reviewer.
 
-Inline manifests are also validated before intent matching. Invalid structure or
-field types return `decision: "block"` with `status: "invalid_manifest"` and
-path-based `manifest_findings`. For compatibility, a valid inline intent may omit
-`decision`; the historical approval and default-allow precedence still applies.
-API and MCP pass every JSON manifest value, including a top-level array or scalar,
-and an explicit `null`, through this same core validation boundary.
+Inline manifests are also validated before intent matching. Invalid structure,
+field types, or malformed `parameters_schema` keywords return
+`decision: "block"` with `status: "invalid_manifest"` and path-based
+`manifest_findings` (for example
+`$.intents[0].parameters_schema.properties.service.type`). For compatibility, a
+valid inline intent may omit `decision`; the historical approval and
+default-allow precedence still applies. API and MCP pass every JSON manifest
+value, including a top-level array or scalar, and an explicit `null`, through
+this same core validation boundary.
+
+Policy Pack row errors for schema findings use the form
+`intents.csv row N: parameters_schema.<path>: <message>` and surface through the
+existing invalid-pack adapters (CLI exit `2`, API HTTP `400`, MCP `-32602`).
 
 Invalid parameter response excerpt:
 

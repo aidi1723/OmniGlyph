@@ -13,6 +13,7 @@ It is suitable for experimentation, local agent workflows, RAG preprocessing, co
 
 ## Current Closeout Reference
 
+- Latest parameter-schema fail-closed hardening closeout: [`docs/superpowers/reviews/2026-07-16-parameter-schema-fail-closed-closeout.md`](../superpowers/reviews/2026-07-16-parameter-schema-fail-closed-closeout.md).
 - Latest intent-policy fail-closed hardening closeout: [`docs/superpowers/reviews/2026-07-16-intent-policy-fail-closed-closeout.md`](../superpowers/reviews/2026-07-16-intent-policy-fail-closed-closeout.md).
 - Latest project-wide release-safety hardening and verification closeout: [`docs/superpowers/reviews/2026-07-16-project-release-safety-closeout.md`](../superpowers/reviews/2026-07-16-project-release-safety-closeout.md).
 - v0.8 source-batch closeout and key paths: [`docs/product/v0.8-closeout.md`](v0.8-closeout.md).
