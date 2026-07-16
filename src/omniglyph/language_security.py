@@ -4,7 +4,7 @@ from typing import Any
 
 from omniglyph.code_linter import scan_text
 from omniglyph.oes import risk_level_for_findings
-from omniglyph.parameter_schema import validate_parameters
+from omniglyph.parameter_schema import validate_parameter_schema, validate_parameters
 
 LANGUAGE_SECURITY_SCHEMA = "omniglyph.language_security:0.1"
 INTENT_SANDBOX_SCHEMA = "omniglyph.intent_sandbox:0.1"
@@ -201,14 +201,20 @@ def validate_intent_manifest(manifest: object) -> list[dict[str, str]]:
                             )
                         )
 
-        if "parameters_schema" in intent and not isinstance(intent.get("parameters_schema"), dict):
-            findings.append(
-                _manifest_finding(
-                    f"{path}.parameters_schema",
-                    "type",
-                    "parameters_schema must be an object.",
+        parameters_schema = intent.get("parameters_schema")
+        if "parameters_schema" in intent:
+            if not isinstance(parameters_schema, dict):
+                findings.append(
+                    _manifest_finding(
+                        f"{path}.parameters_schema",
+                        "type",
+                        "parameters_schema must be an object.",
+                    )
                 )
-            )
+            else:
+                findings.extend(
+                    validate_parameter_schema(parameters_schema, f"{path}.parameters_schema")
+                )
     return findings
 
 

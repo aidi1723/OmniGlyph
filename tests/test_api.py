@@ -413,6 +413,28 @@ def test_language_security_enforce_intent_blocks_invalid_inline_manifest(tmp_pat
     assert response.json()["status"] == "invalid_manifest"
 
 
+def test_language_security_enforce_intent_blocks_invalid_inline_parameter_schema(tmp_path):
+    client = TestClient(create_app(GlyphRepository(tmp_path / "test.sqlite3")))
+    manifest = {
+        "intents": [
+            {
+                "intent_id": "network.restart",
+                "decision": "allow",
+                "parameters_schema": {"required": "service"},
+            }
+        ]
+    }
+
+    response = client.post(
+        "/api/v1/language-security/enforce-intent",
+        json={"intent_id": "network.restart", "manifest": manifest, "parameters": {}},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["decision"] == "block"
+    assert response.json()["status"] == "invalid_manifest"
+
+
 def test_language_security_enforce_intent_blocks_non_object_inline_manifest(tmp_path):
     client = TestClient(create_app(GlyphRepository(tmp_path / "test.sqlite3")))
 

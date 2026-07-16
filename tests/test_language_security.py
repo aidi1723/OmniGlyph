@@ -217,6 +217,17 @@ def test_enforce_intent_manifest_allows_valid_parameters():
         ({"intents": [{"intent_id": "x", "allowed_roles": "admin"}]}, "$.intents[0].allowed_roles"),
         ({"intents": [{"intent_id": "x", "allowed_roles": ["admin", ""]}]}, "$.intents[0].allowed_roles[1]"),
         ({"intents": [{"intent_id": "x", "parameters_schema": []}]}, "$.intents[0].parameters_schema"),
+        (
+            {
+                "intents": [
+                    {
+                        "intent_id": "x",
+                        "parameters_schema": {"properties": {"service": {"type": "date"}}},
+                    }
+                ]
+            },
+            "$.intents[0].parameters_schema.properties.service.type",
+        ),
     ],
 )
 def test_enforce_intent_manifest_blocks_invalid_manifests(manifest, expected_path):
