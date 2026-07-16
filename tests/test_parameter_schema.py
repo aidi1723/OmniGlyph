@@ -152,6 +152,20 @@ def test_validate_parameter_schema_accepts_deep_acyclic_definition():
     assert validate_parameter_schema(schema) == []
 
 
+def test_validate_parameter_schema_allows_shared_child_schema_on_siblings():
+    shared = {"type": "string", "minLength": 1}
+    schema = {
+        "type": "object",
+        "properties": {
+            "left": shared,
+            "right": shared,
+            "tags": {"type": "array", "items": shared},
+        },
+    }
+
+    assert validate_parameter_schema(schema) == []
+
+
 def test_validate_parameter_schema_accepts_valid_nested_definition():
     schema = {
         "type": "object",
@@ -248,3 +262,52 @@ def test_validate_parameters_distinguishes_boolean_and_numeric_enum_values():
         {"path": "$.level", "rule": "enum", "message": "Value is not in the allowed enum."}
     ]
     assert validate_parameters({"level": 1.0}, schema) == []
+
+
+def _deep_object_schema(depth: int) -> dict:
+    schema: dict = {"type": "string"}
+    for _ in range(depth):
+        schema = {"type": "object", "properties": {"x": schema}}
+    return schema
+
+
+def _deep_object_value(depth: int, leaf: object) -> object:
+    value: object = leaf
+    for _ in range(depth):
+        value = {"x": value}
+    return value
+
+
+def test_validate_parameters_accepts_deep_nested_matching_values():
+    depth = 1500
+    schema = _deep_object_schema(depth)
+    parameters = _deep_object_value(depth, "ok")
+
+    assert validate_parameters(parameters, schema) == []
+
+
+def test_validate_parameters_reports_deep_nested_type_failures():
+    depth = 1500
+    schema = _deep_object_schema(depth)
+    parameters = _deep_object_value(depth, 1)
+
+    findings = validate_parameters(parameters, schema)
+
+    assert findings == [
+        {
+            "path": "$" + (".x" * depth),
+            "rule": "type",
+            "message": "Expected string.",
+        }
+    ]
+
+
+def test_validate_parameters_accepts_deep_array_item_chain():
+    schema: dict = {"type": "string"}
+    for _ in range(1500):
+        schema = {"type": "array", "items": schema}
+    parameters: object = "ok"
+    for _ in range(1500):
+        parameters = [parameters]
+
+    assert validate_parameters(parameters, schema) == []

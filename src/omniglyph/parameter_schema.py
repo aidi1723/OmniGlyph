@@ -133,38 +133,57 @@ def validate_parameters(parameters: object, schema: object) -> list[Finding]:
 
 def _validate_value(value: object, schema: dict[str, object], path: str) -> list[Finding]:
     findings: list[Finding] = []
-    expected_type = schema.get("type")
-    if isinstance(expected_type, str) and not _matches_type(value, expected_type):
-        return [_finding(path, "type", f"Expected {expected_type}.")]
+    stack: list[tuple[object, dict[str, object], str]] = [(value, schema, path)]
 
-    enum_values = schema.get("enum")
-    if isinstance(enum_values, list) and not any(_json_values_equal(value, candidate) for candidate in enum_values):
-        findings.append(_finding(path, "enum", "Value is not in the allowed enum."))
+    while stack:
+        current_value, current_schema, current_path = stack.pop()
+        expected_type = current_schema.get("type")
+        if isinstance(expected_type, str) and not _matches_type(current_value, expected_type):
+            findings.append(_finding(current_path, "type", f"Expected {expected_type}."))
+            continue
 
-    if isinstance(value, dict):
-        findings.extend(_validate_object(value, schema, path))
-    elif isinstance(value, str):
-        findings.extend(_validate_string(value, schema, path))
-    elif _is_number(value):
-        findings.extend(_validate_number(value, schema, path))
-    elif isinstance(value, list):
-        findings.extend(_validate_array(value, schema, path))
-    return findings
+        enum_values = current_schema.get("enum")
+        if isinstance(enum_values, list) and not any(
+            _json_values_equal(current_value, candidate) for candidate in enum_values
+        ):
+            findings.append(_finding(current_path, "enum", "Value is not in the allowed enum."))
 
-
-def _validate_object(value: dict[Any, Any], schema: dict[str, object], path: str) -> list[Finding]:
-    findings: list[Finding] = []
-    required = schema.get("required")
-    if isinstance(required, list):
-        for field in required:
-            if isinstance(field, str) and field not in value:
-                findings.append(_finding(f"{path}.{field}", "required", "Required field is missing."))
-    properties = schema.get("properties")
-    if isinstance(properties, dict):
-        for field, field_schema in properties.items():
-            if not isinstance(field, str) or not isinstance(field_schema, dict) or field not in value:
-                continue
-            findings.extend(_validate_value(value[field], field_schema, f"{path}.{field}"))
+        if isinstance(current_value, dict):
+            required = current_schema.get("required")
+            if isinstance(required, list):
+                for field in required:
+                    if isinstance(field, str) and field not in current_value:
+                        findings.append(
+                            _finding(
+                                f"{current_path}.{field}",
+                                "required",
+                                "Required field is missing.",
+                            )
+                        )
+            properties = current_schema.get("properties")
+            if isinstance(properties, dict):
+                # Reverse so insertion order is preserved when popping.
+                for field, field_schema in reversed(list(properties.items())):
+                    if (
+                        not isinstance(field, str)
+                        or not isinstance(field_schema, dict)
+                        or field not in current_value
+                    ):
+                        continue
+                    stack.append(
+                        (current_value[field], field_schema, f"{current_path}.{field}")
+                    )
+        elif isinstance(current_value, str):
+            findings.extend(_validate_string(current_value, current_schema, current_path))
+        elif _is_number(current_value):
+            findings.extend(_validate_number(current_value, current_schema, current_path))
+        elif isinstance(current_value, list):
+            items = current_schema.get("items")
+            if isinstance(items, dict):
+                for index in range(len(current_value) - 1, -1, -1):
+                    stack.append(
+                        (current_value[index], items, f"{current_path}[{index}]")
+                    )
     return findings
 
 
@@ -187,16 +206,6 @@ def _validate_number(value: object, schema: dict[str, object], path: str) -> lis
     maximum = schema.get("maximum")
     if _is_number(maximum) and value > maximum:  # type: ignore[operator]
         findings.append(_finding(path, "maximum", f"Number is greater than {_format_number(maximum)}."))
-    return findings
-
-
-def _validate_array(value: list[Any], schema: dict[str, object], path: str) -> list[Finding]:
-    items = schema.get("items")
-    if not isinstance(items, dict):
-        return []
-    findings = []
-    for index, item in enumerate(value):
-        findings.extend(_validate_value(item, items, f"{path}[{index}]"))
     return findings
 
 
