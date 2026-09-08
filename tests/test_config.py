@@ -5,6 +5,9 @@ import omniglyph.config as config
 
 def test_settings_can_be_overridden_with_data_dir_environment(monkeypatch, tmp_path):
     data_dir = tmp_path / "omniglyph-data"
+    monkeypatch.delenv("OMNIGLYPH_SQLITE_PATH", raising=False)
+    monkeypatch.delenv("OMNIGLYPH_RAW_DIR", raising=False)
+    monkeypatch.delenv("OMNIGLYPH_LEXICON_PACK_ROOT", raising=False)
     monkeypatch.setenv("OMNIGLYPH_DATA_DIR", str(data_dir))
 
     reloaded = importlib.reload(config)
