@@ -118,7 +118,7 @@ def _normalize_policy(policy: dict | None) -> tuple[dict[str, str], list[str]]:
     warnings = []
     for key in DEFAULT_POLICY:
         value = (policy or {}).get(key, normalized[key])
-        if value not in ALLOWED_ACTIONS:
+        if not isinstance(value, str) or value not in ALLOWED_ACTIONS:
             warnings.append(f"{key} must be one of allow, block, review; using block.")
             value = "block"
         normalized[key] = value

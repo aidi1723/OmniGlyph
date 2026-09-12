@@ -9,6 +9,7 @@ from omniglyph.code_linter import scan_text
 from omniglyph.config import settings
 from omniglyph.explanation import explain_code_security, explain_for_audit, explain_glyph, explain_term
 from omniglyph.guardrail import enforce_grounded_output, validate_output_terms
+from omniglyph.json_input import ensure_finite_json
 from omniglyph.language_security import enforce_intent_manifest, scan_language_input, scan_output_dlp
 from omniglyph.lexicon_pack import ensure_allowed_pack_path, validate_lexicon_pack
 from omniglyph.normalization import compact_normalize, normalize_tokens
@@ -164,6 +165,11 @@ def create_app(repository: GlyphRepository | None = None) -> FastAPI:
                 manifest = load_policy_pack(request.policy_pack_path).to_manifest()
             except ValueError as exc:
                 raise HTTPException(status_code=400, detail=str(exc)) from exc
+        try:
+            ensure_finite_json(request.parameters or {})
+            ensure_finite_json(manifest)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
         return enforce_intent_manifest(request.intent_id, manifest, actor_role=request.actor_role, parameters=request.parameters)
 
     @app.post("/api/v1/audit/explain")
@@ -193,6 +199,10 @@ def create_app(repository: GlyphRepository | None = None) -> FastAPI:
 
     @app.post("/api/v1/guardrail/enforce-output")
     def enforce_output(request: GuardrailEnforceRequest) -> dict:
+        try:
+            ensure_finite_json(request.policy or {})
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
         return enforce_grounded_output(glyph_repository, request.terms, actor_id=request.actor_id, policy=request.policy)
 
     return app

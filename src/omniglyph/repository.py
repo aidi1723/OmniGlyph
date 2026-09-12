@@ -92,6 +92,16 @@ class GlyphRepository:
                         source_id=source_id,
                         confidence=1.0,
                     )
+                elif record.source_field == "Range" and record.source_value is not None:
+                    self._insert_property_with_connection(
+                        connection,
+                        glyph_uid=glyph_uid,
+                        namespace="unicode",
+                        name="range",
+                        value=record.source_value,
+                        source_id=source_id,
+                        confidence=1.0,
+                    )
 
     def insert_property(
         self,
@@ -161,10 +171,30 @@ class GlyphRepository:
             return self._delete_lexical_namespace_with_connection(connection, namespace)
 
     def replace_lexical_namespace(self, namespace: str, entries, source: SourceSnapshot) -> int:
+        entries = list(entries)
+        if not entries:
+            raise ValueError("replacement entries must not be empty")
+        if any(entry.namespace != namespace for entry in entries):
+            raise ValueError("replacement entries must match namespace")
         with self.connect() as connection:
-            self._delete_lexical_namespace_with_connection(connection, namespace)
             source_id = self._add_source_snapshot_with_connection(connection, source)
-            return self._insert_lexical_entries_with_connection(connection, entries, source_id)
+            legacy_ids: dict[tuple[str, str, str], str] = {}
+            rows = connection.execute(
+                "SELECT id, namespace, normalized_term, canonical_id, source_id FROM lexical_entry WHERE namespace = ?",
+                (namespace,),
+            ).fetchall()
+            for entry in entries:
+                key = self._lexical_business_key(entry)
+                candidates = [row for row in rows if (row["namespace"], row["normalized_term"], row["canonical_id"]) == key]
+                exact = [row for row in candidates if row["source_id"] == source_id]
+                if len(exact) == 1:
+                    legacy_ids[key] = exact[0]["id"]
+                elif len(exact) > 1 or len(candidates) > 1:
+                    raise ValueError(f"ambiguous legacy identity for {key[1]} / {key[2]}")
+                elif candidates:
+                    legacy_ids[key] = candidates[0]["id"]
+            self._delete_lexical_namespace_with_connection(connection, namespace)
+            return self._insert_lexical_entries_with_connection(connection, entries, source_id, legacy_ids=legacy_ids)
 
     def _add_source_snapshot_with_connection(
         self,
@@ -203,43 +233,66 @@ class GlyphRepository:
         entries,
         source_id: str,
         confidence: float = 1.0,
+        legacy_ids: dict[tuple[str, str, str], str] | None = None,
     ) -> int:
         inserted = 0
         for entry in entries:
-            entry_id = str(
-                uuid.uuid5(
-                    uuid.NAMESPACE_URL,
-                    f"omniglyph:lexical:{entry.namespace}:{entry.canonical_id}:{entry.term}:{source_id}",
-                )
-            )
-            now = datetime.now(timezone.utc).isoformat()
-            connection.execute(
+            normalized_term = self._normalize_text(entry.term)
+            business_key = self._lexical_business_key(entry)
+            existing = connection.execute(
                 """
-                INSERT OR IGNORE INTO lexical_entry (
-                    id, namespace, term, normalized_term, canonical_id, entry_type,
-                    language, definition, traits, source_id, confidence, created_at,
-                    sensitivity, review_status, pack_id, pack_version
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                SELECT * FROM lexical_entry
+                WHERE namespace = ? AND normalized_term = ? AND canonical_id = ? AND source_id = ?
                 """,
-                (
-                    entry_id,
-                    entry.namespace,
-                    entry.term,
-                    self._normalize_text(entry.term),
-                    entry.canonical_id,
-                    entry.entry_type,
-                    entry.language,
-                    entry.definition,
-                    json.dumps(entry.traits, ensure_ascii=False, sort_keys=True),
-                    source_id,
-                    confidence,
-                    now,
-                    entry.sensitivity,
-                    entry.review_status,
-                    entry.pack_id,
-                    entry.pack_version,
-                ),
-            )
+                (entry.namespace, normalized_term, entry.canonical_id, source_id),
+            ).fetchone()
+            if existing is not None:
+                if not self._lexical_facts_match(existing, entry):
+                    raise ValueError(f"conflicting facts for lexical entry {normalized_term}")
+                entry_id = existing["id"]
+            else:
+                identity = json.dumps(
+                    ["omniglyph:lexical:v2", entry.namespace, normalized_term, entry.canonical_id, source_id],
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                )
+                entry_id = (legacy_ids or {}).get(
+                    business_key,
+                    str(uuid.uuid5(uuid.NAMESPACE_URL, identity)),
+                )
+                now = datetime.now(timezone.utc).isoformat()
+                connection.execute(
+                    """
+                    INSERT INTO lexical_entry (
+                        id, namespace, term, normalized_term, canonical_id, entry_type,
+                        language, definition, traits, source_id, confidence, created_at,
+                        sensitivity, review_status, pack_id, pack_version
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        entry_id,
+                        entry.namespace,
+                        entry.term,
+                        normalized_term,
+                        entry.canonical_id,
+                        entry.entry_type,
+                        entry.language,
+                        entry.definition,
+                        json.dumps(entry.traits, ensure_ascii=False, sort_keys=True),
+                        source_id,
+                        confidence,
+                        now,
+                        entry.sensitivity,
+                        entry.review_status,
+                        entry.pack_id,
+                        entry.pack_version,
+                    ),
+                )
+                existing = connection.execute("SELECT id FROM lexical_entry WHERE id = ?", (entry_id,)).fetchone()
+                if existing is None:
+                    raise ValueError(f"lexical entry insert did not produce an ID for {normalized_term}")
+                entry_id = existing["id"]
+            now = datetime.now(timezone.utc).isoformat()
             for alias in entry.aliases:
                 connection.execute(
                     """
@@ -258,6 +311,24 @@ class GlyphRepository:
                 )
             inserted += 1
         return inserted
+
+    def _lexical_business_key(self, entry) -> tuple[str, str, str]:
+        return (entry.namespace, self._normalize_text(entry.term), entry.canonical_id)
+
+    def _lexical_facts_match(self, row: sqlite3.Row, entry) -> bool:
+        return all(
+            row[field] == value
+            for field, value in {
+                "entry_type": entry.entry_type,
+                "language": entry.language,
+                "definition": entry.definition,
+                "traits": json.dumps(entry.traits, ensure_ascii=False, sort_keys=True),
+                "sensitivity": entry.sensitivity,
+                "review_status": entry.review_status,
+                "pack_id": entry.pack_id,
+                "pack_version": entry.pack_version,
+            }.items()
+        )
 
     def _delete_lexical_namespace_with_connection(
         self,

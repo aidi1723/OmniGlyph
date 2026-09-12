@@ -73,6 +73,13 @@ def test_handle_mcp_initialize_uses_package_version():
     assert response["result"]["serverInfo"]["version"] == __version__
 
 
+def test_mcp_stdio_rejects_nonstandard_json_numbers():
+    output = StringIO()
+    serve_stdio(StringIO('{"jsonrpc":"2.0","id":1,"method":"tools/list","params":NaN}\n'), output)
+    response = json.loads(output.getvalue())
+    assert response["error"]["code"] == -32700
+
+
 def test_handle_mcp_lookup_glyph_tool_call(tmp_path):
     repository = GlyphRepository(tmp_path / "test.sqlite3")
     repository.initialize()

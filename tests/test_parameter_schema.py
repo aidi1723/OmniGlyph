@@ -238,6 +238,13 @@ def test_validate_parameters_reports_numeric_bounds():
     assert findings == [{"path": "$.retries", "rule": "maximum", "message": "Number is greater than 3."}]
 
 
+@pytest.mark.parametrize("amount", [float("nan"), float("inf"), float("-inf")])
+def test_validate_parameters_rejects_nonfinite_numbers(amount):
+    schema = {"type": "object", "properties": {"amount": {"type": "number", "minimum": 0, "maximum": 100}}}
+    findings = validate_parameters({"amount": amount}, schema)
+    assert findings == [{"path": "$.amount", "rule": "finite", "message": "Number must be finite."}]
+
+
 def test_validate_parameters_reports_array_item_failures():
     schema = {"type": "object", "properties": {"ports": {"type": "array", "items": {"type": "integer", "minimum": 1}}}}
 

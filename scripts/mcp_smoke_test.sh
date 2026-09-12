@@ -20,6 +20,7 @@ expected = {
     "normalize_tokens",
     "list_namespaces",
     "validate_lexicon_pack",
+    "validate_policy_pack",
     "validate_output_terms",
     "enforce_grounded_output",
     "scan_code_symbols",
@@ -29,6 +30,8 @@ expected = {
     "enforce_intent",
     "audit_explain",
 }
+if len(tools) != len(payload["result"]["tools"]):
+    raise SystemExit("duplicate MCP tool names")
 missing = expected - tools
 if missing:
     raise SystemExit(f"missing MCP tools: {sorted(missing)}")

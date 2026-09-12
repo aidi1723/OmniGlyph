@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -66,6 +67,21 @@ def test_get_glyph_rejects_empty_input(tmp_path):
     response = client.get("/api/v1/glyph", params={"char": ""})
 
     assert response.status_code == 400
+
+
+def test_api_rejects_nonfinite_intent_parameters(tmp_path):
+    repository = GlyphRepository(tmp_path / "test.sqlite3")
+    client = TestClient(create_app(repository))
+    response = client.post(
+        "/api/v1/language-security/enforce-intent",
+        content=json.dumps({
+            "intent_id": "quote.create",
+            "manifest": {"intents": [{"intent_id": "quote.create", "decision": "allow"}]},
+            "parameters": {"amount": float("nan")},
+        }).encode(),
+        headers={"content-type": "application/json"},
+    )
+    assert response.status_code == 422
 
 
 def test_get_glyph_returns_404_for_missing_record(tmp_path):

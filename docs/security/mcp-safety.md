@@ -38,6 +38,10 @@ The stdio MCP server exposes lookup and scanning tools only. It does not provide
 
 ## Recommended Deployment
 
+- The HTTP API has no built-in authentication. The supplied Compose configuration
+  publishes only `127.0.0.1:8000`; container-internal `0.0.0.0:8000` is intentional.
+  Do not change the host binding for remote access without an authenticated
+  gateway, TLS, and request limits. Local binding is not API authentication.
 - Run OmniGlyph MCP from a trusted local virtual environment.
 - Import only data sources whose licenses and provenance you understand.
 - Keep private domain packs separated from global Unicode facts.

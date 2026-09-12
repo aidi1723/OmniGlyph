@@ -21,10 +21,12 @@ PROMPT_INJECTION_PATTERNS = [
 ]
 
 DLP_PATTERNS = [
-    ("dlp-api-key", re.compile(r"\bsk-[A-Za-z0-9][A-Za-z0-9_-]{15,}\b")),
-    ("dlp-aws-access-key", re.compile(r"\bAKIA[0-9A-Z]{16}\b")),
-    ("dlp-email-address", re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")),
+    ("dlp-api-key", re.compile(r"(?<![A-Za-z0-9_-])sk-[A-Za-z0-9][A-Za-z0-9_-]{15,}(?![A-Za-z0-9_-])")),
+    ("dlp-aws-access-key", re.compile(r"(?<![A-Za-z0-9_])AKIA[0-9A-Z]{16}(?![A-Za-z0-9_])")),
 ]
+EMAIL_PATTERN = re.compile(
+    r"(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,253}\.[A-Za-z]{2,63}(?![A-Za-z0-9.-])"
+)
 
 LANGUAGE_INPUT_UNICODE_RULES = {
     "unicode-bidi-control",
@@ -51,6 +53,9 @@ def scan_output_dlp(text: str, secret_terms: list[str] | None = None, source_nam
     for rule_id, pattern in DLP_PATTERNS:
         for match in list(pattern.finditer(text)):
             findings.append(_dlp_finding(rule_id, match.group(0), match.start(), match.end(), source_name))
+    for match in EMAIL_PATTERN.finditer(text):
+        if len(match.group(0)) <= 254:
+            findings.append(_dlp_finding("dlp-email-address", match.group(0), match.start(), match.end(), source_name))
     for term in secret_terms or []:
         if not term:
             continue
@@ -344,7 +349,7 @@ def _intent_result(
         "decision": decision,
         "status": status,
         "intent": intent,
-        "parameters": parameters or {},
+        "parameters": {} if parameter_findings else (parameters or {}),
         "limits": limits,
     }
     if policy:

@@ -138,6 +138,9 @@ def _validate_value(value: object, schema: dict[str, object], path: str) -> list
     while stack:
         current_value, current_schema, current_path = stack.pop()
         expected_type = current_schema.get("type")
+        if expected_type in {"number", "integer"} and _is_number(current_value) and not _is_finite_number(current_value):
+            findings.append(_finding(current_path, "finite", "Number must be finite."))
+            continue
         if isinstance(expected_type, str) and not _matches_type(current_value, expected_type):
             findings.append(_finding(current_path, "type", f"Expected {expected_type}."))
             continue
