@@ -1,0 +1,4 @@
+4E00;<CJK Ideograph, First>;Lo;0;L;;;;;N;;;;;
+9FFF;<CJK Ideograph, Last>;Lo;0;L;;;;;N;;;;;
+AC00;<Hangul Syllable, First>;Lo;0;L;;;;;N;;;;;
+D7A3;<Hangul Syllable, Last>;Lo;0;L;;;;;N;;;;;

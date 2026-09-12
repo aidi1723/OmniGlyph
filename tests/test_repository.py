@@ -1,3 +1,4 @@
+import json
 import threading
 from pathlib import Path
 
@@ -307,3 +308,88 @@ def test_repository_namespace_replacement_rolls_back_on_insert_failure(tmp_path)
     assert repository.find_term("FOB") is not None
     with repository.connect() as connection:
         assert connection.execute("SELECT COUNT(*) FROM source_snapshot").fetchone()[0] == 1
+
+
+def test_unicode_range_provenance_is_queryable_without_names(tmp_path):
+    from omniglyph.normalizer import parse_unicode_data
+
+    repository = GlyphRepository(tmp_path / "range.sqlite3")
+    repository.initialize()
+    source_id = repository.add_source_snapshot(SourceSnapshot("Unicode Character Database", "file://range", "fixture", "range-hash", "Unicode Terms of Use", "range"))
+    records = [record for record in parse_unicode_data(Path("tests/fixtures/UnicodeData.ranges.txt")) if record.unicode_hex in {"U+4E00", "U+94DD", "U+AC01"}]
+    repository.insert_glyph_records(records, source_id)
+    for glyph in ("\u4e00", "\u94dd", "\uac01"):
+        record = repository.find_by_glyph(glyph)
+        assert record is not None
+        assert record["unicode"]["name"] is None
+        prop = next(prop for prop in record["properties"] if prop["name"] == "range")
+        provenance = json.loads(prop["value"])
+        assert provenance["first"].endswith(";N;;;;;")
+        assert ", First>" in provenance["first"]
+        assert ", Last>" in provenance["last"]
+        assert record["sources"][0]["source_version"] == "fixture"
+
+
+def _entry(term, canonical_id="trade:fob", **kwargs):
+    return DomainEntry(
+        term=term, canonical_id=canonical_id, entry_type="trade_term", language="en",
+        aliases=kwargs.pop("aliases", []), definition=kwargs.pop("definition", "Free On Board"),
+        traits=kwargs.pop("traits", {"kind": "trade"}), namespace="private_trade", **kwargs,
+    )
+
+
+def test_repository_uses_structured_identity_and_real_id_for_aliases(tmp_path):
+    repository = GlyphRepository(tmp_path / "identity.sqlite3")
+    repository.initialize()
+    source_id = repository.add_source_snapshot(SourceSnapshot("Pack", "file://pack", "1", "identity", "private", "pack"))
+    repository.insert_lexical_entries([_entry("a:b", canonical_id="c", aliases=["first"])], source_id)
+    repository.insert_lexical_entries([_entry("a", canonical_id="b:c", aliases=["second"])], source_id)
+    with repository.connect() as connection:
+        rows = connection.execute("SELECT id, term FROM lexical_entry ORDER BY term").fetchall()
+        aliases = connection.execute("SELECT lexical_entry_id, alias FROM lexical_alias ORDER BY alias").fetchall()
+    assert [row["term"] for row in rows] == ["a", "a:b"]
+    assert {row["alias"]: row["lexical_entry_id"] for row in aliases} == {
+        "first": next(row["id"] for row in rows if row["term"] == "a:b"),
+        "second": next(row["id"] for row in rows if row["term"] == "a"),
+    }
+
+
+def test_repository_merges_case_variant_and_rejects_conflicting_fact(tmp_path):
+    repository = GlyphRepository(tmp_path / "merge.sqlite3")
+    repository.initialize()
+    source_id = repository.add_source_snapshot(SourceSnapshot("Pack", "file://pack", "1", "merge", "private", "pack"))
+    repository.insert_lexical_entries([_entry("FOB", aliases=["Free On Board"])], source_id)
+    original = repository.find_term("fob")
+    assert original is not None
+    repository.insert_lexical_entries([_entry("fob", aliases=["离岸价"])], source_id)
+    merged = repository.find_term("FOB")
+    assert merged is not None and merged["id"] == original["id"]
+    assert repository.find_term("离岸价")["id"] == original["id"]
+    with pytest.raises(ValueError, match="conflicting facts"):
+        repository.insert_lexical_entries([_entry("fob", definition="Different definition")], source_id)
+
+
+def test_replacement_reuses_unique_legacy_id_when_source_changes(tmp_path):
+    repository = GlyphRepository(tmp_path / "legacy-id.sqlite3")
+    repository.initialize()
+    old_source = SourceSnapshot("Pack", "file://pack", "1", "legacy-1", "private", "pack")
+    old_id = repository.add_source_snapshot(old_source)
+    repository.insert_lexical_entries([_entry("FOB", aliases=["old alias"])], old_id)
+    old_entry = repository.find_term("FOB")
+    assert old_entry is not None
+    new_source = SourceSnapshot("Pack", "file://pack", "2", "legacy-2", "private", "pack")
+    repository.replace_lexical_namespace("private_trade", [_entry("fob", aliases=["new alias"])], new_source)
+    new_entry = repository.find_term("FOB")
+    assert new_entry is not None and new_entry["id"] == old_entry["id"]
+    assert repository.find_term("new alias")["id"] == old_entry["id"]
+    assert repository.find_term("old alias") is None
+
+
+def test_replacement_rejects_ambiguous_legacy_identity(tmp_path):
+    repository = GlyphRepository(tmp_path / "ambiguous.sqlite3")
+    repository.initialize()
+    for version in ("1", "2"):
+        source_id = repository.add_source_snapshot(SourceSnapshot("Pack", "file://pack", version, f"ambiguous-{version}", "private", "pack"))
+        repository.insert_lexical_entries([_entry("FOB")], source_id)
+    with pytest.raises(ValueError, match="ambiguous"):
+        repository.replace_lexical_namespace("private_trade", [_entry("FOB")], SourceSnapshot("Pack", "file://pack", "3", "ambiguous-3", "private", "pack"))

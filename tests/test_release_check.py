@@ -8,11 +8,11 @@ def test_release_check_uses_project_python_and_release_gates():
     assert '.venv/bin/python' in script
     assert '-m ruff check .' in script
     assert '-m mypy src' in script
-    assert 'scripts/mcp_smoke_test.sh' in script
+    assert 'omniglyph.mcp_server' in script
     assert '-m build --no-isolation' in script
-    assert '-m twine check dist/*' in script
-    assert 'scripts/artifact_audit.py --quiet' in script
-    assert 'scripts/wheel_smoke_test.sh' in script
+    assert '-m twine check' in script
+    assert 'scripts/artifact_audit.py --quiet --wheel' in script
+    assert 'scripts/wheel_smoke_test.sh "${WHEEL_PATH}"' in script
     assert 'git diff --check' in script
 
 
@@ -21,8 +21,8 @@ def test_wheel_smoke_test_installs_built_wheel_and_checks_mcp():
 
     assert '-m venv' in script
     assert 'pip install --no-deps' in script
-    assert 'bin/omniglyph" --version' in script
-    assert 'scripts/mcp_smoke_test.sh' in script
+    assert 'installed_smoke.py' in script
+    assert 'bin/omniglyph-mcp' in script
 
 
 def test_release_shell_scripts_are_executable():

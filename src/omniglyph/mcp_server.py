@@ -8,6 +8,7 @@ from omniglyph.code_linter import scan_text
 from omniglyph.config import settings
 from omniglyph.explanation import explain_code_security, explain_for_audit, explain_glyph, explain_term
 from omniglyph.guardrail import enforce_grounded_output, validate_output_terms
+from omniglyph.json_input import ensure_finite_json, parse_strict_json
 from omniglyph.language_security import enforce_intent_manifest, scan_language_input, scan_output_dlp
 from omniglyph.lexicon_pack import ensure_allowed_pack_path, validate_lexicon_pack
 from omniglyph.normalization import compact_normalize, normalize_tokens
@@ -405,6 +406,10 @@ def handle_mcp_request(request: object, repository: GlyphRepository | None = Non
                 return _error(request_id, -32602, "enforce_intent actor_role must be a string")
             if parameters is not None and not isinstance(parameters, dict):
                 return _error(request_id, -32602, "enforce_intent parameters must be an object")
+            try:
+                ensure_finite_json(parameters or {})
+            except ValueError as exc:
+                return _error(request_id, -32602, str(exc))
             if policy_pack_path is not None:
                 try:
                     ensure_allowed_policy_pack_path(policy_pack_path, settings.policy_pack_root)
@@ -449,12 +454,12 @@ def serve_stdio(input_stream: TextIO = sys.stdin, output_stream: TextIO = sys.st
             continue
         request_id = None
         try:
-            request = json.loads(line)
+            request = parse_strict_json(line)
             if isinstance(request, dict):
                 request_id = request.get("id")
             response = handle_mcp_request(request)
-        except json.JSONDecodeError as exc:
-            response = _error(None, -32700, f"Parse error: {exc.msg}")
+        except (json.JSONDecodeError, ValueError) as exc:
+            response = _error(request_id, -32700, f"Parse error: {exc}")
         except Exception:  # pragma: no cover - defensive stdio server boundary
             response = _error(request_id, -32603, "Internal error")
         if response is not None:
@@ -475,7 +480,7 @@ def _error(request_id: Any, code: int, message: str) -> dict[str, Any]:
 
 
 def _json_content(payload: Any) -> dict[str, str]:
-    return {"type": "text", "text": json.dumps(payload, ensure_ascii=False)}
+    return {"type": "text", "text": json.dumps(payload, ensure_ascii=False, allow_nan=False)}
 
 
 if __name__ == "__main__":

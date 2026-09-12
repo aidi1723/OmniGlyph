@@ -3,8 +3,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 from omniglyph.domain_pack import parse_domain_pack
-from omniglyph.lexicon_pack import init_lexicon_pack, load_lexicon_pack, validate_lexicon_pack
+from omniglyph.lexicon_pack import ensure_allowed_pack_path, init_lexicon_pack, load_lexicon_pack, validate_lexicon_pack
 from omniglyph.repository import GlyphRepository, SourceSnapshot
 
 
@@ -164,3 +166,16 @@ def test_cli_init_and_validate_lexicon_pack(tmp_path):
     assert "Created lexicon pack" in init_result.stdout
     assert validate_result.returncode == 0
     assert '"status": "pass"' in validate_result.stdout
+
+
+def test_ensure_allowed_pack_path_rejects_child_symlink_escape(tmp_path):
+    root = tmp_path / "allowed"
+    pack = root / "pack"
+    outside = tmp_path / "outside"
+    pack.mkdir(parents=True)
+    outside.mkdir()
+    (outside / "pack.json").write_text("{}", encoding="utf-8")
+    (pack / "pack.json").symlink_to(outside / "pack.json")
+    (pack / "terms.csv").write_text("term,canonical_id,entry_type\nFOB,trade:fob,term\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="outside OMNIGLYPH_LEXICON_PACK_ROOT"):
+        ensure_allowed_pack_path(str(pack), root)

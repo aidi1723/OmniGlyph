@@ -29,6 +29,12 @@ UV_CACHE_DIR=.uv-cache uv pip install -e '.[dev]'
 .venv/bin/uvicorn omniglyph.api:app --reload
 ```
 
+The API has no built-in authentication. The development server and the supplied
+Docker Compose host port bind to `127.0.0.1` by default. Inside the container,
+Uvicorn still listens on `0.0.0.0:8000` so port forwarding works. Before enabling
+remote access, configure an authenticated gateway, TLS, and request limits.
+Loopback binding limits network exposure; it does not authenticate local callers.
+
 ## 5. Query a Glyph
 
 ```bash

@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from omniglyph.domain_pack import bundled_domain_pack, parse_domain_pack
 
 FIXTURE = Path(__file__).parent / "fixtures" / "domain_pack.csv"
@@ -18,14 +20,12 @@ def test_parse_domain_pack_reads_terms_aliases_and_traits():
     assert first.namespace == "private_building_materials"
 
 
-def test_parse_domain_pack_skips_incomplete_rows(tmp_path):
+def test_parse_domain_pack_rejects_incomplete_rows(tmp_path):
     source = tmp_path / "bad.csv"
     source.write_text("term,canonical_id,entry_type,language,aliases,definition,traits\nFOB,trade:fob,trade_term,en,,Free On Board,{}\nmissing,,trade_term,en,,,{}\n", encoding="utf-8")
 
-    entries = list(parse_domain_pack(source, namespace="private_trade"))
-
-    assert len(entries) == 1
-    assert entries[0].term == "FOB"
+    with pytest.raises(ValueError, match="canonical_id"):
+        list(parse_domain_pack(source, namespace="private_trade"))
 
 
 def test_parse_software_development_domain_pack():

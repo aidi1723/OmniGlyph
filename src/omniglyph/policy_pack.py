@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from omniglyph.pack_paths import ensure_pack_path
 from omniglyph.parameter_schema import validate_parameter_schema
 
 POLICY_PACK_SCHEMA = "omniglyph.policy_pack:0.1"
@@ -139,12 +140,10 @@ def _inspect_policy_pack(pack_dir: Path) -> tuple[dict[str, Any], list[dict[str,
 
 
 def ensure_allowed_policy_pack_path(path: str, root: Path | None) -> None:
-    if root is None:
-        return
-    pack_path = Path(path).resolve()
-    allowed_root = root.resolve()
-    if pack_path != allowed_root and allowed_root not in pack_path.parents:
-        raise ValueError("policy pack path is outside OMNIGLYPH_POLICY_PACK_ROOT")
+    try:
+        ensure_pack_path(path, root, (POLICY_FILENAME, INTENTS_FILENAME))
+    except ValueError as exc:
+        raise ValueError(str(exc).replace("configured pack root", "OMNIGLYPH_POLICY_PACK_ROOT")) from exc
 
 
 def _validate_metadata(pack_dir: Path) -> tuple[dict[str, Any], list[str]]:
@@ -179,6 +178,9 @@ def _validate_intents(pack_dir: Path) -> tuple[list[dict[str, Any]], list[str]]:
         reader = csv.DictReader(file)
         if reader.fieldnames is None:
             return [], [f"{INTENTS_FILENAME}: missing header row"]
+        duplicate_fields = sorted({field for field in reader.fieldnames if reader.fieldnames.count(field) > 1})
+        if duplicate_fields:
+            return [], [f"{INTENTS_FILENAME}: duplicate column {field}" for field in duplicate_fields]
         missing = sorted(field for field in REQUIRED_INTENT_FIELDS if field not in reader.fieldnames)
         for field in missing:
             errors.append(f"{INTENTS_FILENAME}: missing required column {field}")

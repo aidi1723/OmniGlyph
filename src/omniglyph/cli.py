@@ -8,8 +8,9 @@ from omniglyph.code_linter import format_json_report, format_text_report, scan_p
 from omniglyph.config import settings
 from omniglyph.explanation import explain_for_audit
 from omniglyph.guardrail import enforce_grounded_output, validate_output_terms
+from omniglyph.json_input import parse_strict_json
 from omniglyph.language_security import enforce_intent_manifest, scan_language_input, scan_output_dlp
-from omniglyph.lexicon_pack import entries_from_source, init_lexicon_pack, source_paths, validate_lexicon_pack
+from omniglyph.lexicon_pack import init_lexicon_pack, prepare_lexicon_source, validate_lexicon_pack
 from omniglyph.normalizer import parse_unicode_data
 from omniglyph.policy_pack import init_policy_pack, load_policy_pack, validate_policy_pack
 from omniglyph.repository import GlyphRepository, SourceSnapshot
@@ -89,11 +90,13 @@ def ingest_domain_pack(
     dry_run: bool = False,
     replace_namespace: bool = False,
 ) -> int:
-    entries, metadata = entries_from_source(source_path, namespace=namespace)
-    terms_path, _ = source_paths(source_path)
-    source_namespace = metadata["namespace"] if metadata is not None else namespace
-    if source_namespace is None:
-        raise ValueError("namespace is required when importing a CSV file")
+    prepared = prepare_lexicon_source(source_path, namespace=namespace)
+    prepared.require_valid(require_entries=replace_namespace)
+    if expected_sha256 is not None and prepared.sha256 != expected_sha256.lower():
+        raise ValueError("SHA-256 mismatch for lexicon source")
+    entries, metadata = prepared.entries, prepared.metadata
+    terms_path = prepared.terms_path
+    source_namespace = prepared.namespace
     source_version = metadata["version"] if metadata is not None else source_version
     source_name = metadata["name"] if metadata is not None else "Private Domain Pack"
     if dry_run:
@@ -111,22 +114,15 @@ def ingest_domain_pack(
             )
         )
         return len(entries)
-    artifact = register_local_source(
-        terms_path,
-        source_url=terms_path.as_uri() if terms_path.is_absolute() else f"file://{terms_path}",
-        source_version=source_version,
-        license="private",
-        expected_sha256=expected_sha256,
-    )
     repository = GlyphRepository(settings.sqlite_path)
     repository.initialize()
     source = SourceSnapshot(
         source_name=source_name,
-        source_url=artifact.source_url,
-        source_version=artifact.source_version,
-        sha256=artifact.sha256,
-        license=artifact.license,
-        local_path=str(artifact.path),
+        source_url=terms_path.as_uri() if terms_path.is_absolute() else f"file://{terms_path}",
+        source_version=source_version,
+        sha256=prepared.sha256,
+        license=metadata["license"] if metadata is not None else "private",
+        local_path=str(terms_path),
     )
     if replace_namespace:
         return repository.replace_lexical_namespace(source_namespace, entries, source)
@@ -254,9 +250,9 @@ def main() -> None:
             raise SystemExit(1)
     elif args.command == "enforce-intent":
         try:
-            parameters = json.loads(args.parameters)
-        except json.JSONDecodeError as exc:
-            parser.error(f"--parameters must be a JSON object: {exc.msg}")
+            parameters = parse_strict_json(args.parameters)
+        except (json.JSONDecodeError, ValueError) as exc:
+            parser.error(f"--parameters must be a JSON object: {exc}")
         if not isinstance(parameters, dict):
             parser.error("--parameters must be a JSON object")
         try:
@@ -274,9 +270,9 @@ def main() -> None:
         policy = None
         if args.policy is not None:
             try:
-                policy = json.loads(args.policy)
-            except json.JSONDecodeError as exc:
-                parser.error(f"--policy must be a JSON object: {exc.msg}")
+                policy = parse_strict_json(args.policy)
+            except (json.JSONDecodeError, ValueError) as exc:
+                parser.error(f"--policy must be a JSON object: {exc}")
             if not isinstance(policy, dict):
                 parser.error("--policy must be a JSON object")
         repository = GlyphRepository(settings.sqlite_path)

@@ -158,6 +158,17 @@ def test_policy_pack_rejects_rows_with_extra_columns(tmp_path):
         load_policy_pack(pack_dir)
 
 
+@pytest.mark.parametrize("column", ["decision", "allowed_roles", "requires_approval"])
+def test_policy_pack_rejects_duplicate_authorization_columns(tmp_path, column):
+    pack_dir = tmp_path / f"duplicate-{column}"
+    write_policy_pack(pack_dir)
+    header = (pack_dir / "intents.csv").read_text(encoding="utf-8").splitlines()[0]
+    (pack_dir / "intents.csv").write_text(header + "," + column + "\n", encoding="utf-8")
+    report = validate_policy_pack(pack_dir)
+    assert report["status"] == "fail"
+    assert any("duplicate column" in error and column in error for error in report["errors"])
+
+
 def test_init_policy_pack_creates_valid_template(tmp_path):
     target = tmp_path / "starter"
 
@@ -180,6 +191,19 @@ def test_ensure_allowed_policy_pack_path_blocks_outside_root(tmp_path):
     ensure_allowed_policy_pack_path(str(inside), root)
     with pytest.raises(ValueError, match="outside OMNIGLYPH_POLICY_PACK_ROOT"):
         ensure_allowed_policy_pack_path(str(outside), root)
+
+
+def test_ensure_allowed_policy_pack_path_rejects_child_symlink_escape(tmp_path):
+    root = tmp_path / "allowed"
+    pack = root / "policy"
+    outside = tmp_path / "outside"
+    pack.mkdir(parents=True)
+    outside.mkdir()
+    (outside / "policy.json").write_text("{}", encoding="utf-8")
+    (pack / "policy.json").symlink_to(outside / "policy.json")
+    (pack / "intents.csv").write_text("intent_id,canonical_phrase,decision,risk_level,requires_approval,allowed_roles,audit_required,parameters_schema\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="outside OMNIGLYPH_POLICY_PACK_ROOT"):
+        ensure_allowed_policy_pack_path(str(pack), root)
 
 
 def test_cli_init_validate_and_enforce_policy_pack(tmp_path):

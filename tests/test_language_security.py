@@ -31,6 +31,27 @@ def test_scan_language_input_allows_clean_business_text():
     assert report["findings"] == []
 
 
+@pytest.mark.parametrize("prefix", ["Key: ", "密钥", "密钥：", "\n"])
+def test_scan_output_dlp_detects_api_key_next_to_multilingual_text(prefix):
+    value = "sk-proj-abcdefghijklmnopqrstuvwxyz123456"
+    report = scan_output_dlp(prefix + value)
+    assert report["decision"] == "block"
+    assert value not in report["redacted_text"]
+    assert any(item["rule_id"] == "dlp-api-key" for item in report["findings"])
+
+
+@pytest.mark.parametrize("prefix", ["联系人：", "Contact: ", "联系人\n"])
+def test_scan_output_dlp_detects_email_next_to_multilingual_text(prefix):
+    report = scan_output_dlp(prefix + "person@example.com。")
+    assert report["decision"] == "block"
+    assert any(item["rule_id"] == "dlp-email-address" for item in report["findings"])
+
+
+def test_scan_output_dlp_skips_quadratic_email_candidate_without_at():
+    report = scan_output_dlp("a." * 32768)
+    assert report["findings"] == []
+
+
 def test_scan_output_dlp_redacts_api_key_and_secret_terms():
     report = scan_output_dlp(
         "Use sk-proj-abcdefghijklmnopqrstuvwxyz123456 and supplier Alpha Factory.",
@@ -177,6 +198,21 @@ def test_enforce_intent_manifest_blocks_invalid_parameters():
     assert result["status"] == "invalid_parameters"
     assert result["limits"] == ["Intent parameters do not match parameters_schema."]
     assert result["parameter_findings"][0] == {"path": "$.service", "rule": "type", "message": "Expected string."}
+
+
+def test_enforce_intent_manifest_rejects_nonfinite_parameters_without_echoing_them():
+    manifest = {
+        "intents": [{
+            "intent_id": "quote.create", "decision": "allow", "allowed_roles": ["operator"],
+            "parameters_schema": {"type": "object", "properties": {"amount": {"type": "number", "minimum": 0}},},
+        }]
+    }
+    result = enforce_intent_manifest("quote.create", manifest, actor_role="operator", parameters={"amount": float("nan")})
+    assert result["decision"] == "block"
+    assert result["status"] == "invalid_parameters"
+    assert result["parameters"] == {}
+    assert result["parameter_findings"][0]["rule"] == "finite"
+    json.dumps(result, allow_nan=False)
 
 
 def test_enforce_intent_manifest_allows_valid_parameters():

@@ -165,6 +165,13 @@ def test_enforce_grounded_output_invalid_policy_action_falls_back_to_block(tmp_p
     assert result["policy_warnings"] == ["unknown_action must be one of allow, block, review; using block."]
 
 
+def test_enforce_grounded_output_invalid_policy_action_type_falls_back_to_block(tmp_path):
+    repository = seeded_repository(tmp_path)
+    result = enforce_grounded_output(repository, ["HS 7604.99X"], policy={"unknown_action": []})
+    assert result["decision"] == "block"
+    assert result["policy_warnings"] == ["unknown_action must be one of allow, block, review; using block."]
+
+
 def test_enforce_grounded_output_includes_review_packet_for_default_unknown_block(tmp_path):
     repository = seeded_repository(tmp_path)
 
