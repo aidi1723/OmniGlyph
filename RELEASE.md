@@ -30,6 +30,7 @@ Current GitHub closeout:
 
 - v0.8.0 beta release-prep is merged into `main`.
 - Current package metadata is `0.8.1b0`.
+- v0.8.1b0 delivery closeout: `docs/product/v0.8.1b0-closeout.md`.
 - GitHub closeout statement and maintenance log are recorded under `docs/product/v0.8.0b0-release-prep.md` and `docs/product/v0.8-maintenance-log.md`.
 - TestPyPI, PyPI, and MCP Registry publication remain paused until an explicit operator approval.
 
