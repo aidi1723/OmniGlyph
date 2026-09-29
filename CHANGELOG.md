@@ -20,6 +20,7 @@
 - Name the Latin lookalike for the common identical Cyrillic and Greek letters. Other letters in those scripts still use the generic cross-script finding.
 - Detect “ignore your previous instructions”, “don't follow the previous rules”, and “忘记之前的指令” without treating “不要忘记之前的会议提示” as an override.
 - Redact GitHub tokens, Slack tokens, and private-key headers in output DLP.
+- Install the built wheel into a clean virtualenv during the release smoke test, so an editable checkout of the same version cannot skip the entry points.
 
 ### Security / Fail-closed hardening (2026-07-16)
 
