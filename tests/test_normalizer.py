@@ -26,14 +26,12 @@ def test_parse_unicode_data_supports_cjk_without_guessing_definition():
     assert records[3].computable_traits is None
 
 
-def test_parse_unicode_data_skips_malformed_rows(tmp_path):
+def test_parse_unicode_data_rejects_malformed_rows(tmp_path):
     malformed = tmp_path / "UnicodeData.malformed.txt"
     malformed.write_text("0041;LATIN CAPITAL LETTER A\nnot-hex;BROKEN\n", encoding="utf-8")
 
-    records = list(parse_unicode_data(malformed))
-
-    assert len(records) == 1
-    assert records[0].glyph == "A"
+    with pytest.raises(ValueError, match="not hexadecimal"):
+        list(parse_unicode_data(malformed))
 
 
 def test_parse_unicode_data_covers_combining_marks_variation_selectors_and_emoji():

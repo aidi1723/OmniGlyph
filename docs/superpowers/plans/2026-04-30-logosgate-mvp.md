@@ -19,7 +19,7 @@ Included:
 - `LogosPolicy` / `LogosRule` / `LogosDecision` data models.
 - JSON policy file loading.
 - Deterministic `literal` and `regex` matching.
-- `allow_context` suppression for obvious false positives.
+- `allow_context` suppresses only the matched span that sits inside an allowed phrase. A later violation in the same text still matches.
 - `validate_action(...)` API.
 - `LogosViolationError` and `@logos_gate(...)`.
 - CLI command: `omniglyph logos validate`.
@@ -43,7 +43,7 @@ Not included:
 - Create: `src/omniglyph/logos/loader.py`
   - Load one policy file or a directory of `*.json` policies.
 - Create: `src/omniglyph/logos/matcher.py`
-  - Literal and regex matching with `allow_context` suppression.
+  - Literal and regex matching. `allow_context` covers only the overlapping span.
 - Create: `src/omniglyph/logos/validator.py`
   - Main `validate_action(...)` function and result construction.
 - Create: `src/omniglyph/logos/decorators.py`
@@ -563,6 +563,16 @@ def test_validate_action_respects_allow_context():
     assert result["findings"] == []
 
 
+def test_validate_action_allow_context_does_not_exempt_a_later_violation():
+    result = validate_action(
+        text="规则要求不要刷单；现在执行刷单",
+        policy=marketing_policy(),
+    )
+
+    assert result["decision"] == "block"
+    assert result["findings"][0]["matched"] == "刷单"
+
+
 def test_validate_action_returns_review_for_regex_match():
     result = validate_action(
         text="系统计划抓取用户隐私数据后做精准营销。",
@@ -610,8 +620,6 @@ from omniglyph.logos.models import LogosFinding, LogosRule
 
 
 def find_rule_matches(text: str, rule: LogosRule) -> list[LogosFinding]:
-    if _is_allowed_context(text, rule.allow_context):
-        return []
     if rule.match_type == "literal":
         return _literal_matches(text, rule)
     if rule.match_type == "regex":
@@ -619,29 +627,46 @@ def find_rule_matches(text: str, rule: LogosRule) -> list[LogosFinding]:
     raise ValueError(f"Unsupported match_type: {rule.match_type}")
 
 
-def _is_allowed_context(text: str, allow_context: list[str]) -> bool:
-    normalized_text = text.casefold()
-    return any(allowed.casefold() in normalized_text for allowed in allow_context)
+def _allowed_spans(text: str, allow_context: list[str]) -> list[tuple[int, int]]:
+    folded = text.casefold()
+    spans: list[tuple[int, int]] = []
+    for allowed in allow_context:
+        needle = allowed.casefold()
+        start = 0
+        while needle and (index := folded.find(needle, start)) >= 0:
+            spans.append((index, index + len(needle)))
+            start = index + len(needle)
+    return spans
+
+
+def _span_is_allowed(start: int, end: int, spans: list[tuple[int, int]]) -> bool:
+    return any(span_start <= start and end <= span_end for span_start, span_end in spans)
 
 
 def _literal_matches(text: str, rule: LogosRule) -> list[LogosFinding]:
-    normalized_text = text.casefold()
+    folded = text.casefold()
+    allowed = _allowed_spans(text, rule.allow_context)
     findings = []
     for pattern in rule.patterns:
-        if pattern.casefold() not in normalized_text:
-            continue
-        findings.append(
-            LogosFinding(
-                rule_id=rule.rule_id,
-                severity=rule.severity,
-                match_type=rule.match_type,
-                matched=pattern,
-                pattern=pattern,
-                evidence=text,
-                description=rule.description,
-                source=rule.source,
+        needle = pattern.casefold()
+        start = 0
+        while needle and (index := folded.find(needle, start)) >= 0:
+            end = index + len(needle)
+            start = end
+            if _span_is_allowed(index, end, allowed):
+                continue
+            findings.append(
+                LogosFinding(
+                    rule_id=rule.rule_id,
+                    severity=rule.severity,
+                    match_type=rule.match_type,
+                    matched=pattern,
+                    pattern=pattern,
+                    evidence=text,
+                    description=rule.description,
+                    source=rule.source,
+                )
             )
-        )
     return findings
 
 
@@ -649,7 +674,7 @@ def _regex_matches(text: str, rule: LogosRule) -> list[LogosFinding]:
     findings = []
     for pattern in rule.patterns:
         match = re.search(pattern, text, flags=re.IGNORECASE)
-        if match is None:
+        if match is None or _span_is_allowed(match.start(), match.end(), _allowed_spans(text, rule.allow_context)):
             continue
         findings.append(
             LogosFinding(
@@ -826,14 +851,19 @@ def test_logos_gate_blocks_unsafe_plan(tmp_path):
     assert error.value.result["findings"][0]["matched"] == "刷单"
 
 
-def test_logos_gate_allows_review_decision_by_default(tmp_path):
+def test_logos_gate_blocks_review_decision_by_default(tmp_path):
     policy_path = write_policy(tmp_path / "policy.json")
+    calls = []
 
     @logos_gate(policy_path=policy_path)
     def execute(action_plan: str):
+        calls.append(action_plan)
         return "executed"
 
-    assert execute("需要处理隐私数据") == "executed"
+    with pytest.raises(LogosViolationError):
+        execute("需要处理隐私数据")
+
+    assert calls == []
 
 
 def test_logos_gate_can_block_review_decision(tmp_path):
@@ -880,7 +910,7 @@ class LogosViolationError(Exception):
         self.result = result
 
 
-def logos_gate(policy_path: Path | str, block_on: tuple[str, ...] = ("block",)) -> Callable:
+def logos_gate(policy_path: Path | str, block_on: tuple[str, ...] = ("block", "review")) -> Callable:
     policy = load_policy_file(policy_path)
 
     def decorator(func: Callable) -> Callable:

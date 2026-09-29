@@ -27,6 +27,30 @@ def test_validate_output_terms_marks_known_and_unknown_terms(tmp_path):
     assert result["unknown"] == ["HS 7604.99X"]
 
 
+def test_guardrail_prefers_approved_term_and_blocks_conflicting_approved_terms(tmp_path):
+    repository = GlyphRepository(tmp_path / "guard.sqlite3")
+    repository.initialize()
+    draft_source = repository.add_source_snapshot(SourceSnapshot("Pack", "file://a", "1", "draft", "private", "a"))
+    approved_source = repository.add_source_snapshot(SourceSnapshot("Pack", "file://b", "1", "approved", "private", "b"))
+    conflict_source = repository.add_source_snapshot(SourceSnapshot("Pack", "file://c", "1", "conflict", "private", "c"))
+    from omniglyph.domain_pack import DomainEntry
+
+    def entry(namespace, canonical_id, review_status="approved"):
+        return DomainEntry("FOB", canonical_id, "trade_term", "en", [], "definition", {}, namespace, review_status=review_status)
+
+    repository.insert_lexical_entries([entry("private_a", "trade:draft", "draft")], draft_source)
+    repository.insert_lexical_entries([entry("private_b", "trade:approved")], approved_source)
+    preferred = enforce_grounded_output(repository, ["FOB"])
+    assert preferred["decision"] == "allow"
+    assert preferred["details"][0]["canonical_id"] == "trade:approved"
+
+    repository.insert_lexical_entries([entry("private_c", "other:fob")], conflict_source)
+    conflict = enforce_grounded_output(repository, ["FOB"])
+    assert conflict["decision"] == "block"
+    assert conflict["details"][0]["status"] == "ambiguous"
+    assert conflict["details"][0]["candidate_canonical_ids"] == ["other:fob", "trade:approved"]
+
+
 def test_validate_output_terms_passes_when_all_terms_are_known(tmp_path):
     repository = seeded_repository(tmp_path)
 

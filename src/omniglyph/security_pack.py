@@ -14,7 +14,7 @@ class ConfusableMapping:
 UNICODE_CONFUSABLES_SOURCE: dict[str, Any] = {
     "source_id": "source:unicode-confusables:minimal",
     "source_name": "OmniGlyph Unicode Confusables Minimal Pack",
-    "source_version": "0.1.0",
+    "source_version": "0.2.0",
     "license": "Unicode Terms of Use; OmniGlyph curated fixture",
     "confidence": 1.0,
 }
@@ -32,37 +32,62 @@ SECURITY_SOURCES: dict[str, dict[str, Any]] = {
     PYTHON_UNICODEDATA_SOURCE["source_id"]: PYTHON_UNICODEDATA_SOURCE,
 }
 
+# Single-character letters that commonly render like one Latin letter.
+# Other Cyrillic and Greek letters stay on the generic cross-script rule.
+_CONFUSABLE_LETTERS = (
+    ("\u0430", "a", "Cyrillic small letter a"),
+    ("\u0435", "e", "Cyrillic small letter ie"),
+    ("\u043e", "o", "Cyrillic small letter o"),
+    ("\u0440", "p", "Cyrillic small letter er"),
+    ("\u0441", "c", "Cyrillic small letter es"),
+    ("\u0443", "y", "Cyrillic small letter u"),
+    ("\u0445", "x", "Cyrillic small letter ha"),
+    ("\u0455", "s", "Cyrillic small letter dze"),
+    ("\u0456", "i", "Cyrillic small letter byelorussian-ukrainian i"),
+    ("\u0458", "j", "Cyrillic small letter je"),
+    ("\u04cf", "l", "Cyrillic small letter palochka"),
+    ("\u0410", "A", "Cyrillic capital letter a"),
+    ("\u0412", "B", "Cyrillic capital letter ve"),
+    ("\u0415", "E", "Cyrillic capital letter ie"),
+    ("\u041a", "K", "Cyrillic capital letter ka"),
+    ("\u041c", "M", "Cyrillic capital letter em"),
+    ("\u041d", "H", "Cyrillic capital letter en"),
+    ("\u041e", "O", "Cyrillic capital letter o"),
+    ("\u0420", "P", "Cyrillic capital letter er"),
+    ("\u0421", "C", "Cyrillic capital letter es"),
+    ("\u0422", "T", "Cyrillic capital letter te"),
+    ("\u0423", "Y", "Cyrillic capital letter u"),
+    ("\u0425", "X", "Cyrillic capital letter ha"),
+    ("\u0406", "I", "Cyrillic capital letter byelorussian-ukrainian i"),
+    ("\u0391", "A", "Greek capital letter alpha"),
+    ("\u0392", "B", "Greek capital letter beta"),
+    ("\u0395", "E", "Greek capital letter epsilon"),
+    ("\u0396", "Z", "Greek capital letter zeta"),
+    ("\u0397", "H", "Greek capital letter eta"),
+    ("\u0399", "I", "Greek capital letter iota"),
+    ("\u039a", "K", "Greek capital letter kappa"),
+    ("\u039c", "M", "Greek capital letter mu"),
+    ("\u039d", "N", "Greek capital letter nu"),
+    ("\u039f", "O", "Greek capital letter omicron"),
+    ("\u03a1", "P", "Greek capital letter rho"),
+    ("\u03a4", "T", "Greek capital letter tau"),
+    ("\u03a5", "Y", "Greek capital letter upsilon"),
+    ("\u03a7", "X", "Greek capital letter chi"),
+    ("\u03bf", "o", "Greek small letter omicron"),
+)
+
+
+def _confusable(character: str, latin: str, name: str) -> ConfusableMapping:
+    return ConfusableMapping(
+        character=character,
+        confusable_with=latin,
+        source_id=UNICODE_CONFUSABLES_SOURCE["source_id"],
+        why_it_matters=f"{name} can look like Latin {latin} in identifiers.",
+    )
+
+
 CONFUSABLES = {
-    "\u0430": ConfusableMapping(
-        character="\u0430",
-        confusable_with="a",
-        source_id=UNICODE_CONFUSABLES_SOURCE["source_id"],
-        why_it_matters="Cyrillic small letter a can look like Latin small letter a in identifiers.",
-    ),
-    "\u0435": ConfusableMapping(
-        character="\u0435",
-        confusable_with="e",
-        source_id=UNICODE_CONFUSABLES_SOURCE["source_id"],
-        why_it_matters="Cyrillic small letter ie can look like Latin small letter e in identifiers.",
-    ),
-    "\u043e": ConfusableMapping(
-        character="\u043e",
-        confusable_with="o",
-        source_id=UNICODE_CONFUSABLES_SOURCE["source_id"],
-        why_it_matters="Cyrillic small letter o can look like Latin small letter o in identifiers.",
-    ),
-    "\u0391": ConfusableMapping(
-        character="\u0391",
-        confusable_with="A",
-        source_id=UNICODE_CONFUSABLES_SOURCE["source_id"],
-        why_it_matters="Greek capital alpha can look like Latin capital A in identifiers.",
-    ),
-    "\u03bf": ConfusableMapping(
-        character="\u03bf",
-        confusable_with="o",
-        source_id=UNICODE_CONFUSABLES_SOURCE["source_id"],
-        why_it_matters="Greek small omicron can look like Latin small letter o in identifiers.",
-    ),
+    character: _confusable(character, latin, name) for character, latin, name in _CONFUSABLE_LETTERS
 }
 
 

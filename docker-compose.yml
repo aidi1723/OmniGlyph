@@ -3,5 +3,7 @@ services:
     build: .
     ports:
       - "127.0.0.1:8000:8000"
+    environment:
+      OMNIGLYPH_API_TOKEN: ${OMNIGLYPH_API_TOKEN:-}
     volumes:
       - ./data:/app/data

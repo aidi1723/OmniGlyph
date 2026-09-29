@@ -1,5 +1,30 @@
 
+import pytest
+
 from omniglyph.code_linter import format_text_report, scan_file, scan_path, scan_text
+
+
+def test_scan_text_rejects_oversized_input_and_directory_scans_continue(tmp_path):
+    from omniglyph.limits import MAX_TEXT_CHARS
+
+    with pytest.raises(ValueError, match="exceeds"):
+        scan_text("a" * (MAX_TEXT_CHARS + 1), source_name="huge.py")
+
+    (tmp_path / "huge.py").write_text("a" * (MAX_TEXT_CHARS + 1), encoding="utf-8")
+    (tmp_path / "small.py").write_text("ok = 1\u200b\n", encoding="utf-8")
+    report = scan_path(tmp_path)
+
+    assert report["status"] == "error"
+    assert report["failed_files"][0]["error_type"] == "TextLimitError"
+    assert report["findings"][0]["rule_id"] == "unicode-invisible-format"
+    assert report["findings"][0]["source"].endswith("small.py")
+
+
+def test_scan_text_flags_ascii_controls_and_accepts_printable_ascii():
+    report = scan_text("ok\x00\n", source_name="sample.py")
+
+    assert report["findings"][0]["rule_id"] == "unicode-control-character"
+    assert scan_text("value = 1\n", source_name="sample.py")["status"] == "pass"
 
 
 def test_scan_text_detects_zero_width_space():
@@ -30,6 +55,16 @@ def test_scan_text_detects_cyrillic_homoglyph_in_latin_code():
     assert finding["suggested_action"] == "review"
     assert finding["auto_fixable"] is False
     assert "Latin" in finding["why_it_matters"]
+
+
+def test_scan_text_names_more_identical_confusables_and_keeps_other_letters_generic():
+    cyrillic = scan_text("to\u0440en = 1\n", source_name="sample.py")
+    assert cyrillic["findings"][0]["rule_id"] == "unicode-confusable"
+    assert cyrillic["findings"][0]["confusable_with"] == "p"
+
+    greek = scan_text("pi = \u03c0\n", source_name="sample.py")
+    assert greek["findings"][0]["rule_id"] == "unicode-cross-script-homoglyph-risk"
+    assert "confusable_with" not in greek["findings"][0]
 
 
 def test_scan_text_detects_bidi_control():

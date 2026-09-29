@@ -10,6 +10,27 @@ from omniglyph.repository import GlyphRepository, SourceSnapshot
 from omniglyph.unihan import parse_unihan_data
 
 
+def test_insert_glyph_records_counts_one_pass_over_an_iterator(tmp_path):
+    repository = GlyphRepository(tmp_path / "stream.sqlite3")
+    repository.initialize()
+    source_id = repository.add_source_snapshot(
+        SourceSnapshot("Unicode Character Database", "file://u", "fixture", "stream", "Unicode Terms of Use", "u")
+    )
+    produced = 0
+
+    def records():
+        nonlocal produced
+        produced += 1
+        yield GlyphRecord(glyph="A", unicode_hex="U+0041", basic_definition="LATIN CAPITAL LETTER A", source_value="A")
+        produced += 1
+        yield GlyphRecord(glyph="B", unicode_hex="U+0042", basic_definition="LATIN CAPITAL LETTER B", source_value="B")
+
+    assert repository.insert_glyph_records(records(), source_id) == 2
+    assert produced == 2
+    assert repository.find_by_glyph("A")["unicode"]["name"] == "LATIN CAPITAL LETTER A"
+    assert repository.find_by_glyph("B")["unicode"]["hex"] == "U+0042"
+
+
 def test_repository_inserts_source_snapshot_and_finds_glyph(tmp_path):
     repository = GlyphRepository(tmp_path / "test.sqlite3")
     repository.initialize()
@@ -334,7 +355,9 @@ def _entry(term, canonical_id="trade:fob", **kwargs):
     return DomainEntry(
         term=term, canonical_id=canonical_id, entry_type="trade_term", language="en",
         aliases=kwargs.pop("aliases", []), definition=kwargs.pop("definition", "Free On Board"),
-        traits=kwargs.pop("traits", {"kind": "trade"}), namespace="private_trade", **kwargs,
+        traits=kwargs.pop("traits", {"kind": "trade"}),
+        namespace=kwargs.pop("namespace", "private_trade"),
+        **kwargs,
     )
 
 
@@ -352,6 +375,77 @@ def test_repository_uses_structured_identity_and_real_id_for_aliases(tmp_path):
         "first": next(row["id"] for row in rows if row["term"] == "a:b"),
         "second": next(row["id"] for row in rows if row["term"] == "a"),
     }
+
+
+def test_repository_counts_merged_case_variants_once(tmp_path):
+    repository = GlyphRepository(tmp_path / "count.sqlite3")
+    repository.initialize()
+    source_id = repository.add_source_snapshot(SourceSnapshot("Pack", "file://pack", "1", "count", "private", "pack"))
+
+    count = repository.insert_lexical_entries([_entry("FOB", aliases=["free"]), _entry("fob", aliases=["board"])], source_id)
+
+    with repository.connect() as connection:
+        rows = connection.execute("SELECT id FROM lexical_entry").fetchall()
+    assert count == 1
+    assert len(rows) == 1
+
+
+def test_find_term_prefers_approved_entry_over_earlier_namespace(tmp_path):
+    repository = GlyphRepository(tmp_path / "prefer.sqlite3")
+    repository.initialize()
+    draft_source = repository.add_source_snapshot(SourceSnapshot("Pack", "file://a", "1", "draft", "private", "a"))
+    approved_source = repository.add_source_snapshot(SourceSnapshot("Pack", "file://b", "1", "approved", "private", "b"))
+    repository.insert_lexical_entries([
+        _entry("FOB", canonical_id="trade:draft", namespace="private_a", review_status="draft", definition="draft"),
+    ], draft_source)
+    repository.insert_lexical_entries([
+        _entry("FOB", canonical_id="trade:approved", namespace="private_b", review_status="approved", definition="approved"),
+    ], approved_source)
+
+    found = repository.find_term("FOB")
+
+    assert found is not None
+    assert found["namespace"] == "private_b"
+    assert found["canonical_id"] == "trade:approved"
+    assert found["review_status"] == "approved"
+    assert "ambiguous" not in found
+
+
+def test_find_term_marks_conflicting_approved_entries(tmp_path):
+    repository = GlyphRepository(tmp_path / "conflict.sqlite3")
+    repository.initialize()
+    first = repository.add_source_snapshot(SourceSnapshot("Pack", "file://a", "1", "first", "private", "a"))
+    second = repository.add_source_snapshot(SourceSnapshot("Pack", "file://b", "1", "second", "private", "b"))
+    repository.insert_lexical_entries([_entry("FOB", canonical_id="trade:fob", namespace="private_a")], first)
+    repository.insert_lexical_entries([_entry("FOB", canonical_id="other:fob", namespace="private_b")], second)
+
+    found = repository.find_term("FOB")
+
+    assert found is not None
+    assert found["ambiguous"] is True
+    assert found["candidate_canonical_ids"] == ["other:fob", "trade:fob"]
+
+
+def test_reimport_clears_placeholder_glyph_name_and_keeps_explicit_name(tmp_path):
+    repository = GlyphRepository(tmp_path / "names.sqlite3")
+    repository.initialize()
+    source_id = repository.add_source_snapshot(
+        SourceSnapshot("Unicode Character Database", "file://unicode", "old", "names", "Unicode Terms of Use", "unicode")
+    )
+    repository.insert_glyph_records([
+        GlyphRecord(glyph="一", unicode_hex="U+4E00", basic_definition="CJK UNIFIED IDEOGRAPH-4E00"),
+        GlyphRecord(glyph="铝", unicode_hex="U+94DD", basic_definition="CJK UNIFIED IDEOGRAPH-94DD"),
+    ], source_id)
+    with repository.connect() as connection:
+        connection.execute("UPDATE glyph_node SET name = ? WHERE glyph = ?", ("<CJK Ideograph, First>", "一"))
+
+    repository.insert_glyph_records([
+        GlyphRecord(glyph="一", unicode_hex="U+4E00", basic_definition=None, source_field="Range", source_value="{}"),
+        GlyphRecord(glyph="铝", unicode_hex="U+94DD", basic_definition=None, source_field="Range", source_value="{}"),
+    ], source_id)
+
+    assert repository.find_by_glyph("一")["unicode"]["name"] is None
+    assert repository.find_by_glyph("铝")["unicode"]["name"] == "CJK UNIFIED IDEOGRAPH-94DD"
 
 
 def test_repository_merges_case_variant_and_rejects_conflicting_fact(tmp_path):

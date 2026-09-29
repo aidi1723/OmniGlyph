@@ -26,31 +26,37 @@ UV_CACHE_DIR=.uv-cache uv pip install -e '.[dev]'
 ## 4. Run API
 
 ```bash
-.venv/bin/uvicorn omniglyph.api:app --reload
+export OMNIGLYPH_API_TOKEN="$(python -c 'import secrets; print(secrets.token_hex(24))')"
+.venv/bin/uvicorn omniglyph.api:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-The API has no built-in authentication. The development server and the supplied
-Docker Compose host port bind to `127.0.0.1` by default. Inside the container,
-Uvicorn still listens on `0.0.0.0:8000` so port forwarding works. Before enabling
-remote access, configure an authenticated gateway, TLS, and request limits.
-Loopback binding limits network exposure; it does not authenticate local callers.
+Every route except `/api/v1/health` requires `Authorization: Bearer $OMNIGLYPH_API_TOKEN`.
+Health reports whether the database exists and does not return its filesystem path.
+HTTP pack validation also requires `OMNIGLYPH_LEXICON_PACK_ROOT` or
+`OMNIGLYPH_POLICY_PACK_ROOT`; requests outside those directories are rejected.
+The Compose host port binds to `127.0.0.1`. Inside the container, Uvicorn listens
+on `0.0.0.0:8000` so port forwarding works. Remote access still needs TLS and
+request limits in front of this token.
 
 ## 5. Query a Glyph
 
 ```bash
-curl 'http://127.0.0.1:8000/api/v1/glyph?char=%E9%93%9D'
+curl -H "Authorization: Bearer $OMNIGLYPH_API_TOKEN" \
+  'http://127.0.0.1:8000/api/v1/glyph?char=%E9%93%9D'
 ```
 
 ## 6. Query a Term
 
 ```bash
-curl 'http://127.0.0.1:8000/api/v1/term?text=FOB'
+curl -H "Authorization: Bearer $OMNIGLYPH_API_TOKEN" \
+  'http://127.0.0.1:8000/api/v1/term?text=FOB'
 ```
 
 ## 7. Normalize Tokens
 
 ```bash
 curl -X POST 'http://127.0.0.1:8000/api/v1/normalize?mode=compact' \
+  -H "Authorization: Bearer $OMNIGLYPH_API_TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{"tokens":["铝","FOB","tempered glass","unknown"]}'
 ```
@@ -84,7 +90,7 @@ Expected compact idea:
 .venv/bin/omniglyph enforce-intent ticket.create --policy-pack examples/policy-packs/agent_intents --actor-role operator
 ```
 
-These commands return JSON evidence. They do not rewrite text automatically or execute shell commands.
+These commands return JSON evidence. They do not rewrite text automatically or execute shell commands. Scan commands reject text longer than 200000 characters, and a malformed UnicodeData import exits with code 2.
 
 ## 10. Run Demo
 

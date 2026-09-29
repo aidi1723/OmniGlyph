@@ -31,12 +31,16 @@ def main() -> None:
     names = {item["name"] for item in tools}
     if not expected <= names or len(names) != len(tools):
         raise SystemExit("installed MCP tool listing failed")
+    os.environ["OMNIGLYPH_API_TOKEN"] = "installed-smoke-token"
     from fastapi.testclient import TestClient
 
     from omniglyph.api import create_app
     from omniglyph.repository import GlyphRepository
 
-    client = TestClient(create_app(GlyphRepository(Path(env["OMNIGLYPH_SQLITE_PATH"]))))
+    client = TestClient(
+        create_app(GlyphRepository(Path(env["OMNIGLYPH_SQLITE_PATH"]))),
+        headers={"Authorization": "Bearer installed-smoke-token"},
+    )
     if client.get("/api/v1/health").status_code != 200:
         raise SystemExit("installed HTTP health failed")
     if client.get("/api/v1/term", params={"text": "FOB"}).json()["canonical_id"] != "trade:fob":

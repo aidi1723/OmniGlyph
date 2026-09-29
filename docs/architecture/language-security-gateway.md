@@ -116,7 +116,7 @@ This does not prove that prompt injection is globally solved.
 It creates deterministic safety checkpoints for the parts OmniGlyph can inspect:
 
 - physical Unicode attacks
-- known prompt-injection phrases
+- known prompt-injection phrases, including ignore, disregard, and forget of previous or earlier instructions, and requests to print or reveal a hidden, system, or developer prompt. Text longer than 200000 characters is rejected before those checks run.
 - obvious sensitive output patterns
 - explicit secret terms
 - manifest-defined or Policy Pack-defined intents

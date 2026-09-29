@@ -6,6 +6,16 @@ Base URL for local development:
 http://127.0.0.1:8000
 ```
 
+## Authentication
+
+Every route except `GET /api/v1/health` requires:
+
+```text
+Authorization: Bearer $OMNIGLYPH_API_TOKEN
+```
+
+A missing server token or a bearer token that does not match returns HTTP 401. Scan, explanation, and audit text is limited to 200000 characters. Longer text returns HTTP 400.
+
 ## `GET /api/v1/health`
 
 Returns service status.
@@ -13,7 +23,7 @@ Returns service status.
 Response:
 
 ```json
-{"status":"ok","service":"omniglyph","version":"0.8.0b0"}
+{"status":"ok","service":"omniglyph","version":"0.8.1b0","database":{"exists":true}}
 ```
 
 ## `GET /api/v1/glyph`
@@ -478,7 +488,7 @@ Suggested host behavior:
 
 ## `POST /api/v1/language-security/scan-input`
 
-Scan untrusted natural-language input before it enters a model.
+Scan untrusted natural-language input before it enters a model. Text longer than 200000 characters returns HTTP 400.
 
 Request:
 

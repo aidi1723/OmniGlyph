@@ -33,6 +33,19 @@ def seeded_domain_repository(tmp_path):
     return repository
 
 
+def _allow_policy_root(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(
+        api_module,
+        "settings",
+        Settings(
+            data_dir=tmp_path / "data",
+            raw_dir=tmp_path / "data" / "raw",
+            sqlite_path=tmp_path / "data" / "omniglyph.sqlite3",
+            policy_pack_root=tmp_path,
+        ),
+    )
+
+
 def write_api_policy_pack(path: Path) -> None:
     path.mkdir()
     (path / "policy.json").write_text(
@@ -57,6 +70,7 @@ def test_get_glyph_returns_record(tmp_path):
     assert payload["lexical"]["pinyin"] == "lǚ"
     assert payload["lexical"]["basic_meaning"] == "aluminum"
     assert payload["properties"][0]["confidence"] == 1.0
+    assert all("local_path" not in source for source in payload["sources"])
 
 
 def test_get_glyph_rejects_empty_input(tmp_path):
@@ -114,15 +128,67 @@ def test_health_check_returns_service_status(tmp_path):
         "status": "ok",
         "service": "omniglyph",
         "version": __version__,
-        "database": {"path": str(repository.sqlite_path), "exists": True},
+        "database": {"exists": True},
     }
+
+
+def test_api_requires_bearer_token_and_redacts_secret_definitions(tmp_path):
+    repository = GlyphRepository(tmp_path / "secrets.sqlite3")
+    repository.initialize()
+    source_id = repository.add_source_snapshot(SourceSnapshot("Pack", "file://pack", "1", "secret", "private", "pack"))
+    from omniglyph.domain_pack import DomainEntry
+
+    repository.insert_lexical_entries([
+        DomainEntry("ProjectX", "secret:x", "term", "en", [], "super-secret-definition", {"hidden": True}, "private_a", sensitivity="secret"),
+    ], source_id)
+    app = create_app(repository)
+
+    missing = TestClient(app, headers={"Authorization": ""})
+    assert missing.get("/api/v1/term", params={"text": "ProjectX"}).status_code == 401
+
+    authorized = TestClient(app)
+    response = authorized.get("/api/v1/term", params={"text": "ProjectX"})
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["canonical_id"] == "secret:x"
+    assert payload["sensitivity"] == "secret"
+    assert payload["definition"] is None
+    assert payload["traits"] == {}
+    assert payload["definition_redacted"] is True
+
+    explained = authorized.get("/api/v1/explain/term", params={"text": "ProjectX"})
+    assert explained.status_code == 200
+    assert explained.json()["lexical"][0]["definition"] is None
+    assert explained.json()["lexical"][0]["traits"] == {}
+
+
+def test_http_pack_endpoints_require_configured_roots(tmp_path, monkeypatch):
+    repository = GlyphRepository(tmp_path / "packs.sqlite3")
+    client = TestClient(create_app(repository))
+    monkeypatch.setattr(
+        api_module,
+        "settings",
+        Settings(
+            data_dir=tmp_path / "data",
+            raw_dir=tmp_path / "data" / "raw",
+            sqlite_path=tmp_path / "data" / "omniglyph.sqlite3",
+            lexicon_pack_root=None,
+            policy_pack_root=None,
+        ),
+    )
+
+    lexicon = client.post("/api/v1/lexicon/validate-pack", json={"path": "examples/lexicon-packs/company_trade_terms"})
+    policy = client.post("/api/v1/policy/validate-pack", json={"path": str(tmp_path)})
+
+    assert lexicon.status_code == 403
+    assert policy.status_code == 403
 
 
 def test_api_metadata_uses_package_version(tmp_path):
     repository = GlyphRepository(tmp_path / "test.sqlite3")
     app = create_app(repository)
 
-    assert __version__ == "0.8.0b0"
+    assert __version__ == "0.8.1b0"
     assert app.version == __version__
 
 
@@ -293,7 +359,17 @@ def test_lexicon_namespaces_endpoint_lists_loaded_packs(tmp_path):
     ]
 
 
-def test_lexicon_validate_pack_endpoint_reports_valid_example_pack(tmp_path):
+def test_lexicon_validate_pack_endpoint_reports_valid_example_pack(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        api_module,
+        "settings",
+        Settings(
+            data_dir=tmp_path / "data",
+            raw_dir=tmp_path / "data" / "raw",
+            sqlite_path=tmp_path / "data" / "omniglyph.sqlite3",
+            lexicon_pack_root=Path.cwd(),
+        ),
+    )
     client = TestClient(create_app(GlyphRepository(tmp_path / "test.sqlite3")))
 
     response = client.post("/api/v1/lexicon/validate-pack", json={"path": "examples/lexicon-packs/company_trade_terms"})
@@ -325,9 +401,10 @@ def test_lexicon_validate_pack_endpoint_rejects_paths_outside_configured_root(tm
     assert response.status_code == 403
 
 
-def test_policy_validate_pack_endpoint_reports_valid_pack(tmp_path):
+def test_policy_validate_pack_endpoint_reports_valid_pack(tmp_path, monkeypatch):
     pack_dir = tmp_path / "policy"
     write_api_policy_pack(pack_dir)
+    _allow_policy_root(monkeypatch, tmp_path)
     client = TestClient(create_app(GlyphRepository(tmp_path / "test.sqlite3")))
 
     response = client.post("/api/v1/policy/validate-pack", json={"path": str(pack_dir)})
@@ -337,9 +414,10 @@ def test_policy_validate_pack_endpoint_reports_valid_pack(tmp_path):
     assert response.json()["policy"]["policy_id"] == "company.acme.agent_policy"
 
 
-def test_language_security_enforce_intent_can_load_policy_pack_path(tmp_path):
+def test_language_security_enforce_intent_can_load_policy_pack_path(tmp_path, monkeypatch):
     pack_dir = tmp_path / "policy"
     write_api_policy_pack(pack_dir)
+    _allow_policy_root(monkeypatch, tmp_path)
     client = TestClient(create_app(GlyphRepository(tmp_path / "test.sqlite3")))
 
     response = client.post(
@@ -358,7 +436,7 @@ def test_language_security_enforce_intent_can_load_policy_pack_path(tmp_path):
     assert payload["policy"]["policy_id"] == "company.acme.agent_policy"
 
 
-def test_language_security_enforce_intent_rejects_invalid_parameter_schema_pack(tmp_path):
+def test_language_security_enforce_intent_rejects_invalid_parameter_schema_pack(tmp_path, monkeypatch):
     pack_dir = tmp_path / "policy"
     write_api_policy_pack(pack_dir)
     intents_path = pack_dir / "intents.csv"
@@ -367,6 +445,7 @@ def test_language_security_enforce_intent_rejects_invalid_parameter_schema_pack(
         text.replace('""required"":[""service""]', '""required"":""service""'),
         encoding="utf-8",
     )
+    _allow_policy_root(monkeypatch, tmp_path)
     client = TestClient(create_app(GlyphRepository(tmp_path / "test.sqlite3")))
 
     response = client.post(
@@ -378,9 +457,10 @@ def test_language_security_enforce_intent_rejects_invalid_parameter_schema_pack(
     assert "parameters_schema.required" in response.json()["detail"]
 
 
-def test_language_security_enforce_intent_blocks_invalid_policy_pack_parameters(tmp_path):
+def test_language_security_enforce_intent_blocks_invalid_policy_pack_parameters(tmp_path, monkeypatch):
     pack_dir = tmp_path / "policy"
     write_api_policy_pack(pack_dir)
+    _allow_policy_root(monkeypatch, tmp_path)
     client = TestClient(create_app(GlyphRepository(tmp_path / "test.sqlite3")))
 
     response = client.post(
@@ -418,13 +498,14 @@ def test_language_security_enforce_intent_rejects_ambiguous_policy_sources(tmp_p
     assert response.json()["detail"] == "provide exactly one of manifest or policy_pack_path"
 
 
-def test_language_security_enforce_intent_returns_400_for_invalid_pack(tmp_path):
+def test_language_security_enforce_intent_returns_400_for_invalid_pack(tmp_path, monkeypatch):
     pack_dir = tmp_path / "policy"
     write_api_policy_pack(pack_dir)
     intents_path = pack_dir / "intents.csv"
     lines = intents_path.read_text(encoding="utf-8").splitlines()
     lines[1] += ",unexpected"
     intents_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    _allow_policy_root(monkeypatch, tmp_path)
     client = TestClient(create_app(GlyphRepository(tmp_path / "test.sqlite3")))
 
     response = client.post(

@@ -84,7 +84,7 @@ OmniGlyph 也把自然语言当作运行时攻击面处理。`scan_language_inpu
 
 OmniGlyph 已准备为 Python 包和 MCP Registry server。当前 GitHub 源码候选版本高于最新已发布 PyPI 包。
 
-- 当前源码包版本：`omniglyph==0.8.0b0`
+- 当前源码包版本：`omniglyph==0.8.1b0`
 - 最新已发布 PyPI 包：`omniglyph==0.6.0b0`
 - MCP Registry server：`io.github.aidi1723/omniglyph`
 - 传输方式：本地 stdio MCP server
@@ -107,7 +107,7 @@ omniglyph-mcp
 printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' | omniglyph-mcp
 ```
 
-当前源码分支版本为 `0.8.0b0`，已经提供 v0.8 MCP 工具集。`0.8.0b0` 的 PyPI 发布属于单独 release 步骤。
+当前源码分支版本为 `0.8.1b0`，已经提供 v0.8 MCP 工具集。`0.8.1b0` 的 PyPI 发布属于单独 release 步骤。
 
 当前源码 MCP 工具：`lookup_glyph`、`lookup_term`、`explain_glyph`、`explain_term`、`explain_code_security`、`normalize_tokens`、`list_namespaces`、`validate_lexicon_pack`、`validate_policy_pack`、`validate_output_terms`、`enforce_grounded_output`、`scan_unicode_security`、`scan_language_input`、`scan_output_dlp`、`enforce_intent`、`audit_explain`。旧工具名 `scan_code_symbols` 仍可作为向后兼容别名调用。
 
@@ -415,8 +415,8 @@ omniglyph enforce-output --term FOB --term "HS 7604.99X" --policy '{"unknown_act
 
 当前已实现：
 
-- `scan_language_input`：在输入进入模型前扫描 prompt-injection 指令和高风险隐藏 Unicode。
-- `scan_output_dlp`：在输出出境前扫描 API key、AWS key、邮箱和调用方传入的机密词，并返回 `[REDACTED]` 文本。
+- `scan_language_input`：在输入进入模型前扫描 prompt-injection 指令（包括无视先前指令、要求打印隐藏提示等改写）和高风险隐藏 Unicode。超过 200000 字符的文本会被拒绝。
+- `scan_output_dlp`：在输出出境前扫描 API key、AWS key、GitHub token、Slack token、私钥头、邮箱和调用方传入的机密词，并返回 `[REDACTED]` 文本。
 - `enforce_intent`：根据 intent manifest 校验 Agent 动作请求，只返回决策，不执行 shell 命令。
 
 这不是“彻底消灭 prompt injection”的承诺，而是给 AgentCore / MCP 工作流增加确定性安全检查点，让模型即使被诱导也不能直接越过边界。
@@ -435,7 +435,7 @@ OmniGlyph 的目标是用本地、可追溯、结构化查询，替代 Agent 临
 | Unihan_Readings 导入 | `291,227` 条 properties |
 | Unihan_DictionaryLikeData 导入 | `156,251` 条 properties |
 | 已验证 Unihan 属性总量 | `447,478` 条 properties |
-| 本地测试 | `184 passed` |
+| 本地测试 | `337 passed` |
 | N100 Linux 测试 | beta 分支曾验证通过 |
 | Docker build/run/healthcheck | N100 曾验证通过 |
 | `铝` 的 SQLite 查询 benchmark | 1000 次查询 P95 约 `0.17ms` |

@@ -20,7 +20,9 @@ def test_wheel_smoke_test_installs_built_wheel_and_checks_mcp():
     script = Path("scripts/wheel_smoke_test.sh").read_text(encoding="utf-8")
 
     assert '-m venv' in script
-    assert 'pip install --no-deps' in script
+    assert '--system-site-packages' not in script
+    assert 'unset PYTHONPATH' in script
+    assert 'pip install --no-deps --force-reinstall' in script
     assert 'installed_smoke.py' in script
     assert 'bin/omniglyph-mcp' in script
 

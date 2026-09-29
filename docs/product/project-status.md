@@ -11,8 +11,18 @@ It is suitable for experimentation, local agent workflows, RAG preprocessing, co
 - Stage 3 Semantic Topology: planned.
 - Stage 4 Native Semantic Computation: planned.
 
+## Current Source Behavior (0.8.1b0)
+
+- HTTP routes other than `GET /api/v1/health` require `Authorization: Bearer $OMNIGLYPH_API_TOKEN`. Health reports whether the database file exists and does not return its path.
+- HTTP responses omit secret term definitions and local source paths. HTTP pack validation requires `OMNIGLYPH_LEXICON_PACK_ROOT` or `OMNIGLYPH_POLICY_PACK_ROOT`.
+- Term lookup prefers an approved entry. Conflicting approved canonical IDs are marked ambiguous, and the output guardrail blocks them.
+- UnicodeData ingestion validates the file, then streams glyph records into SQLite. Malformed rows fail the import. Range placeholder names are cleared when a later import has a real name or an expanded range record.
+- Submitted scan text is limited to 200000 characters. HTTP returns 400 and MCP returns `-32602`. Local `scan-code` records an oversized file as failed and continues with the other files.
+- Prompt-injection checks cover ignore, disregard, and forget of previous or earlier instructions, plus requests to print or reveal a hidden, system, or developer prompt. Ordinary references to an earlier email or meeting notes stay allowed. The checker is still a phrase list.
+
 ## Current Closeout Reference
 
+- v0.8.1b0 delivery closeout, local release-gate evidence, and publication boundary: [`docs/product/v0.8.1b0-closeout.md`](v0.8.1b0-closeout.md).
 - Latest parameter-schema fail-closed hardening closeout: [`docs/superpowers/reviews/2026-07-16-parameter-schema-fail-closed-closeout.md`](../superpowers/reviews/2026-07-16-parameter-schema-fail-closed-closeout.md).
 - Latest intent-policy fail-closed hardening closeout: [`docs/superpowers/reviews/2026-07-16-intent-policy-fail-closed-closeout.md`](../superpowers/reviews/2026-07-16-intent-policy-fail-closed-closeout.md).
 - Latest project-wide release-safety hardening and verification closeout: [`docs/superpowers/reviews/2026-07-16-project-release-safety-closeout.md`](../superpowers/reviews/2026-07-16-project-release-safety-closeout.md).
@@ -81,7 +91,8 @@ OmniGlyph is not yet ideal for:
 - Community adoption is still early.
 - Current output guardrail supports known/unknown validation, policy modes, and review evidence for checked terms, but not persistent queues, automatic rewrites, or external approval integrations.
 - Current Language Security Gateway is a deterministic checkpoint layer, not a complete prompt-injection, DLP, IAM, or OS sandboxing product. Intent Policy Packs and `parameters_schema` fail closed on invalid policy definitions, but still use a documented lightweight schema subset rather than full JSON Schema.
-- Homoglyph detection is rule-based with a minimal confusables map; full Unicode confusables data ingestion is planned.
+- The stdio MCP server does not require the HTTP bearer token. It is a trusted local process. Remote HTTP access still needs the token, TLS, and a network boundary.
+- Homoglyph detection names the Latin lookalike for a curated set of identical Cyrillic and Greek letters. Other letters in those scripts get a generic cross-script finding. Full Unicode confusables data ingestion is still planned.
 - OmniGlyph Explanation Standard v0.1 has runtime wrappers for glyph, term, and code-security explanations; broader CLDR and concept graph integrations are still planned.
 - No automatic source-code mutation or rewrite is performed.
 - Stage 3/4 semantic graph and computation layers are roadmap items, not current production features.
