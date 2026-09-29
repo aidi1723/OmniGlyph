@@ -7,17 +7,22 @@ DEFAULT_POLICY = {
     "unknown_action": "block",
     "unapproved_action": "block",
     "secret_action": "block",
+    "ambiguous_action": "block",
 }
-RISKY_STATUS_ORDER = ("unknown", "unapproved", "secret")
+RISKY_STATUS_ORDER = ("ambiguous", "unknown", "unapproved", "secret")
 ACTION_PRECEDENCE = ("block", "review", "allow")
 
 REVIEW_REASONS = {
+    "ambiguous": "The same term resolves to more than one approved canonical ID.",
     "unknown": "Term is not present in the local fact base.",
     "unapproved": "Term exists in the local fact base but is not approved.",
     "secret": "Term is approved but marked secret.",
 }
 
 SUGGESTED_HOST_ACTIONS = {
+    ("ambiguous", "block"): "Block delivery until the conflicting canonical IDs are resolved.",
+    ("ambiguous", "review"): "Route the conflicting canonical IDs to a reviewer before delivery.",
+    ("ambiguous", "allow"): "Deliver only if the host policy accepts conflicting term identities.",
     ("unknown", "block"): "Block delivery until the term is reviewed, removed, or added to an approved source.",
     ("unknown", "review"): "Route to human review or regenerate with verified terms only.",
     ("unknown", "allow"): "Deliver only if the host policy accepts unsupported terms.",
@@ -39,6 +44,22 @@ def validate_output_terms(repository: GlyphRepository, terms: list[str]) -> dict
         if record is None:
             unknown.append(term)
             details.append({"term": term, "status": "unknown", "canonical_id": None})
+            continue
+        if record.get("ambiguous"):
+            unknown.append(term)
+            details.append(
+                {
+                    "term": term,
+                    "status": "ambiguous",
+                    "canonical_id": None,
+                    "candidate_canonical_ids": record.get("candidate_canonical_ids", []),
+                    "entry_type": record["entry_type"],
+                    "sensitivity": record.get("sensitivity"),
+                    "review_status": record.get("review_status"),
+                    "source_id": record["source_id"],
+                    "source_name": record["source_name"],
+                }
+            )
             continue
         if record.get("review_status") != "approved":
             unknown.append(term)
@@ -134,6 +155,8 @@ def _classify_secret_detail(detail: dict) -> dict:
 
 
 def _action_for_detail(detail: dict, policy: dict[str, str]) -> str:
+    if detail["status"] == "ambiguous":
+        return policy["ambiguous_action"]
     if detail["status"] == "unknown":
         return policy["unknown_action"]
     if detail["status"] == "unapproved":
@@ -174,6 +197,7 @@ def _limit_for(action: str, detail: dict) -> str | None:
     if status == "known":
         return None
     label = {
+        "ambiguous": "Ambiguous terms",
         "unknown": "Unknown terms",
         "unapproved": "Unapproved terms",
         "secret": "Secret terms",
@@ -226,7 +250,7 @@ def _review_term_payload(detail: dict) -> dict:
         "term": detail["term"],
         "canonical_id": detail.get("canonical_id"),
     }
-    for key in ("entry_type", "sensitivity", "review_status", "source_id", "source_name"):
+    for key in ("entry_type", "sensitivity", "review_status", "source_id", "source_name", "candidate_canonical_ids"):
         if key in detail:
             payload[key] = detail[key]
     return payload

@@ -2,6 +2,7 @@ import json
 import sqlite3
 import threading
 import uuid
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -18,6 +19,34 @@ class SourceSnapshot:
     sha256: str
     license: str
     local_path: str
+
+
+def _stored_glyph_name(name: str | None) -> str | None:
+    if name and name.startswith("<") and (name.endswith(", First>") or name.endswith(", Last>")):
+        return None
+    return name
+
+
+def _select_lexical_match(rows: list[sqlite3.Row], to_dict) -> dict | None:
+    if not rows:
+        return None
+    approved = [row for row in rows if row["review_status"] == "approved"]
+    pool = approved or rows
+    canonical_ids = sorted({row["canonical_id"] for row in pool})
+    chosen = min(
+        pool,
+        key=lambda row: (
+            -float(row["confidence"]),
+            0 if row["sensitivity"] != "secret" else 1,
+            row["namespace"],
+            row["id"],
+        ),
+    )
+    result = cast(dict, to_dict(chosen))
+    if len(canonical_ids) > 1:
+        result["ambiguous"] = True
+        result["candidate_canonical_ids"] = canonical_ids
+    return result
 
 
 class GlyphRepository:
@@ -54,8 +83,21 @@ class GlyphRepository:
         with self.connect() as connection:
             return self._add_source_snapshot_with_connection(connection, source)
 
-    def insert_glyph_records(self, records: list[GlyphRecord], source_id: str) -> None:
+    def insert_glyph_records(
+        self,
+        records: Iterable[GlyphRecord],
+        source_id: str | None = None,
+        *,
+        source: SourceSnapshot | None = None,
+    ) -> int:
+        if source_id is None and source is None:
+            raise ValueError("glyph import requires a source")
+        count = 0
         with self.connect() as connection:
+            if source is not None:
+                source_id = self._add_source_snapshot_with_connection(connection, source)
+            if source_id is None:
+                raise ValueError("glyph import requires a source")
             for record in records:
                 glyph_uid = self._glyph_uid(record.unicode_hex)
                 now = datetime.now(timezone.utc).isoformat()
@@ -66,7 +108,11 @@ class GlyphRepository:
                         general_category, script, block, created_at, updated_at
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(glyph) DO UPDATE SET
-                        name = COALESCE(glyph_node.name, excluded.name),
+                        name = CASE
+                            WHEN excluded.name IS NOT NULL THEN excluded.name
+                            WHEN glyph_node.name GLOB '<*, First>' OR glyph_node.name GLOB '<*, Last>' THEN NULL
+                            ELSE glyph_node.name
+                        END,
                         updated_at = excluded.updated_at
                     """,
                     (
@@ -74,7 +120,7 @@ class GlyphRepository:
                         record.glyph,
                         record.unicode_hex,
                         None,
-                        record.basic_definition,
+                        _stored_glyph_name(record.basic_definition),
                         None,
                         None,
                         None,
@@ -82,13 +128,24 @@ class GlyphRepository:
                         now,
                     ),
                 )
-                if record.basic_definition is not None:
+                stored_name = _stored_glyph_name(record.basic_definition)
+                connection.execute(
+                    """
+                    DELETE FROM glyph_property
+                    WHERE glyph_uid = ?
+                      AND property_namespace = 'unicode'
+                      AND property_name = 'name'
+                      AND (property_value GLOB '<*, First>' OR property_value GLOB '<*, Last>')
+                    """,
+                    (glyph_uid,),
+                )
+                if stored_name is not None:
                     self._insert_property_with_connection(
                         connection,
                         glyph_uid=glyph_uid,
                         namespace="unicode",
                         name="name",
-                        value=record.basic_definition,
+                        value=stored_name,
                         source_id=source_id,
                         confidence=1.0,
                     )
@@ -102,6 +159,8 @@ class GlyphRepository:
                         source_id=source_id,
                         confidence=1.0,
                     )
+                count += 1
+        return count
 
     def insert_property(
         self,
@@ -235,7 +294,7 @@ class GlyphRepository:
         confidence: float = 1.0,
         legacy_ids: dict[tuple[str, str, str], str] | None = None,
     ) -> int:
-        inserted = 0
+        touched: set[str] = set()
         for entry in entries:
             normalized_term = self._normalize_text(entry.term)
             business_key = self._lexical_business_key(entry)
@@ -309,8 +368,8 @@ class GlyphRepository:
                         now,
                     ),
                 )
-            inserted += 1
-        return inserted
+            touched.add(entry_id)
+        return len(touched)
 
     def _lexical_business_key(self, entry) -> tuple[str, str, str]:
         return (entry.namespace, self._normalize_text(entry.term), entry.canonical_id)
@@ -346,33 +405,29 @@ class GlyphRepository:
     def find_term(self, text: str) -> dict | None:
         normalized = self._normalize_text(text)
         with self.connect() as connection:
-            row = connection.execute(
+            term_rows = connection.execute(
                 """
                 SELECT le.*, le.term AS matched_text, ss.source_name, ss.source_version
                 FROM lexical_entry le
                 JOIN source_snapshot ss ON ss.id = le.source_id
                 WHERE le.normalized_term = ?
-                ORDER BY le.confidence DESC, le.namespace
-                LIMIT 1
                 """,
                 (normalized,),
-            ).fetchone()
-            if row is None:
-                row = connection.execute(
-                    """
-                    SELECT le.*, la.alias AS matched_text, ss.source_name, ss.source_version
-                    FROM lexical_alias la
-                    JOIN lexical_entry le ON le.id = la.lexical_entry_id
-                    JOIN source_snapshot ss ON ss.id = le.source_id
-                    WHERE la.normalized_alias = ?
-                    ORDER BY le.confidence DESC, le.namespace
-                    LIMIT 1
-                    """,
-                    (normalized,),
-                ).fetchone()
-            if row is None:
-                return None
-            return self._lexical_row_to_dict(row)
+            ).fetchall()
+            alias_rows = connection.execute(
+                """
+                SELECT le.*, la.alias AS matched_text, ss.source_name, ss.source_version
+                FROM lexical_alias la
+                JOIN lexical_entry le ON le.id = la.lexical_entry_id
+                JOIN source_snapshot ss ON ss.id = le.source_id
+                WHERE la.normalized_alias = ?
+                """,
+                (normalized,),
+            ).fetchall()
+        rows = list(term_rows)
+        seen = {row["id"] for row in rows}
+        rows.extend(row for row in alias_rows if row["id"] not in seen)
+        return _select_lexical_match(rows, self._lexical_row_to_dict)
 
     def list_secret_terms(self) -> list[str]:
         with self.connect() as connection:

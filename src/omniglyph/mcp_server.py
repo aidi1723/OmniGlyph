@@ -11,6 +11,7 @@ from omniglyph.guardrail import enforce_grounded_output, validate_output_terms
 from omniglyph.json_input import ensure_finite_json, parse_strict_json
 from omniglyph.language_security import enforce_intent_manifest, scan_language_input, scan_output_dlp
 from omniglyph.lexicon_pack import ensure_allowed_pack_path, validate_lexicon_pack
+from omniglyph.limits import TextLimitError
 from omniglyph.normalization import compact_normalize, normalize_tokens
 from omniglyph.policy_pack import ensure_allowed_policy_pack_path, load_policy_pack, validate_policy_pack
 from omniglyph.repository import GlyphRepository
@@ -286,7 +287,7 @@ def handle_mcp_request(request: object, repository: GlyphRepository | None = Non
                 return _error(request_id, -32602, "explain_code_security requires source code text")
             if not isinstance(source_name, str) or not source_name.strip():
                 return _error(request_id, -32602, "explain_code_security source_name must be a string")
-            return _result(request_id, {"content": [_json_content(explain_code_security(text, source_name=source_name))]})
+            return _content_result(request_id, lambda: explain_code_security(text, source_name=source_name))
 
         if tool_name == "normalize_tokens":
             tokens = arguments.get("tokens")
@@ -360,7 +361,7 @@ def handle_mcp_request(request: object, repository: GlyphRepository | None = Non
                 return _error(request_id, -32602, f"{tool_name} requires source code text")
             if not isinstance(source_name, str) or not source_name.strip():
                 return _error(request_id, -32602, f"{tool_name} source_name must be a string")
-            return _result(request_id, {"content": [_json_content(scan_text(text, source_name=source_name))]})
+            return _content_result(request_id, lambda: scan_text(text, source_name=source_name))
 
         if tool_name == "scan_language_input":
             text = arguments.get("text")
@@ -369,7 +370,7 @@ def handle_mcp_request(request: object, repository: GlyphRepository | None = Non
                 return _error(request_id, -32602, "scan_language_input requires text")
             if not isinstance(source_name, str) or not source_name.strip():
                 return _error(request_id, -32602, "scan_language_input source_name must be a string")
-            return _result(request_id, {"content": [_json_content(scan_language_input(text, source_name=source_name))]})
+            return _content_result(request_id, lambda: scan_language_input(text, source_name=source_name))
 
         if tool_name == "scan_output_dlp":
             text = arguments.get("text")
@@ -386,7 +387,10 @@ def handle_mcp_request(request: object, repository: GlyphRepository | None = Non
                 return _error(request_id, -32602, "scan_output_dlp source_name must be a string")
             if include_lexicon_secrets:
                 secret_terms = list(secret_terms) + glyph_repository.list_secret_terms()
-            return _result(request_id, {"content": [_json_content(scan_output_dlp(text, secret_terms=secret_terms, source_name=source_name))]})
+            return _content_result(
+                request_id,
+                lambda: scan_output_dlp(text, secret_terms=secret_terms, source_name=source_name),
+            )
 
         if tool_name == "enforce_intent":
             intent_id = arguments.get("intent_id")
@@ -440,7 +444,10 @@ def handle_mcp_request(request: object, repository: GlyphRepository | None = Non
                 return _error(request_id, -32602, "audit_explain glyph text must contain exactly one Unicode character")
             if not isinstance(source_name, str) or not source_name.strip():
                 return _error(request_id, -32602, "audit_explain source_name must be a string")
-            result, action = explain_for_audit(glyph_repository, kind, text, source_name)
+            try:
+                result, action = explain_for_audit(glyph_repository, kind, text, source_name)
+            except TextLimitError as exc:
+                return _error(request_id, -32602, str(exc))
             return _result(request_id, {"content": [_json_content({"result": result, "audit": build_audit_event(actor_id, action, result)})]})
 
         return _error(request_id, -32601, f"Unknown tool: {tool_name}")
@@ -458,6 +465,8 @@ def serve_stdio(input_stream: TextIO = sys.stdin, output_stream: TextIO = sys.st
             if isinstance(request, dict):
                 request_id = request.get("id")
             response = handle_mcp_request(request)
+        except TextLimitError as exc:
+            response = _error(request_id, -32602, str(exc))
         except (json.JSONDecodeError, ValueError) as exc:
             response = _error(request_id, -32700, f"Parse error: {exc}")
         except Exception:  # pragma: no cover - defensive stdio server boundary
@@ -469,6 +478,14 @@ def serve_stdio(input_stream: TextIO = sys.stdin, output_stream: TextIO = sys.st
 
 def main() -> None:
     serve_stdio()
+
+
+def _content_result(request_id: Any, build) -> dict[str, Any]:
+    try:
+        payload = build()
+    except TextLimitError as exc:
+        return _error(request_id, -32602, str(exc))
+    return _result(request_id, {"content": [_json_content(payload)]})
 
 
 def _result(request_id: Any, result: dict[str, Any]) -> dict[str, Any]:

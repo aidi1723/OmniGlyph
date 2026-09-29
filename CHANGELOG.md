@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+### 0.8.1b0 audit fixes
+
+- Prefer an approved lexical entry when the same term exists in more than one namespace. Conflicting approved canonical IDs are marked ambiguous and the output guardrail blocks them.
+- Count merged case-variant rows once during lexical import.
+- Reject malformed UnicodeData rows instead of skipping them.
+- Replace stored `<..., First>` / `<..., Last>` glyph names when a later import has a real name or an expanded range record. An explicit name is kept when the later record has no name.
+- Require `OMNIGLYPH_API_TOKEN` for HTTP routes other than `/api/v1/health`. Health no longer returns the database path. HTTP responses omit secret term definitions. HTTP pack access requires a configured pack root.
+- Run Ruff, mypy, the cross-border demo, and the installed wheel smoke test in GitHub Actions.
+- Revise the unimplemented LogosGate plan so an allow phrase cannot exempt a later violation, and the proposed decorator blocks `review` by default.
+- Validate UnicodeData before writing a source snapshot, then stream glyph and Unihan records into SQLite instead of retaining the full parsed list.
+- Report CLI input errors, including malformed UnicodeData, on stderr with exit code 2.
+- Reject scan text longer than 200000 characters. HTTP returns 400, MCP returns `-32602`, and local `scan-code` records that file as failed and continues.
+- Treat paraphrased instruction overrides as prompt injection, including disregard/forget of earlier directions and requests to print a hidden prompt. Ordinary references to an earlier email or meeting notes stay allowed.
+- Skip Unicode name and normalization lookups for printable ASCII during code scans.
+- Import UnicodeData in one pass and roll the source snapshot back with the glyph rows when a later row is malformed.
+- Name the Latin lookalike for the common identical Cyrillic and Greek letters. Other letters in those scripts still use the generic cross-script finding.
+- Detect “ignore your previous instructions”, “don't follow the previous rules”, and “忘记之前的指令” without treating “不要忘记之前的会议提示” as an override.
+- Redact GitHub tokens, Slack tokens, and private-key headers in output DLP.
+
 ### Security / Fail-closed hardening (2026-07-16)
 
 - Fail closed on invalid inline intent manifests: return `decision=block` / `status=invalid_manifest` with path-based findings instead of allowing or raising.

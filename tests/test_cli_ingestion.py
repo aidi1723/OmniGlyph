@@ -113,6 +113,74 @@ def test_import_reads_snapshot_once_and_hashes_the_imported_bytes(tmp_path, popu
     assert row[0] == hashlib.sha256(content).hexdigest()
 
 
+def test_ingest_unicode_and_unihan_stream_records(tmp_path, monkeypatch):
+    database = tmp_path / "data.sqlite3"
+    monkeypatch.setattr(cli, "settings", Settings(sqlite_path=database))
+    seen = []
+    real_glyphs = GlyphRepository.insert_glyph_records
+    real_unihan = GlyphRepository.insert_unihan_properties
+
+    def spy_glyphs(self, records, *args, **kwargs):
+        seen.append(type(records).__name__)
+        return real_glyphs(self, records, *args, **kwargs)
+
+    def spy_unihan(self, properties, source_id):
+        seen.append(type(properties).__name__)
+        return real_unihan(self, properties, source_id)
+
+    real_open = Path.open
+    text_opens: list[Path] = []
+
+    def counting_open(self, *args, **kwargs):
+        mode = args[0] if args else kwargs.get("mode", "r")
+        if self == unicode_source and str(mode).startswith("r") and "b" not in str(mode):
+            text_opens.append(self)
+        return real_open(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "open", counting_open)
+    monkeypatch.setattr(GlyphRepository, "insert_glyph_records", spy_glyphs)
+    monkeypatch.setattr(GlyphRepository, "insert_unihan_properties", spy_unihan)
+    unicode_source = tmp_path / "UnicodeData.txt"
+    unicode_source.write_text("0041;LATIN CAPITAL LETTER A;Lu;0;L;;;;;N;;;;0061;\n", encoding="utf-8")
+    unihan_source = tmp_path / "Unihan.txt"
+    unihan_source.write_text("U+0041\tkMandarin\tA\n", encoding="utf-8")
+
+    assert cli.ingest_unicode(unicode_source) == 1
+    assert cli.ingest_unihan(unihan_source) == 1
+    assert seen == ["generator", "generator"]
+    assert text_opens == [unicode_source]
+
+
+def test_malformed_unicode_import_rolls_back_the_source_snapshot(tmp_path, monkeypatch):
+    database = tmp_path / "data.sqlite3"
+    monkeypatch.setattr(cli, "settings", Settings(sqlite_path=database))
+    source = tmp_path / "bad.txt"
+    source.write_text("0041;LATIN CAPITAL LETTER A;Lu;0;L;;;;;N;;;;0061;\nZZZZ;NOT HEX\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="hexadecimal"):
+        cli.ingest_unicode(source)
+
+    repository = GlyphRepository(database)
+    repository.initialize()
+    with repository.connect() as connection:
+        assert connection.execute("SELECT COUNT(*) FROM source_snapshot").fetchone()[0] == 0
+        assert connection.execute("SELECT COUNT(*) FROM glyph_node").fetchone()[0] == 0
+
+
+def test_cli_main_reports_malformed_unicode_without_a_traceback(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(cli, "settings", Settings(sqlite_path=tmp_path / "data.sqlite3"))
+    source = tmp_path / "bad.txt"
+    source.write_text("ZZZZ;NOT HEX\n", encoding="utf-8")
+
+    with pytest.raises(SystemExit) as caught:
+        cli.main(["ingest-unicode", "--source", str(source)])
+
+    assert caught.value.code == 2
+    error = capsys.readouterr().err
+    assert "hexadecimal" in error
+    assert "Traceback" not in error
+
+
 def test_dry_run_also_checks_expected_hash(tmp_path, populated):
     source = tmp_path / "valid.csv"
     source.write_text(HEADER + "CIF,trade:cif,term,,{}\n", encoding="utf-8")

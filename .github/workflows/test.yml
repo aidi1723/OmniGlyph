@@ -17,7 +17,19 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e '.[dev]'
+      - run: ruff check .
+      - run: mypy src
       - run: pytest -v
+      - run: python examples/scripts/run_cross_border_demo.py > demo-output.json
+      - run: python - <<'PY'
+          import json
+          from pathlib import Path
+          payload = json.loads(Path("demo-output.json").read_text())
+          known = payload["normalization"]["known"]
+          assert known["aluminum profile"] == "material:aluminum_profile"
+          assert known["FOB"] == "trade:fob"
+          assert "Bangkok" in payload["normalization"]["unknown"]
+        PY
       - run: omniglyph --version
       - run: scripts/mcp_smoke_test.sh omniglyph-mcp
 
@@ -40,3 +52,4 @@ jobs:
         PY
       - run: python -m twine check dist/omniglyph-*.whl dist/omniglyph-*.tar.gz
       - run: python scripts/artifact_audit.py --wheel dist/omniglyph-$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')-py3-none-any.whl --sdist dist/omniglyph-$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])').tar.gz
+      - run: bash scripts/wheel_smoke_test.sh dist/omniglyph-$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')-py3-none-any.whl

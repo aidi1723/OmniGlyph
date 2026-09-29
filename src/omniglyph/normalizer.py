@@ -23,15 +23,19 @@ def parse_unicode_data(path: Path) -> Iterator[GlyphRecord]:
     pending: tuple[int, str, list[str], str] | None = None
     with path.open("r", encoding="utf-8") as source:
         for line_number, line in enumerate(source, 1):
-            fields = line.rstrip("\n").split(";")
-            if len(fields) < 2:
+            if not line.strip():
                 continue
+            fields = line.rstrip("\n").split(";")
+            if len(fields) < 2 or not fields[0]:
+                raise ValueError(f"UnicodeData row is missing a code point at line {line_number}")
 
             codepoint_hex, character_name = fields[0], fields[1]
             try:
                 codepoint = int(codepoint_hex, 16)
             except ValueError:
-                continue
+                raise ValueError(
+                    f"UnicodeData code point is not hexadecimal at line {line_number}: {codepoint_hex}"
+                ) from None
             if not 0 <= codepoint <= 0x10FFFF:
                 raise ValueError(f"Unicode code point out of range at line {line_number}: {codepoint_hex}")
 

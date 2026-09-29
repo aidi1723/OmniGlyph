@@ -1,5 +1,6 @@
 import argparse
 import json
+import sys
 from pathlib import Path
 
 from omniglyph import __version__
@@ -41,21 +42,19 @@ def ingest_unicode(source_path: Path, source_version: str = "local", expected_sh
         license=UNICODE_LICENSE,
         expected_sha256=expected_sha256,
     )
-    records = list(parse_unicode_data(source_path))
     repository = GlyphRepository(settings.sqlite_path)
     repository.initialize()
-    source_id = repository.add_source_snapshot(
-        SourceSnapshot(
+    return repository.insert_glyph_records(
+        parse_unicode_data(source_path),
+        source=SourceSnapshot(
             source_name="Unicode Character Database",
             source_url=artifact.source_url,
             source_version=artifact.source_version,
             sha256=artifact.sha256,
             license=artifact.license,
             local_path=str(artifact.path),
-        )
+        ),
     )
-    repository.insert_glyph_records(records, source_id=source_id)
-    return len(records)
 
 
 def ingest_unihan(source_path: Path, source_version: str = "local", expected_sha256: str | None = None) -> int:
@@ -66,7 +65,6 @@ def ingest_unihan(source_path: Path, source_version: str = "local", expected_sha
         license=UNIHAN_LICENSE,
         expected_sha256=expected_sha256,
     )
-    properties = list(parse_unihan_data(source_path))
     repository = GlyphRepository(settings.sqlite_path)
     repository.initialize()
     source_id = repository.add_source_snapshot(
@@ -79,7 +77,7 @@ def ingest_unihan(source_path: Path, source_version: str = "local", expected_sha
             local_path=str(artifact.path),
         )
     )
-    return repository.insert_unihan_properties(properties, source_id=source_id)
+    return repository.insert_unihan_properties(parse_unihan_data(source_path), source_id=source_id)
 
 
 def ingest_domain_pack(
@@ -130,7 +128,7 @@ def ingest_domain_pack(
     return repository.insert_lexical_entries(entries, source_id=source_id)
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="omniglyph")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     subcommands = parser.add_subparsers(dest="command", required=True)
@@ -212,7 +210,15 @@ def main() -> None:
     scan_code.add_argument("--format", choices=["text", "json"], default="text")
     scan_code.add_argument("--fail-on", choices=["never", "warning"], default="never")
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
+    try:
+        _execute_command(args, parser)
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        raise SystemExit(2) from exc
+
+
+def _execute_command(args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
     if args.command == "download-unicode":
         download_unicode(args.expected_sha256)
     elif args.command == "ingest-unicode":

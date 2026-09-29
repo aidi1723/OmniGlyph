@@ -32,7 +32,7 @@ def normalize_tokens(repository: GlyphRepository, tokens: list[str]) -> list[dic
                 )
                 continue
         term = repository.find_term(token)
-        if term is not None:
+        if term is not None and not term.get("ambiguous"):
             results.append(
                 NormalizeResult(
                     input=token,

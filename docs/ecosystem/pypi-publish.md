@@ -113,7 +113,7 @@ After PyPI publication:
 
 ## v0.8.0b0 Release Status
 
-Prepared in source, not uploaded yet.
+Prepared in source, not uploaded yet. Current source metadata is `0.8.1b0`. The counts below record the earlier `0.8.0b0` prep.
 
 - Package metadata version is `0.8.0b0`.
 - Full `scripts/release_check.sh` gate passed locally during release-prep verification.

@@ -3,6 +3,7 @@ import re
 from typing import Any
 
 from omniglyph.code_linter import scan_text
+from omniglyph.limits import ensure_text_limit
 from omniglyph.oes import risk_level_for_findings
 from omniglyph.parameter_schema import validate_parameter_schema, validate_parameters
 
@@ -12,17 +13,39 @@ PROMPT_SECURITY_SOURCE_ID = "source:omniglyph:prompt-injection-pack:0.1"
 DLP_SOURCE_ID = "source:omniglyph:dlp-pack:0.1"
 ALLOWED_INTENT_DECISIONS = {"allow", "review", "block"}
 
+_EARLIER_INSTRUCTION = (
+    r"(?:(?:all|any|the|your)\s+)*(?:previous|prior|above|earlier)\s+"
+    r"(?:instructions?|directions?|rules?|prompts?)"
+)
 PROMPT_INJECTION_PATTERNS = [
-    re.compile(r"\bignore\s+(all\s+)?(previous|prior|above)\s+instructions?\b", re.IGNORECASE),
-    re.compile(r"\breveal\s+(the\s+)?(system|developer)\s+prompt\b", re.IGNORECASE),
-    re.compile(r"\bprint\s+(the\s+)?(system|developer)\s+prompt\b", re.IGNORECASE),
-    re.compile(r"忽略.{0,8}(前置|之前|以上|所有).{0,8}(规则|指令|提示)", re.IGNORECASE),
-    re.compile(r"(系统|开发者).{0,4}(提示|指令).{0,8}(发给我|告诉我|输出|打印)", re.IGNORECASE),
+    re.compile(
+        rf"\b(?:ignore|disregard|forget|override|bypass)\s+{_EARLIER_INSTRUCTION}\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        rf"\b(?:do not|don't|stop)\s+follow(?:ing)?\s+{_EARLIER_INSTRUCTION}\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?:print|reveal|show|dump)\s+(?:the\s+|your\s+)?"
+        r"(?:hidden|system|developer)\s+prompt\b",
+        re.IGNORECASE,
+    ),
+    re.compile(r"(?:忽略|无视|不要遵守).{0,8}(?:前置|之前|以上|所有|先前).{0,8}(?:规则|指令|提示)"),
+    re.compile(r"(?<!不要)忘记.{0,6}(?:之前|先前|以上|所有).{0,6}(?:指令|规则|提示)"),
+    re.compile(r"(?:系统|开发者).{0,4}(?:提示|指令).{0,8}(?:发给我|告诉我|输出|打印)"),
 ]
 
 DLP_PATTERNS = [
     ("dlp-api-key", re.compile(r"(?<![A-Za-z0-9_-])sk-[A-Za-z0-9][A-Za-z0-9_-]{15,}(?![A-Za-z0-9_-])")),
     ("dlp-aws-access-key", re.compile(r"(?<![A-Za-z0-9_])AKIA[0-9A-Z]{16}(?![A-Za-z0-9_])")),
+    ("dlp-github-token", re.compile(r"(?<![A-Za-z0-9_])ghp_[A-Za-z0-9]{36}(?![A-Za-z0-9_])")),
+    ("dlp-github-token", re.compile(r"(?<![A-Za-z0-9_])github_pat_[A-Za-z0-9_]{22,}(?![A-Za-z0-9_])")),
+    ("dlp-slack-token", re.compile(r"(?<![A-Za-z0-9_])xox[baprs]-[A-Za-z0-9-]{10,}(?![A-Za-z0-9_-])")),
+    (
+        "dlp-private-key",
+        re.compile(r"-----BEGIN (?:RSA |OPENSSH |EC |DSA |ENCRYPTED )?PRIVATE KEY-----"),
+    ),
 ]
 EMAIL_PATTERN = re.compile(
     r"(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,253}\.[A-Za-z]{2,63}(?![A-Za-z0-9.-])"
@@ -49,6 +72,7 @@ def scan_language_input(text: str, source_name: str = "<input>") -> dict:
 
 
 def scan_output_dlp(text: str, secret_terms: list[str] | None = None, source_name: str = "<output>") -> dict:
+    ensure_text_limit(text)
     findings = []
     for rule_id, pattern in DLP_PATTERNS:
         for match in list(pattern.finditer(text)):

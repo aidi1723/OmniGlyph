@@ -3,6 +3,7 @@ import unicodedata
 from collections.abc import Iterable
 from pathlib import Path
 
+from omniglyph.limits import TextLimitError, ensure_text_limit
 from omniglyph.oes import risk_level_for_findings
 from omniglyph.security_pack import PYTHON_UNICODEDATA_SOURCE, find_confusable
 
@@ -78,6 +79,7 @@ SKIPPED_DIRECTORY_NAMES = {
 
 
 def scan_text(text: str, source_name: str = "<text>") -> dict:
+    ensure_text_limit(text)
     findings = []
     for line_number, line in enumerate(text.splitlines(), 1):
         for column_number, char in enumerate(line, 1):
@@ -95,7 +97,10 @@ def scan_file(path: Path | str) -> dict:
         return _file_error_report(file_path, "UnicodeDecodeError", "file is not valid UTF-8 text")
     except OSError as exc:
         return _file_error_report(file_path, type(exc).__name__, str(exc))
-    return scan_text(text, source_name=str(file_path))
+    try:
+        return scan_text(text, source_name=str(file_path))
+    except TextLimitError as exc:
+        return _file_error_report(file_path, "TextLimitError", str(exc))
 
 
 def scan_path(path: Path | str) -> dict:
@@ -155,6 +160,8 @@ def format_json_report(report: dict) -> str:
 
 def _inspect_char(char: str, line_number: int, column_number: int) -> dict | None:
     code_point = ord(char)
+    if 0x20 <= code_point <= 0x7E:
+        return None
     name = _unicode_name(char)
     category = unicodedata.category(char)
     script_hint = _script_hint(name)

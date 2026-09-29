@@ -4,7 +4,7 @@ OmniGlyph is designed as a local, deterministic, read-only fact layer for agents
 
 ## Security Posture
 
-The stdio MCP server exposes lookup and scanning tools only. It does not provide tools for shell execution, file modification, network calls, credential access, browser automation, or database mutation.
+The stdio MCP server exposes lookup, validation, and scanning tools. It does not provide tools for shell execution, file modification, network calls, browser automation, or database mutation. `validate_lexicon_pack` and `validate_policy_pack` read caller-supplied pack directories when the corresponding root is unset; set `OMNIGLYPH_LEXICON_PACK_ROOT` and `OMNIGLYPH_POLICY_PACK_ROOT` before exposing the server to an untrusted agent.
 
 ## Tool Boundaries
 
@@ -12,6 +12,9 @@ The stdio MCP server exposes lookup and scanning tools only. It does not provide
 | --- | --- | --- | --- | --- | --- |
 | `lookup_glyph` | yes | no | no | no | no |
 | `lookup_term` | yes | no | no | no | no |
+| `list_namespaces` | yes | no | no | no | no |
+| `validate_lexicon_pack` | no | pack directory | no | no | no |
+| `validate_policy_pack` | no | pack directory | no | no | no |
 | `explain_glyph` | yes | no | no | no | no |
 | `explain_term` | yes | provided text | no | no | no |
 | `explain_code_security` | no | provided text | no | no | no |
@@ -38,10 +41,13 @@ The stdio MCP server exposes lookup and scanning tools only. It does not provide
 
 ## Recommended Deployment
 
-- The HTTP API has no built-in authentication. The supplied Compose configuration
-  publishes only `127.0.0.1:8000`; container-internal `0.0.0.0:8000` is intentional.
-  Do not change the host binding for remote access without an authenticated
-  gateway, TLS, and request limits. Local binding is not API authentication.
+- The HTTP API requires `OMNIGLYPH_API_TOKEN` on every route except `/api/v1/health`.
+  Health reports database existence and omits the filesystem path. Secret term
+  definitions are omitted from HTTP responses. Pack endpoints reject requests
+  unless `OMNIGLYPH_LEXICON_PACK_ROOT` or `OMNIGLYPH_POLICY_PACK_ROOT` is set.
+  Compose publishes only `127.0.0.1:8000`; container-internal `0.0.0.0:8000` is
+  intentional. Remote access still needs TLS and request limits. Pass the token
+  into Compose with `OMNIGLYPH_API_TOKEN`.
 - Run OmniGlyph MCP from a trusted local virtual environment.
 - Import only data sources whose licenses and provenance you understand.
 - Keep private domain packs separated from global Unicode facts.
@@ -59,7 +65,7 @@ OmniGlyph is a deterministic lookup, explanation, scanning, source-grounding, an
 ## Known Limitations
 
 - `scan_code_symbols` and `scan_unicode_security` detect suspicious Unicode patterns, but they are not complete security scanners.
-- `scan_language_input` and `scan_output_dlp` are deterministic security checks, not complete prompt-injection or DLP products.
+- `scan_language_input` and `scan_output_dlp` are deterministic security checks, not complete prompt-injection or DLP products. They reject text longer than 200000 characters with JSON-RPC `-32602`. Local `omniglyph scan-code` records an oversized file as failed and continues.
 - `enforce_intent` validates manifest policy but does not replace OS sandboxing, IAM, approval workflows, or endpoint security.
-- Confusable detection uses a minimal bundled map in the current beta; full Unicode confusables ingestion is a future enhancement.
+- Confusable detection names Latin lookalikes for a curated set of identical Cyrillic and Greek letters. Full Unicode confusables ingestion is a future enhancement.
 - The server trusts the local database. Data-source integrity depends on explicit ingestion and source tracking.
